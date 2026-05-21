@@ -1,0 +1,39 @@
+# dependencies
+node_modules/
+apps/*/node_modules/
+
+# build output
+dist/
+apps/*/dist/
+packages/*/dist/
+tools/*/dist/
+
+# vite cache
+.vite/
+apps/*/.vite/
+
+# environment
+.env
+.env.local
+apps/*/.env
+apps/*/.env.local
+packages/*/.env
+packages/*/.env.local
+packages/secrets/cm-platform.env
+tools/*/.env
+tools/*/.env.local
+
+# logs
+logs/
+*.log
+npm-debug.log*
+
+# generated project snapshots
+structure.txt
+
+# local editor settings
+.vscode/
+!.vscode/extensions.json
+
+# local scratch/backups
+*.bkp

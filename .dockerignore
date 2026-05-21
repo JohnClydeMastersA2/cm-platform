@@ -1,0 +1,9 @@
+node_modules
+dist
+public-dist
+.git
+.gitignore
+.vscode
+npm-debug.log
+Dockerfile
+docker-compose.yml

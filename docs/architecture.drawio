@@ -1,0 +1,73 @@
+<mxfile host="Electron">
+  <diagram name="cm-platform architecture" id="e4YldL3JUiHkzIUzgTxK">
+    <mxGraphModel dx="1414" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-1" parent="1" style="text;html=1;fontSize=22;fontStyle=1;" value="cm-platform Development Architecture" vertex="1">
+          <mxGeometry height="40" width="420" x="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="publisher:*&#xa;Public Website&#xa;apps/publisher-web&#xa;Vite + TypeScript + Bootstrap" vertex="1">
+          <mxGeometry height="130" width="260" x="40" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="api:*&#xa;Fastify Backend&#xa;apps/svc-core&#xa;/public + /internal routes" vertex="1">
+          <mxGeometry height="130" width="260" x="40" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="infra:*&#xa;Docker / SQL Server&#xa;docker/compose.dev.yml&#xa;CMPlatform database" vertex="1">
+          <mxGeometry height="130" width="260" x="40" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="etl:*&#xa;IIS Log Import Tooling&#xa;tools/etl-csv-import&#xa;Bulk import + reporting support" vertex="1">
+          <mxGeometry height="130" width="280" x="670" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="logging:*&#xa;Shared Logging Package&#xa;packages/logging&#xa;Used by API + ETL" vertex="1">
+          <mxGeometry height="110" width="280" x="360" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-7" parent="1" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff;" value="Publisher Browser" vertex="1">
+          <mxGeometry height="50" width="260" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff;" value="/public/*&#xa;Browser-safe API surface" vertex="1">
+          <mxGeometry height="70" width="220" x="400" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff;" value="/internal/*&#xa;Private platform API surface" vertex="1">
+          <mxGeometry height="70" width="220" x="400" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-10" parent="1" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="SQL Server Container&#xa;Database: CMPlatform" vertex="1">
+          <mxGeometry height="120" width="190" x="670" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-11" parent="1" style="shape=folder;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff;" value="IIS Log Files&#xa;WEB01 / WEB02" vertex="1">
+          <mxGeometry height="90" width="180" x="820" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-12" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-7" style="endArrow=block;html=1;" target="ZYtAe1xEgmeF31nPmP2l-2" value="uses">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-13" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-2" style="endArrow=block;html=1;" target="ZYtAe1xEgmeF31nPmP2l-3" value="fetches data from /public/*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-14" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-3" style="endArrow=block;html=1;" target="ZYtAe1xEgmeF31nPmP2l-4" value="queries SQL Server">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-15" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-3" style="endArrow=block;html=1;" target="ZYtAe1xEgmeF31nPmP2l-8" value="exposes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-16" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-3" style="endArrow=block;html=1;" target="ZYtAe1xEgmeF31nPmP2l-9" value="exposes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-17" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-4" style="endArrow=block;html=1;" target="ZYtAe1xEgmeF31nPmP2l-10" value="contains">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-18" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-11" style="endArrow=block;html=1;" target="ZYtAe1xEgmeF31nPmP2l-5" value="input">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-19" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-5" style="endArrow=block;html=1;" target="ZYtAe1xEgmeF31nPmP2l-10" value="bulk inserts / summaries">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-20" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-6" style="endArrow=block;dashed=1;html=1;" target="ZYtAe1xEgmeF31nPmP2l-3" value="shared logger">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-21" edge="1" parent="1" source="ZYtAe1xEgmeF31nPmP2l-6" style="endArrow=block;dashed=1;html=1;" target="ZYtAe1xEgmeF31nPmP2l-5" value="shared logger">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

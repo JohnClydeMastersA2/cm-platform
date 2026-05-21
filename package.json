@@ -1,0 +1,63 @@
+{
+  "name": "cm-platform-root",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "infra:up": "powershell -ExecutionPolicy Bypass -File scripts/docker/infra-up.ps1",
+    "infra:down": "powershell -ExecutionPolicy Bypass -File scripts/docker/infra-down.ps1",
+    "infra:restart": "npm run infra:down && npm run infra:up",
+    "infra:status": "docker compose -f docker/compose.dev.yml ps",
+    "infra:logs": "docker compose -f docker/compose.dev.yml logs -f --tail=200",
+    "db:schema": "powershell -ExecutionPolicy Bypass -File scripts/db/ensure-local-schema.ps1",
+
+    "api:dev": "npm --workspace apps/svc-core run dev",
+    "api:build": "npm --workspace apps/svc-core run build",
+    "api:start": "npm --workspace apps/svc-core run start",
+    "api:verify": "curl.exe http://localhost:3000/health && curl.exe http://localhost:3000/ready",
+    "api:test:internal": "powershell -ExecutionPolicy Bypass -File scripts/api/test-internal-api.ps1",
+    "email-webhooks:tunnel": "powershell -ExecutionPolicy Bypass -File scripts/webhooks/start-email-events-tunnel.ps1",
+    "email-webhooks:watch": "powershell -ExecutionPolicy Bypass -File scripts/webhooks/watch-email-events-log.ps1",
+
+    "publisher:dev": "npm --workspace apps/publisher-web run dev",
+    "publisher:build": "npm --workspace apps/publisher-web run build",
+    "publisher:preview": "npm --workspace apps/publisher-web run preview",
+
+    "etl:build": "npm --workspace tools/etl-csv-import run build",
+    "etl:run": "npm --workspace tools/etl-csv-import run run",
+    "email-send-test:build": "npm --workspace tools/email-send-test run build",
+    "email-send-test:run": "npm --workspace tools/email-send-test run run",
+
+    "contracts:build": "npm --workspace packages/contracts run build",
+    "auth:build": "npm --workspace packages/auth run build",
+    "email:build": "npm --workspace packages/email run build",
+    "logging:build": "npm --workspace packages/logging run build",
+    "secrets:build": "npm --workspace packages/secrets run build",
+
+    "core:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run secrets:build && npm run email:build && npm run api:build",
+    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run publisher:build && npm run etl:build && npm run email-send-test:build",
+    "build": "npm run all:build",
+
+    "api:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/svc-core/dist -ErrorAction SilentlyContinue\"",
+    "publisher:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/publisher-web/dist -ErrorAction SilentlyContinue\"",
+    "contracts:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/contracts/dist -ErrorAction SilentlyContinue\"",
+    "auth:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/auth/dist -ErrorAction SilentlyContinue\"",
+    "email:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/email/dist -ErrorAction SilentlyContinue\"",
+    "logging:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/logging/dist -ErrorAction SilentlyContinue\"",
+    "secrets:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/secrets/dist -ErrorAction SilentlyContinue\"",
+    "etl:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/etl-csv-import/dist -ErrorAction SilentlyContinue\"",
+    "email-send-test:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/email-send-test/dist -ErrorAction SilentlyContinue\"",
+    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run secrets:clean && npm run email:clean && npm run api:clean && npm run publisher:clean && npm run etl:clean && npm run email-send-test:clean",
+
+    "core:rebuild": "npm run api:clean && npm run core:build",
+    "all:rebuild": "npm run clean && npm run all:build",
+
+    "dev": "npm run infra:up && npm run api:dev"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8"
+  }
+}

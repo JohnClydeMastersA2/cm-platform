@@ -1,0 +1,1 @@
+tree C:\cm-platform /F > C:\cm-platform\structure.txt

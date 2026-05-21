@@ -1,0 +1,19 @@
+{
+  "name": "@cm/email",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cm/secrets": "*",
+    "nodemailer": "^8.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.0",
+    "@types/nodemailer": "^7.0.4",
+    "typescript": "^5.9.3"
+  }
+}
