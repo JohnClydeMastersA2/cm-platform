@@ -12,7 +12,22 @@ services:
       - mssql_data:/var/opt/mssql
     restart: unless-stopped
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: cm-platform-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: cm_platform
+      RABBITMQ_DEFAULT_PASS: cm_platform_dev
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
 volumes:
   mssql_data:
     external: true
     name: docker_mssql_data
+  rabbitmq_data:
+    name: cm_platform_rabbitmq_data

@@ -1,10 +1,12 @@
-import { sendEmail } from "@cm/email";
 import { AuthLoginSchema, AuthRegisterSchema, AuthVerifyEmailSchema } from "@cm/contracts";
+import { emailMessageTypes, type EmailVerificationRequestedMessage } from "@cm/messaging/email";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { randomUUID } from "node:crypto";
 import {
   createEmailVerificationChallenge,
   deleteDemoAccount,
   getAccountBySessionToken,
+  getSessionByToken,
   loginAccount,
   registerAccount,
   revokeSessionToken,
@@ -45,7 +47,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
     try {
       const account = await registerAccount(app.db, parsed.data);
       const verificationToken = await createEmailVerificationChallenge(app.db, account.accountId);
-      await sendVerificationEmail(account, verificationToken, authApiBaseUrl);
+      await queueVerificationEmail(app, account, verificationToken, authApiBaseUrl);
 
       reply.code(201).send({ account });
     } catch (err) {
@@ -107,7 +109,10 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
       return;
     }
 
-    return { account: session.account };
+    return {
+      account: session.account,
+      session: await getSessionByToken(app.db, session.sessionToken),
+    };
   });
 
   app.post("/logout", async (request, reply) => {
@@ -157,32 +162,41 @@ async function requireSession(
   return { account, sessionToken };
 }
 
-async function sendVerificationEmail(
+async function queueVerificationEmail(
+  app: FastifyInstance,
   account: AuthAccount,
   verificationToken: string,
   authApiBaseUrl: string,
 ): Promise<void> {
   const verificationUrl = `${authApiBaseUrl}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
 
-  await sendEmail({
-    to: account.emailAddress,
-    subject: "Verify your CM Platform account",
-    html: [
-      "<p>Welcome to CM Platform.</p>",
-      "<p>Please verify your email address to finish setting up your account.</p>",
-      `<p><a href="${verificationUrl}">Verify email address</a></p>`,
-      `<p>This verification link expires in ${emailVerificationExpirationText}.</p>`,
-    ].join("\n"),
-    text: [
-      "Welcome to CM Platform.",
-      "",
-      "Please verify your email address to finish setting up your account.",
-      "",
-      `Verify email address: ${verificationUrl}`,
-      "",
-      `This verification link expires in ${emailVerificationExpirationText}.`,
-    ].join("\n"),
-  });
+  const message: EmailVerificationRequestedMessage = {
+    messageType: emailMessageTypes.emailVerificationRequested,
+    messageId: randomUUID(),
+    requestedAt: new Date().toISOString(),
+    source: "svc-core.auth",
+    email: {
+      to: account.emailAddress,
+      subject: "Verify your CM Platform account",
+      html: [
+        "<p>Welcome to CM Platform.</p>",
+        "<p>Please verify your email address to finish setting up your account.</p>",
+        `<p><a href="${verificationUrl}">Verify email address</a></p>`,
+        `<p>This verification link expires in ${emailVerificationExpirationText}.</p>`,
+      ].join("\n"),
+      text: [
+        "Welcome to CM Platform.",
+        "",
+        "Please verify your email address to finish setting up your account.",
+        "",
+        `Verify email address: ${verificationUrl}`,
+        "",
+        `This verification link expires in ${emailVerificationExpirationText}.`,
+      ].join("\n"),
+    },
+  };
+
+  await app.messaging.publishEmailVerificationRequested(message);
 }
 
 function trimTrailingSlash(value: string): string {

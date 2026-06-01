@@ -1,0 +1,45 @@
+{
+  "name": "@cm/messaging",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./email": {
+      "types": "./dist/email.d.ts",
+      "default": "./dist/email.js"
+    },
+    "./widget": {
+      "types": "./dist/widget.d.ts",
+      "default": "./dist/widget.js"
+    },
+    "./widget-consumer": {
+      "types": "./dist/widget-consumer.d.ts",
+      "default": "./dist/widget-consumer.js"
+    },
+    "./topic-routing": {
+      "types": "./dist/topic-routing.d.ts",
+      "default": "./dist/topic-routing.js"
+    },
+    "./priority-queue": {
+      "types": "./dist/priority-queue.d.ts",
+      "default": "./dist/priority-queue.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.8",
+    "@types/node": "^25.2.0",
+    "typescript": "^5.9.3"
+  }
+}

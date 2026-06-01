@@ -4,6 +4,7 @@
   "workspaces": [
     "apps/*",
     "packages/*",
+    "services/*",
     "tools/*"
   ],
   "scripts": {
@@ -14,13 +15,23 @@
     "infra:logs": "docker compose -f docker/compose.dev.yml logs -f --tail=200",
     "db:schema": "powershell -ExecutionPolicy Bypass -File scripts/db/ensure-local-schema.ps1",
 
-    "api:dev": "npm --workspace apps/svc-core run dev",
+    "api:dev": "npm run api:deps:build && npm --workspace apps/svc-core run dev",
     "api:build": "npm --workspace apps/svc-core run build",
     "api:start": "npm --workspace apps/svc-core run start",
     "api:verify": "curl.exe http://localhost:3000/health && curl.exe http://localhost:3000/ready",
     "api:test:internal": "powershell -ExecutionPolicy Bypass -File scripts/api/test-internal-api.ps1",
     "email-webhooks:tunnel": "powershell -ExecutionPolicy Bypass -File scripts/webhooks/start-email-events-tunnel.ps1",
     "email-webhooks:watch": "powershell -ExecutionPolicy Bypass -File scripts/webhooks/watch-email-events-log.ps1",
+
+    "email-dispatcher:dev": "npm run email-dispatcher:deps:build && npm --workspace services/email-dispatcher run dev",
+    "email-dispatcher:build": "npm --workspace services/email-dispatcher run build",
+    "email-dispatcher:start": "npm --workspace services/email-dispatcher run start",
+    "widget-consumer:dev": "npm run widget-consumer:deps:build && npm --workspace services/widget-consumer run dev",
+    "widget-consumer:fast": "powershell -ExecutionPolicy Bypass -File scripts/workers/start-widget-consumer.ps1 -Name fast-consumer -ProcessingSeconds 1",
+    "widget-consumer:slow": "powershell -ExecutionPolicy Bypass -File scripts/workers/start-widget-consumer.ps1 -Name slow-consumer -ProcessingSeconds 5",
+    "widget-consumers:demo": "powershell -ExecutionPolicy Bypass -File scripts/workers/start-widget-consumers-demo.ps1",
+    "widget-consumer:build": "npm --workspace services/widget-consumer run build",
+    "widget-consumer:start": "npm --workspace services/widget-consumer run start",
 
     "publisher:dev": "npm --workspace apps/publisher-web run dev",
     "publisher:build": "npm --workspace apps/publisher-web run build",
@@ -35,10 +46,14 @@
     "auth:build": "npm --workspace packages/auth run build",
     "email:build": "npm --workspace packages/email run build",
     "logging:build": "npm --workspace packages/logging run build",
+    "messaging:build": "npm --workspace packages/messaging run build",
     "secrets:build": "npm --workspace packages/secrets run build",
+    "api:deps:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build",
+    "email-dispatcher:deps:build": "npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build",
+    "widget-consumer:deps:build": "npm run logging:build && npm run messaging:build",
 
-    "core:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run secrets:build && npm run email:build && npm run api:build",
-    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run publisher:build && npm run etl:build && npm run email-send-test:build",
+    "core:build": "npm run api:deps:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build",
+    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run publisher:build && npm run etl:build && npm run email-send-test:build",
     "build": "npm run all:build",
 
     "api:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/svc-core/dist -ErrorAction SilentlyContinue\"",
@@ -46,11 +61,14 @@
     "contracts:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/contracts/dist -ErrorAction SilentlyContinue\"",
     "auth:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/auth/dist -ErrorAction SilentlyContinue\"",
     "email:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/email/dist -ErrorAction SilentlyContinue\"",
+    "email-dispatcher:clean": "powershell -Command \"Remove-Item -Recurse -Force services/email-dispatcher/dist -ErrorAction SilentlyContinue\"",
+    "widget-consumer:clean": "powershell -Command \"Remove-Item -Recurse -Force services/widget-consumer/dist -ErrorAction SilentlyContinue\"",
     "logging:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/logging/dist -ErrorAction SilentlyContinue\"",
+    "messaging:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/messaging/dist -ErrorAction SilentlyContinue\"",
     "secrets:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/secrets/dist -ErrorAction SilentlyContinue\"",
     "etl:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/etl-csv-import/dist -ErrorAction SilentlyContinue\"",
     "email-send-test:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/email-send-test/dist -ErrorAction SilentlyContinue\"",
-    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run secrets:clean && npm run email:clean && npm run api:clean && npm run publisher:clean && npm run etl:clean && npm run email-send-test:clean",
+    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run messaging:clean && npm run secrets:clean && npm run email:clean && npm run email-dispatcher:clean && npm run widget-consumer:clean && npm run api:clean && npm run publisher:clean && npm run etl:clean && npm run email-send-test:clean",
 
     "core:rebuild": "npm run api:clean && npm run core:build",
     "all:rebuild": "npm run clean && npm run all:build",

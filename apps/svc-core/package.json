@@ -13,6 +13,7 @@
     "@cm/contracts": "*",
     "@cm/email": "*",
     "@cm/logging": "*",
+    "@cm/messaging": "*",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.1",
     "fastify-plugin": "^5.0.1",

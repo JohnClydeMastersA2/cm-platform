@@ -4,6 +4,7 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $composeFile = Join-Path $repoRoot "docker\compose.dev.yml"
 $volumeName = "docker_mssql_data"
 $containerName = "cm-platform-db"
+$rabbitMqContainerName = "cm-platform-rabbitmq"
 $saPassword = "#Pop,6300"
 $devDatabaseNames = @("CMPlatform")
 $legacyDatabaseRenames = @{
@@ -88,6 +89,31 @@ end
     }
 }
 
+function Wait-ForRabbitMq {
+    $maxAttempts = 60
+
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        $previousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+
+        try {
+            docker exec $rabbitMqContainerName rabbitmq-diagnostics -q ping *> $null
+            $rabbitMqPingExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+
+        if ($rabbitMqPingExitCode -eq 0) {
+            Write-Host "RabbitMQ is ready."
+            return
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    throw "RabbitMQ did not become ready after $($maxAttempts * 2) seconds."
+}
+
 $existingVolume = docker volume ls --quiet --filter "name=^$volumeName$"
 
 if (-not $existingVolume) {
@@ -95,13 +121,14 @@ if (-not $existingVolume) {
     docker volume create $volumeName | Out-Null
 }
 
-docker compose -f $composeFile up -d db
+docker compose -f $composeFile up -d db rabbitmq
 
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
 Wait-ForSqlServer
+Wait-ForRabbitMq
 Ensure-DevDatabases
 
 exit $LASTEXITCODE

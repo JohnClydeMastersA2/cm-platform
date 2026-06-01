@@ -8,14 +8,10 @@ const EnvSchema = z.object({
   DB_DATABASE: z.string().min(1),
 
   LOG_LEVEL: z.string().default("info"),
-  PORT: z.coerce.number().int().positive().default(3000),
-  HOST: z.string().default("0.0.0.0"),
-
-  ADMIN_KEY: z.string().min(1),
-
-  AUTH_API_BASE_URL: z.url().default("http://localhost:3000"),
-  PUBLISHER_WEB_BASE_URL: z.url().default("http://localhost:5173"),
+  NODE_ENV: z.string().default("development"),
   RABBITMQ_URL: z.url().default("amqp://cm_platform:cm_platform_dev@localhost:5672"),
+  WIDGET_CONSUMER_NAME: z.string().min(1).default("widget-consumer"),
+  WIDGET_CONSUMER_PROCESSING_SECONDS: z.coerce.number().int().nonnegative().default(1),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -25,7 +21,7 @@ export function loadEnv(): Env {
 
   if (!parsed.success) {
     console.error(z.treeifyError(parsed.error));
-    throw new Error("Invalid environment variables");
+    throw new Error("Invalid widget consumer environment variables");
   }
 
   return parsed.data;

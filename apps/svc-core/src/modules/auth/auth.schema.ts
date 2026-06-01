@@ -6,3 +6,10 @@ export type AuthAccount = {
   createdAt: Date;
   lastLoginAt: Date | null;
 };
+
+export type AuthSession = {
+  authSessionId: number;
+  createdAt: Date;
+  expiresAt: Date;
+  revokedAt: Date | null;
+};

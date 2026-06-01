@@ -8,7 +8,7 @@ import {
 } from "@cm/auth";
 import type { AuthLogin, AuthRegister } from "@cm/contracts";
 import sql from "mssql";
-import type { AuthAccount } from "./auth.schema.js";
+import type { AuthAccount, AuthSession } from "./auth.schema.js";
 
 export const SESSION_COOKIE_NAME = "cm_session";
 
@@ -24,6 +24,13 @@ type AccountRow = {
   Status: string;
   CreatedAt: Date;
   LastLoginAt: Date | null;
+};
+
+type SessionRow = {
+  AuthSessionId: number;
+  CreatedAt: Date;
+  ExpiresAt: Date;
+  RevokedAt: Date | null;
 };
 
 const accountSelectColumns = `
@@ -44,6 +51,15 @@ function mapAccount(row: AccountRow): AuthAccount {
     status: row.Status,
     createdAt: row.CreatedAt,
     lastLoginAt: row.LastLoginAt,
+  };
+}
+
+function mapSession(row: SessionRow): AuthSession {
+  return {
+    authSessionId: row.AuthSessionId,
+    createdAt: row.CreatedAt,
+    expiresAt: row.ExpiresAt,
+    revokedAt: row.RevokedAt,
   };
 }
 
@@ -262,6 +278,29 @@ export async function getAccountBySessionToken(
 
   const row = result.recordset[0];
   return row ? mapAccount(row) : null;
+}
+
+export async function getSessionByToken(
+  db: sql.ConnectionPool,
+  sessionToken: string,
+): Promise<AuthSession | null> {
+  const sessionTokenHash = hashSessionToken(sessionToken);
+
+  const result = await db
+    .request()
+    .input("sessionTokenHash", sql.VarChar(128), sessionTokenHash)
+    .query<SessionRow>(`
+      select
+        AuthSessionId,
+        CreatedAt,
+        ExpiresAt,
+        RevokedAt
+      from dbo.AuthSession
+      where SessionTokenHash = @sessionTokenHash;
+    `);
+
+  const row = result.recordset[0];
+  return row ? mapSession(row) : null;
 }
 
 export async function revokeSessionToken(

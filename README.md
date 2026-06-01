@@ -51,6 +51,7 @@ Short aliases like `build`, `clean`, and `dev` remain for common workflows.
 ```text
 apps/svc-core        API service
 apps/publisher-web   (public) publisher-facing web app
+services/*           deployable background services and workers
 packages/contracts   shared API contracts
 packages/logging     shared logging package
 tools/*              operational utilities
@@ -85,9 +86,17 @@ HOST=0.0.0.0
 ADMIN_KEY=changeme-internal-key
 AUTH_API_BASE_URL=http://localhost:3000
 PUBLISHER_WEB_BASE_URL=http://localhost:5173
+RABBITMQ_URL=amqp://cm_platform:cm_platform_dev@localhost:5672
 ```
 
 The default local database is `CMPlatform` on SQL Server port `1433`. If that port is already in use, adjust `docker/compose.dev.yml` and the API `.env` together.
+
+Local infrastructure also starts RabbitMQ for asynchronous workflow experiments:
+
+```text
+AMQP:       amqp://cm_platform:cm_platform_dev@localhost:5672
+Management: http://localhost:15672
+```
 
 For durable local-development context, especially database and Docker volume facts, see [docs/ops-memory.md](docs/ops-memory.md).
 
@@ -102,6 +111,21 @@ docs/publisher-login-strategy.md publisher account lifecycle and login strategy
 docs/iam-strategy.md    identity and access management strategy
 docs/architecture.drawio development architecture diagram
 ```
+
+## Messaging
+
+Shared RabbitMQ message contracts and topology helpers live in `packages/messaging`.
+Domain imports should use explicit subpaths:
+
+```ts
+import { emailQueues } from "@cm/messaging/email";
+import { widgetQueues } from "@cm/messaging/widget";
+import { widgetConsumerQueues } from "@cm/messaging/widget-consumer";
+import { topicRoutingQueues } from "@cm/messaging/topic-routing";
+import { priorityQueueQueues } from "@cm/messaging/priority-queue";
+```
+
+`packages/messaging/src/index.ts` remains as a package entrypoint that re-exports public domains, but application and service code should prefer the qualified imports above.
 
 ## Database Safety
 
@@ -161,6 +185,26 @@ Or use the shortcut:
 npm run dev
 ```
 
+When testing application email flows, start the email dispatcher in another PowerShell window:
+
+```powershell
+npm run email-dispatcher:dev
+```
+
+When testing the competing consumers demo, start one or more widget consumers in separate PowerShell windows. Give each instance a name and processing time to make RabbitMQ's work distribution visible:
+
+```powershell
+$env:WIDGET_CONSUMER_NAME="fast-consumer"
+$env:WIDGET_CONSUMER_PROCESSING_SECONDS="1"
+npm run widget-consumer:dev
+```
+
+```powershell
+$env:WIDGET_CONSUMER_NAME="slow-consumer"
+$env:WIDGET_CONSUMER_PROCESSING_SECONDS="5"
+npm run widget-consumer:dev
+```
+
 Start the publisher web app separately:
 
 ```powershell
@@ -204,6 +248,8 @@ Build individual targets:
 
 ```powershell
 npm run api:build
+npm run email-dispatcher:build
+npm run widget-consumer:build
 npm run publisher:build
 npm run contracts:build
 npm run secrets:build
@@ -263,7 +309,58 @@ DELETE /auth/me
 
 See [docs/iam-strategy.md](docs/iam-strategy.md).
 
-Registration sends a verification email through `@cm/email`. The verification link expires after five minutes. `svc-core` builds that link from `AUTH_API_BASE_URL` and redirects back to `PUBLISHER_WEB_BASE_URL`, so local development and production can use different public URLs without changing code.
+Registration queues a verification email request through RabbitMQ. `services/email-dispatcher` consumes that request and sends the message through `@cm/email`. The verification link expires after five minutes. `svc-core` builds that link from `AUTH_API_BASE_URL` and redirects back to `PUBLISHER_WEB_BASE_URL`, so local development and production can use different public URLs without changing code.
+
+## Background Services
+
+Deployable non-user-facing runtimes live under `services/`.
+
+`services/email-dispatcher` consumes RabbitMQ email send requests and dispatches them through `@cm/email`. It currently handles publisher account verification emails queued by `svc-core`.
+
+`services/widget-consumer` consumes RabbitMQ widget processing requests for the competing consumers demo. Multiple instances can run against the same queue by using different `WIDGET_CONSUMER_NAME` and `WIDGET_CONSUMER_PROCESSING_SECONDS` values.
+
+## Widget Queue Demo
+
+The publisher web app includes a Widget Queue page at:
+
+```text
+#widgets
+```
+
+It also includes a competing consumers page at:
+
+```text
+#competing-consumers
+```
+
+And a topic routing page at:
+
+```text
+#topic-routing
+```
+
+The topic routing demo publishes one event to the `cm.topic-demo` topic exchange and shows which queues receive copies based on their binding patterns.
+
+The priority queue page is available at:
+
+```text
+#priority-queue
+```
+
+The priority queue demo publishes normal, high, and urgent jobs into one queue declared with `x-max-priority`, then processes messages manually to show that higher-priority waiting messages are delivered first.
+
+The demo uses SQL Server for visible widget state and RabbitMQ for queued work messages:
+
+```text
+Create widgets -> dbo.WidgetQueueDemo rows + cm.widget.processing messages
+Process widgets -> pull messages from RabbitMQ + mark SQL rows processed
+```
+
+After pulling the latest code or changing schema, apply the local table update:
+
+```powershell
+npm run db:schema
+```
 
 ## Email Sending
 

@@ -132,6 +132,93 @@ body {
   max-width: 42rem;
 }
 
+.queue-panel {
+  max-width: 72rem;
+}
+
+.widget-table {
+  font-size: 0.9rem;
+  min-width: 58rem;
+  table-layout: auto;
+}
+
+.widget-table th,
+.widget-table td {
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.widget-table th {
+  white-space: nowrap;
+}
+
+.widget-table .btn-sm {
+  white-space: nowrap;
+}
+
+.widget-col-id {
+  width: 6rem;
+}
+
+.widget-col-status {
+  width: 8rem;
+}
+
+.widget-col-count {
+  width: 7rem;
+}
+
+.widget-col-date,
+.widget-col-actions {
+  width: 12rem;
+}
+
+.consumer-widget-table {
+  min-width: 68rem;
+}
+
+.consumer-col-worker {
+  width: 12rem;
+}
+
+.consumer-col-seconds {
+  width: 7rem;
+}
+
+.topic-routing-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+}
+
+.topic-routing-card {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.topic-routing-table {
+  font-size: 0.85rem;
+  min-width: 24rem;
+}
+
+.priority-queue-table {
+  font-size: 0.9rem;
+  min-width: 34rem;
+}
+
+.messaging-notes {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.messaging-notes ul,
+.messaging-notes ol {
+  padding-left: 1.2rem;
+}
+
 @media (max-width: 991.98px) {
   .publisher-shell {
     display: block;

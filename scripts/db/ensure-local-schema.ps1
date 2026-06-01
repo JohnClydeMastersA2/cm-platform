@@ -267,6 +267,77 @@ begin
         on dbo.AuthChallenge(AccountId, ChallengeType, UsedAt, ExpiresAt);
 end
 
+if object_id('dbo.WidgetQueueDemo', 'U') is null
+begin
+    create table dbo.WidgetQueueDemo (
+        WidgetId int identity(1,1) not null
+            constraint PK_WidgetQueueDemo primary key,
+        WidgetName varchar(200) not null,
+        Status varchar(50) not null
+            constraint DF_WidgetQueueDemo_Status default ('queued'),
+        CreatedAt datetime2(0) not null
+            constraint DF_WidgetQueueDemo_CreatedAt default (sysutcdatetime()),
+        QueuedAt datetime2(0) null,
+        ProcessingStartedAt datetime2(0) null,
+        ProcessedAt datetime2(0) null,
+        ProcessCount int not null
+            constraint DF_WidgetQueueDemo_ProcessCount default (0),
+        LastMessageId varchar(100) null,
+        LastError varchar(max) null
+    );
+end
+
+if COL_LENGTH('dbo.WidgetQueueDemo', 'LastError') is null
+    alter table dbo.WidgetQueueDemo add LastError varchar(max) null;
+
+if not exists (
+    select 1
+    from sys.indexes
+    where name = 'IX_WidgetQueueDemo_Status_CreatedAt'
+      and object_id = object_id('dbo.WidgetQueueDemo')
+)
+begin
+    create nonclustered index IX_WidgetQueueDemo_Status_CreatedAt
+        on dbo.WidgetQueueDemo(Status, CreatedAt desc);
+end
+
+if object_id('dbo.WidgetConsumerDemo', 'U') is null
+begin
+    create table dbo.WidgetConsumerDemo (
+        WidgetId int identity(1,1) not null
+            constraint PK_WidgetConsumerDemo primary key,
+        WidgetName varchar(200) not null,
+        Status varchar(50) not null
+            constraint DF_WidgetConsumerDemo_Status default ('queued'),
+        CreatedAt datetime2(0) not null
+            constraint DF_WidgetConsumerDemo_CreatedAt default (sysutcdatetime()),
+        QueuedAt datetime2(0) null,
+        ProcessingStartedAt datetime2(0) null,
+        ProcessedAt datetime2(0) null,
+        ProcessedBy varchar(100) null,
+        ProcessingSeconds int null,
+        LastMessageId varchar(100) null,
+        LastError varchar(max) null
+    );
+end
+
+if COL_LENGTH('dbo.WidgetConsumerDemo', 'ProcessedBy') is null
+    alter table dbo.WidgetConsumerDemo add ProcessedBy varchar(100) null;
+
+if COL_LENGTH('dbo.WidgetConsumerDemo', 'ProcessingSeconds') is null
+    alter table dbo.WidgetConsumerDemo add ProcessingSeconds int null;
+
+if not exists (
+    select 1
+    from sys.indexes
+    where name = 'IX_WidgetConsumerDemo_Status_CreatedAt'
+      and object_id = object_id('dbo.WidgetConsumerDemo')
+)
+begin
+    create nonclustered index IX_WidgetConsumerDemo_Status_CreatedAt
+        on dbo.WidgetConsumerDemo(Status, CreatedAt desc);
+end
+
 "@
 
 docker exec $containerName /opt/mssql-tools18/bin/sqlcmd `

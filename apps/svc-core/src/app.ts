@@ -1,10 +1,15 @@
 import Fastify from "fastify";
 import { createLogger } from "@cm/logging";
 import { dbPlugin } from "./plugins/db.js";
+import { messagingPlugin } from "./plugins/messaging.js";
 import { authAdminPlugin } from "./plugins/auth-admin.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { emailEventsWebhookRoutes } from "./routes/webhooks/email_events.js";
+import { priorityQueueRoutes } from "./modules/priority_queue/priority_queue.routes.js";
+import { topicRoutingRoutes } from "./modules/topic_routing/topic_routing.routes.js";
 import { internalSurface } from "./surfaces/internal.surface.js";
+import { widgetRoutes } from "./modules/widget/widget.routes.js";
+import { widgetConsumerRoutes } from "./modules/widget_consumer/widget_consumer.routes.js";
 
 type BuildAppOptions = {
   logLevel: string;
@@ -16,6 +21,7 @@ type BuildAppOptions = {
   dbDatabase: string;
   authApiBaseUrl: string;
   publisherWebBaseUrl: string;
+  rabbitMqUrl: string;
 };
 
 export function buildApp(opts: BuildAppOptions) {
@@ -35,6 +41,10 @@ export function buildApp(opts: BuildAppOptions) {
     user: opts.dbUser,
     password: opts.dbPassword,
     database: opts.dbDatabase,
+  });
+
+  app.register(messagingPlugin, {
+    rabbitMqUrl: opts.rabbitMqUrl,
   });
 
   app.register(authAdminPlugin, {
@@ -69,6 +79,10 @@ export function buildApp(opts: BuildAppOptions) {
     publisherWebBaseUrl: opts.publisherWebBaseUrl,
   });
   app.register(emailEventsWebhookRoutes);
+  app.register(widgetRoutes, { prefix: "/widgets" });
+  app.register(widgetConsumerRoutes, { prefix: "/consumer-widgets" });
+  app.register(topicRoutingRoutes, { prefix: "/topic-routing" });
+  app.register(priorityQueueRoutes, { prefix: "/priority-queue" });
   app.register(internalSurface);
 
   return app;
