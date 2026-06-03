@@ -4,6 +4,7 @@ import fp from "fastify-plugin";
 import type { FastifyInstance } from "fastify";
 import {
   assertEmailTopology,
+  emailQueues,
   publishEmailVerificationRequested,
   type EmailVerificationRequestedMessage,
 } from "@cm/messaging/email";
@@ -46,6 +47,12 @@ export type PriorityQueueOverview = {
   messageCount: number;
 };
 
+export type QueueOverview = {
+  queue: string;
+  messageCount: number;
+  consumerCount: number;
+};
+
 export type MessagingClient = {
   publishEmailVerificationRequested(message: EmailVerificationRequestedMessage): Promise<void>;
   publishWidgetProcessingRequested(message: WidgetProcessingRequestedMessage): Promise<void>;
@@ -60,6 +67,8 @@ export type MessagingClient = {
   getWidgetRetryMessageCount(): Promise<number>;
   getWidgetDeadLetterMessageCount(): Promise<number>;
   getWidgetConsumerMessageCount(): Promise<number>;
+  getEmailDispatchQueueOverview(): Promise<QueueOverview>;
+  getWidgetConsumerQueueOverview(): Promise<QueueOverview>;
   getTopicRoutingQueueOverviews(): Promise<TopicRoutingQueueOverview[]>;
   getPriorityQueueOverview(): Promise<PriorityQueueOverview>;
   ackWidgetProcessingMessage(message: GetMessage): void;
@@ -139,6 +148,24 @@ async function messagingPluginImpl(
     getWidgetConsumerMessageCount: async () => {
       const result = await widgetConsumerChannel.checkQueue(widgetConsumerQueues.processing);
       return result.messageCount;
+    },
+    getEmailDispatchQueueOverview: async () => {
+      const result = await widgetConsumerChannel.checkQueue(emailQueues.dispatch);
+
+      return {
+        queue: emailQueues.dispatch,
+        messageCount: result.messageCount,
+        consumerCount: result.consumerCount,
+      };
+    },
+    getWidgetConsumerQueueOverview: async () => {
+      const result = await widgetConsumerChannel.checkQueue(widgetConsumerQueues.processing);
+
+      return {
+        queue: widgetConsumerQueues.processing,
+        messageCount: result.messageCount,
+        consumerCount: result.consumerCount,
+      };
     },
     getTopicRoutingQueueOverviews: async () => {
       return Promise.all(topicRoutingBindings.map(async (binding) => {

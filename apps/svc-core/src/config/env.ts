@@ -14,14 +14,18 @@ const EnvSchema = z.object({
   ADMIN_KEY: z.string().min(1),
 
   AUTH_API_BASE_URL: z.url().default("http://localhost:3000"),
-  PUBLISHER_WEB_BASE_URL: z.url().default("http://localhost:5173"),
+  PUBLIC_WEB_BASE_URL: z.url().default("http://localhost:5173"),
   RABBITMQ_URL: z.url().default("amqp://cm_platform:cm_platform_dev@localhost:5672"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
 
 export function loadEnv(): Env {
-  const parsed = EnvSchema.safeParse(process.env);
+  const rawEnv = {
+    ...process.env,
+    PUBLIC_WEB_BASE_URL: process.env.PUBLIC_WEB_BASE_URL ?? process.env.PUBLISHER_WEB_BASE_URL,
+  };
+  const parsed = EnvSchema.safeParse(rawEnv);
 
   if (!parsed.success) {
     console.error(z.treeifyError(parsed.error));

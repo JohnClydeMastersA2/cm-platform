@@ -1,12 +1,12 @@
 apps/svc-core        API/service
-apps/publisher-web   external publisher portal
+apps/public-web      public-facing web app
 packages/contracts   shared API contracts
 packages/logging     shared logging
 tools/*              operational utilities
 
 The project is organized as a TypeScript monorepo with three main buckets:
 
-apps/*: runnable applications, currently svc-core and publisher-web
+apps/*: runnable applications, currently svc-core and public-web
 packages/*: shared libraries, like @cm/logging and @cm/contracts
 tools/*: operational utilities, like the ETL importer
 
@@ -86,7 +86,7 @@ These files define Zod schemas and TypeScript types for API-facing data. The imp
 
 Instead, both sides can import from @cm/contracts.
 
-The API uses contracts to validate and type its route inputs. Later, publisher-web can use the same contracts to type API responses and validate data coming back from the server. This reduces drift: if Offer changes, the compiler can show every affected place.
+The API uses contracts to validate and type its route inputs. Later, public-web can use the same contracts to type API responses and validate data coming back from the server. This reduces drift: if Offer changes, the compiler can show every affected place.
 
 A contract is not a database model. It is the external agreement between system boundaries. The repo layer can know about database rows like OfferId and CreatedAt; the contract describes the API/domain shape like offerId and createdAt.
 
@@ -103,5 +103,5 @@ apps/svc-core/src/modules/{feature}
 apps/svc-core/src/surfaces
   Exposes features through named API surfaces
 
-apps/publisher-web
+apps/public-web
   Consumes API endpoints using shared contracts

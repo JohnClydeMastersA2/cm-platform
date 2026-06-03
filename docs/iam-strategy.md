@@ -6,7 +6,7 @@ This document captures the working identity and access management direction for 
 
 CM Platform should demonstrate practical IAM fundamentals without trying to become a full identity provider.
 
-The first consumer is `apps/publisher-web`, but reusable server-side pieces should live in shared packages or `svc-core` modules when they can support other platform surfaces later.
+The first consumer is `apps/public-web`, but reusable server-side pieces should live in shared packages or `svc-core` modules when they can support other platform surfaces later.
 
 ## Account Model
 
@@ -34,13 +34,13 @@ This is a reset capability for exercising the account lifecycle, not the final p
 
 Account registration creates a five-minute `email_verification` challenge in `dbo.AuthChallenge`.
 
-The raw verification token is sent by email through `@cm/email`. The database stores only a SHA-256 hash of the token. When the user clicks the verification link, `svc-core` validates the token, marks the challenge used, sets `Account.EmailVerifiedAt`, and redirects back to the publisher web login page.
+The raw verification token is sent by email through `@cm/email`. The database stores only a SHA-256 hash of the token. When the user clicks the verification link, `svc-core` validates the token, marks the challenge used, sets `Account.EmailVerifiedAt`, and redirects back to the public web login page.
 
 Verification links use two `svc-core` environment variables so local development and production can use different public URLs:
 
 ```text
 AUTH_API_BASE_URL=http://localhost:3000
-PUBLISHER_WEB_BASE_URL=http://localhost:5173
+PUBLIC_WEB_BASE_URL=http://localhost:5173
 ```
 
 With the local defaults, the verification email link targets:
@@ -72,7 +72,7 @@ Build in this order:
 ## Package Boundaries
 
 ```text
-apps/publisher-web   auth UI and publisher-facing flows
+apps/public-web      auth UI and public-facing flows
 apps/svc-core        auth API, sessions, account persistence
 packages/contracts   shared request/response schemas
 packages/email       verification/recovery email delivery

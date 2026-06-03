@@ -21,7 +21,7 @@ const emailVerificationExpirationText = "5 minutes";
 
 type AuthRoutesOptions = {
   authApiBaseUrl: string;
-  publisherWebBaseUrl: string;
+  publicWebBaseUrl: string;
 };
 
 type AuthenticatedSession = {
@@ -31,7 +31,7 @@ type AuthenticatedSession = {
 
 export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions): Promise<void> {
   const authApiBaseUrl = trimTrailingSlash(opts.authApiBaseUrl);
-  const publisherWebBaseUrl = trimTrailingSlash(opts.publisherWebBaseUrl);
+  const publicWebBaseUrl = trimTrailingSlash(opts.publicWebBaseUrl);
 
   app.post("/register", async (request, reply) => {
     const parsed = AuthRegisterSchema.safeParse(request.body);
@@ -66,18 +66,18 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
     const parsed = AuthVerifyEmailSchema.safeParse(request.query);
 
     if (!parsed.success) {
-      reply.redirect(`${publisherWebBaseUrl}/#login-email-verification-failed`);
+      reply.redirect(`${publicWebBaseUrl}/#login-email-verification-failed`);
       return;
     }
 
     const account = await verifyEmailChallenge(app.db, parsed.data.token);
 
     if (!account) {
-      reply.redirect(`${publisherWebBaseUrl}/#login-email-verification-failed`);
+      reply.redirect(`${publicWebBaseUrl}/#login-email-verification-failed`);
       return;
     }
 
-    reply.redirect(`${publisherWebBaseUrl}/#login-email-verified`);
+    reply.redirect(`${publicWebBaseUrl}/#login-email-verified`);
   });
 
   app.post("/login", async (request, reply) => {

@@ -13,6 +13,10 @@
     "infra:restart": "npm run infra:down && npm run infra:up",
     "infra:status": "docker compose -f docker/compose.dev.yml ps",
     "infra:logs": "docker compose -f docker/compose.dev.yml logs -f --tail=200",
+    "infra:workers:build": "docker compose -f docker/compose.dev.yml build email-dispatcher",
+    "infra:workers:up": "docker compose -f docker/compose.dev.yml up -d email-dispatcher widget-consumer-fast widget-consumer-slow",
+    "infra:workers:down": "docker compose -f docker/compose.dev.yml stop email-dispatcher widget-consumer-fast widget-consumer-slow",
+    "infra:workers:logs": "docker compose -f docker/compose.dev.yml logs -f --tail=200 email-dispatcher widget-consumer-fast widget-consumer-slow",
     "db:schema": "powershell -ExecutionPolicy Bypass -File scripts/db/ensure-local-schema.ps1",
 
     "api:dev": "npm run api:deps:build && npm --workspace apps/svc-core run dev",
@@ -33,9 +37,9 @@
     "widget-consumer:build": "npm --workspace services/widget-consumer run build",
     "widget-consumer:start": "npm --workspace services/widget-consumer run start",
 
-    "publisher:dev": "npm --workspace apps/publisher-web run dev",
-    "publisher:build": "npm --workspace apps/publisher-web run build",
-    "publisher:preview": "npm --workspace apps/publisher-web run preview",
+    "public:dev": "npm --workspace public-web run dev",
+    "public:build": "npm --workspace public-web run build",
+    "public:preview": "npm --workspace public-web run preview",
 
     "etl:build": "npm --workspace tools/etl-csv-import run build",
     "etl:run": "npm --workspace tools/etl-csv-import run run",
@@ -53,11 +57,11 @@
     "widget-consumer:deps:build": "npm run logging:build && npm run messaging:build",
 
     "core:build": "npm run api:deps:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build",
-    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run publisher:build && npm run etl:build && npm run email-send-test:build",
+    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run public:build && npm run etl:build && npm run email-send-test:build",
     "build": "npm run all:build",
 
     "api:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/svc-core/dist -ErrorAction SilentlyContinue\"",
-    "publisher:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/publisher-web/dist -ErrorAction SilentlyContinue\"",
+    "public:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/public-web/dist -ErrorAction SilentlyContinue\"",
     "contracts:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/contracts/dist -ErrorAction SilentlyContinue\"",
     "auth:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/auth/dist -ErrorAction SilentlyContinue\"",
     "email:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/email/dist -ErrorAction SilentlyContinue\"",
@@ -68,7 +72,7 @@
     "secrets:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/secrets/dist -ErrorAction SilentlyContinue\"",
     "etl:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/etl-csv-import/dist -ErrorAction SilentlyContinue\"",
     "email-send-test:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/email-send-test/dist -ErrorAction SilentlyContinue\"",
-    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run messaging:clean && npm run secrets:clean && npm run email:clean && npm run email-dispatcher:clean && npm run widget-consumer:clean && npm run api:clean && npm run publisher:clean && npm run etl:clean && npm run email-send-test:clean",
+    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run messaging:clean && npm run secrets:clean && npm run email:clean && npm run email-dispatcher:clean && npm run widget-consumer:clean && npm run api:clean && npm run public:clean && npm run etl:clean && npm run email-send-test:clean",
 
     "core:rebuild": "npm run api:clean && npm run core:build",
     "all:rebuild": "npm run clean && npm run all:build",

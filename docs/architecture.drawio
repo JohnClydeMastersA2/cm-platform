@@ -7,7 +7,7 @@
         <mxCell id="ZYtAe1xEgmeF31nPmP2l-1" parent="1" style="text;html=1;fontSize=22;fontStyle=1;" value="cm-platform Development Architecture" vertex="1">
           <mxGeometry height="40" width="420" x="40" as="geometry" />
         </mxCell>
-        <mxCell id="ZYtAe1xEgmeF31nPmP2l-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="publisher:*&#xa;Public Website&#xa;apps/publisher-web&#xa;Vite + TypeScript + Bootstrap" vertex="1">
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="public:*&#xa;Public Website&#xa;apps/public-web&#xa;Vite + TypeScript + Bootstrap" vertex="1">
           <mxGeometry height="130" width="260" x="40" y="140" as="geometry" />
         </mxCell>
         <mxCell id="ZYtAe1xEgmeF31nPmP2l-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="api:*&#xa;Fastify Backend&#xa;apps/svc-core&#xa;/public + /internal routes" vertex="1">
@@ -22,7 +22,7 @@
         <mxCell id="ZYtAe1xEgmeF31nPmP2l-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontSize=14;fontColor=#ffffff;" value="logging:*&#xa;Shared Logging Package&#xa;packages/logging&#xa;Used by API + ETL" vertex="1">
           <mxGeometry height="110" width="280" x="360" y="40" as="geometry" />
         </mxCell>
-        <mxCell id="ZYtAe1xEgmeF31nPmP2l-7" parent="1" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff;" value="Publisher Browser" vertex="1">
+        <mxCell id="ZYtAe1xEgmeF31nPmP2l-7" parent="1" style="shape=rectangle;rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff;" value="Public Browser" vertex="1">
           <mxGeometry height="50" width="260" x="40" y="40" as="geometry" />
         </mxCell>
         <mxCell id="ZYtAe1xEgmeF31nPmP2l-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0050ef;strokeColor=#001DBC;fontColor=#ffffff;" value="/public/*&#xa;Browser-safe API surface" vertex="1">

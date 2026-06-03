@@ -1,0 +1,21 @@
+FROM node:24-bookworm-slim
+
+WORKDIR /app
+
+ENV NODE_ENV=development
+
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY apps ./apps
+COPY packages ./packages
+COPY services ./services
+COPY tools ./tools
+
+RUN npm ci
+RUN npm run logging:build \
+  && npm run messaging:build \
+  && npm run secrets:build \
+  && npm run email:build \
+  && npm run email-dispatcher:build \
+  && npm run widget-consumer:build
+
+CMD ["npm", "--workspace", "services/widget-consumer", "run", "start"]

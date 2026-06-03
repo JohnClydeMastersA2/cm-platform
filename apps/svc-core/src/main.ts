@@ -18,7 +18,7 @@ async function start() {
     dbPassword: env.DB_PASSWORD,
     dbDatabase: env.DB_DATABASE,
     authApiBaseUrl: env.AUTH_API_BASE_URL,
-    publisherWebBaseUrl: env.PUBLISHER_WEB_BASE_URL,
+    publicWebBaseUrl: env.PUBLIC_WEB_BASE_URL,
     rabbitMqUrl: env.RABBITMQ_URL,
   });
 

@@ -42,7 +42,7 @@ mcr.microsoft.com/mssql/server:2022-latest
 docker_default
 ```
 
-The API and publisher web app run locally through npm scripts. API Docker images and containers are disposable future assets and should be recreated from source when the project is ready to containerize the full stack.
+The API and public web app run locally through npm scripts. API Docker images and containers are disposable future assets and should be recreated from source when the project is ready to containerize the full stack.
 
 ## Startup
 

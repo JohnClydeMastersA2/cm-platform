@@ -25,6 +25,64 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
 
+  email-dispatcher:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.background
+    image: cm-platform/background:dev
+    container_name: cm-platform-email-dispatcher
+    command: ["npm", "--workspace", "services/email-dispatcher", "run", "start"]
+    depends_on:
+      - rabbitmq
+    environment:
+      LOG_LEVEL: info
+      NODE_ENV: development
+      RABBITMQ_URL: amqp://cm_platform:cm_platform_dev@rabbitmq:5672
+      EMAIL_DISPATCHER_PREFETCH: "5"
+    volumes:
+      - ../packages/secrets/cm-platform.env:/app/packages/secrets/cm-platform.env:ro
+    restart: unless-stopped
+
+  widget-consumer-fast:
+    image: cm-platform/background:dev
+    container_name: cm-platform-widget-consumer-fast
+    command: ["npm", "--workspace", "services/widget-consumer", "run", "start"]
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      DB_SERVER: db
+      DB_PORT: "1433"
+      DB_USER: sa
+      DB_PASSWORD: "#Pop,6300"
+      DB_DATABASE: CMPlatform
+      LOG_LEVEL: info
+      NODE_ENV: development
+      RABBITMQ_URL: amqp://cm_platform:cm_platform_dev@rabbitmq:5672
+      WIDGET_CONSUMER_NAME: fast-consumer
+      WIDGET_CONSUMER_PROCESSING_SECONDS: "1"
+    restart: unless-stopped
+
+  widget-consumer-slow:
+    image: cm-platform/background:dev
+    container_name: cm-platform-widget-consumer-slow
+    command: ["npm", "--workspace", "services/widget-consumer", "run", "start"]
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      DB_SERVER: db
+      DB_PORT: "1433"
+      DB_USER: sa
+      DB_PASSWORD: "#Pop,6300"
+      DB_DATABASE: CMPlatform
+      LOG_LEVEL: info
+      NODE_ENV: development
+      RABBITMQ_URL: amqp://cm_platform:cm_platform_dev@rabbitmq:5672
+      WIDGET_CONSUMER_NAME: slow-consumer
+      WIDGET_CONSUMER_PROCESSING_SECONDS: "5"
+    restart: unless-stopped
+
 volumes:
   mssql_data:
     external: true

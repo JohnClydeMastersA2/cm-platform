@@ -2,9 +2,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "./style.css";
 
-type Page = "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue";
+type Page = "home" | "infrastructure" | "containers" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue";
 type FormStatus = "idle" | "submitting" | "success" | "error";
-type SidebarSection = "identity" | "account" | "messaging";
+type SidebarSection = "platform" | "containers" | "identity" | "account" | "messaging";
 
 type AuthAccount = {
   accountId: number;
@@ -25,6 +25,23 @@ type AuthSession = {
 type FormState = {
   status: FormStatus;
   message?: string;
+};
+
+type InfrastructureDisposition = "online" | "degraded" | "offline" | "unknown";
+
+type InfrastructureRequirement = {
+  key: string;
+  name: string;
+  disposition: InfrastructureDisposition;
+  detail: string;
+  evidence: string;
+  checkedAt: string;
+};
+
+type PlatformStatus = {
+  checkedAt: string;
+  requirements: InfrastructureRequirement[];
+  notes: string[];
 };
 
 type WidgetStatus = "queued" | "retrying" | "processing" | "processed" | "failed";
@@ -137,10 +154,13 @@ let account: AuthAccount | null = null;
 let authSession: AuthSession | null = null;
 let currentPage: Page | null = null;
 let sidebarSectionsOpen: Record<SidebarSection, boolean> = {
+  platform: true,
+  containers: true,
   identity: true,
   account: true,
   messaging: true,
 };
+let platformStatus: PlatformStatus | null = null;
 let widgetQueueState: WidgetQueueState = {
   widgets: [],
   rabbitMqMessageCount: 0,
@@ -169,6 +189,7 @@ let priorityQueueState: PriorityQueueState = {
 const loginState: FormState = { status: "idle" };
 const registerState: FormState = { status: "idle" };
 const accountState: FormState = { status: "idle" };
+const platformStatusState: FormState = { status: "idle" };
 const widgetState: FormState = { status: "idle" };
 const widgetConsumerState: FormState = { status: "idle" };
 const topicRoutingFormState: FormState = { status: "idle" };
@@ -177,33 +198,39 @@ const priorityQueueFormState: FormState = { status: "idle" };
 function getCurrentPage(): Page {
   const hash = window.location.hash.replace("#", "");
 
+  if (hash === "home") return "home";
+  if (hash === "infrastructure") return "infrastructure";
+  if (hash === "containers") return "containers";
   if (hash === "iam") return "iam";
   if (hash === "register") return "register";
+  if (hash === "login") return "login";
   if (hash === "account") return "account";
   if (hash === "widgets") return "widgets";
   if (hash === "competing-consumers") return "competing-consumers";
   if (hash === "topic-routing") return "topic-routing";
   if (hash === "priority-queue") return "priority-queue";
 
-  return "login";
+  return "home";
 }
 
 function layout(content: string): string {
+  const platformOpen = sidebarSectionsOpen.platform;
+  const containersOpen = sidebarSectionsOpen.containers;
   const identityOpen = sidebarSectionsOpen.identity;
   const accountOpen = sidebarSectionsOpen.account;
   const messagingOpen = sidebarSectionsOpen.messaging;
 
   return `
-    <div class="publisher-shell">
-      <aside class="publisher-sidebar">
-        <div class="publisher-sidebar-header">
-          <a class="publisher-brand" href="#iam">Publisher Portal</a>
+    <div class="public-shell">
+      <aside class="public-sidebar">
+        <div class="public-sidebar-header">
+          <a class="public-brand" href="#home">CM Platform</a>
           <button
             class="btn btn-sm btn-outline-light d-lg-none"
             type="button"
             data-bs-toggle="collapse"
-            data-bs-target="#publisherSidebarNav"
-            aria-controls="publisherSidebarNav"
+            data-bs-target="#publicSidebarNav"
+            aria-controls="publicSidebarNav"
             aria-expanded="false"
             aria-label="Toggle navigation"
           >
@@ -211,10 +238,43 @@ function layout(content: string): string {
           </button>
         </div>
 
-        <div class="collapse d-lg-block" id="publisherSidebarNav">
-          <nav class="publisher-nav">
+        <div class="collapse d-lg-block" id="publicSidebarNav">
+          <nav class="public-nav">
             <button
-              class="publisher-nav-toggle ${identityOpen ? "" : "collapsed"}"
+              class="public-nav-toggle ${platformOpen ? "" : "collapsed"}"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#platformNav"
+              aria-expanded="${platformOpen ? "true" : "false"}"
+              aria-controls="platformNav"
+            >
+              Platform
+            </button>
+            <div class="collapse ${platformOpen ? "show" : ""}" id="platformNav">
+              <div class="public-nav-group">
+                <a class="public-nav-link" href="#home">Overview</a>
+                <a class="public-nav-link" href="#infrastructure">Infrastructure Status</a>
+              </div>
+            </div>
+
+            <button
+              class="public-nav-toggle ${containersOpen ? "" : "collapsed"}"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#containersNav"
+              aria-expanded="${containersOpen ? "true" : "false"}"
+              aria-controls="containersNav"
+            >
+              Containers
+            </button>
+            <div class="collapse ${containersOpen ? "show" : ""}" id="containersNav">
+              <div class="public-nav-group">
+                <a class="public-nav-link" href="#containers">Overview</a>
+              </div>
+            </div>
+
+            <button
+              class="public-nav-toggle ${identityOpen ? "" : "collapsed"}"
               type="button"
               data-bs-toggle="collapse"
               data-bs-target="#identityAccessNav"
@@ -224,31 +284,15 @@ function layout(content: string): string {
               Identity and Access
             </button>
             <div class="collapse ${identityOpen ? "show" : ""}" id="identityAccessNav">
-              <div class="publisher-nav-group">
-                <a class="publisher-nav-link" href="#iam">Overview</a>
-                <a class="publisher-nav-link" href="#register">Create Account</a>
-                <a class="publisher-nav-link" href="#login">Login</a>
+              <div class="public-nav-group">
+                <a class="public-nav-link" href="#iam">Overview</a>
+                <a class="public-nav-link" href="#register">Create Account</a>
+                <a class="public-nav-link" href="#login">Login</a>
               </div>
             </div>
 
             <button
-              class="publisher-nav-toggle ${accountOpen ? "" : "collapsed"}"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#myAccountNav"
-              aria-expanded="${accountOpen ? "true" : "false"}"
-              aria-controls="myAccountNav"
-            >
-              My Account
-            </button>
-            <div class="collapse ${accountOpen ? "show" : ""}" id="myAccountNav">
-              <div class="publisher-nav-group">
-                <a class="publisher-nav-link" href="#account">Session State</a>
-              </div>
-            </div>
-
-            <button
-              class="publisher-nav-toggle ${messagingOpen ? "" : "collapsed"}"
+              class="public-nav-toggle ${messagingOpen ? "" : "collapsed"}"
               type="button"
               data-bs-toggle="collapse"
               data-bs-target="#queueDemosNav"
@@ -258,51 +302,482 @@ function layout(content: string): string {
               Messaging with RabbitMQ
             </button>
             <div class="collapse ${messagingOpen ? "show" : ""}" id="queueDemosNav">
-              <div class="publisher-nav-group">
-                <a class="publisher-nav-link" href="#widgets">Queue Basics, Retry and DLQs</a>
-                <a class="publisher-nav-link" href="#competing-consumers">Competing Consumers</a>
-                <a class="publisher-nav-link" href="#topic-routing">Topic Routing</a>
-                <a class="publisher-nav-link" href="#priority-queue">Priority Queue</a>
+              <div class="public-nav-group">
+                <a class="public-nav-link" href="#widgets">Queue Basics, Retry and DLQs</a>
+                <a class="public-nav-link" href="#competing-consumers">Competing Consumers</a>
+                <a class="public-nav-link" href="#topic-routing">Topic Routing</a>
+                <a class="public-nav-link" href="#priority-queue">Priority Queue</a>
+              </div>
+            </div>
+
+            <button
+              class="public-nav-toggle ${accountOpen ? "" : "collapsed"}"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#myAccountNav"
+              aria-expanded="${accountOpen ? "true" : "false"}"
+              aria-controls="myAccountNav"
+            >
+              My Account
+            </button>
+            <div class="collapse ${accountOpen ? "show" : ""}" id="myAccountNav">
+              <div class="public-nav-group">
+                <a class="public-nav-link" href="#account">Session State</a>
               </div>
             </div>
           </nav>
         </div>
       </aside>
 
-      <main class="publisher-main">
+      <main class="public-main">
         ${content}
       </main>
     </div>
   `;
 }
 
-function iamPage(): string {
-  return `
-    <div class="auth-panel auth-panel-wide">
-      <h1 class="h3 mb-2">Identity and Access</h1>
-      <p class="text-muted">
-        This area collects the account, authentication, verification, and future authorization capabilities for Publisher Portal.
-      </p>
+function homePage(): string {
+  const sourceCodeUrl = "https://github.com/JohnClydeMastersA2/cm-platform";
+  const credentials = [
+    "API-first platform design",
+    "TypeScript full-stack development",
+    "Fastify service architecture",
+    "SQL Server workflow persistence",
+    "RabbitMQ messaging patterns",
+    "Background services and workers",
+    "PowerShell automation",
+    "Docker local infrastructure",
+  ];
+  const platformCards = [
+    {
+      title: "API-first core",
+      body: "Fastify owns the public and internal route surfaces so web apps, HTTP engines, workers, and tools can all integrate through explicit service boundaries.",
+      proof: "svc-core, /auth, /internal, webhook endpoints",
+    },
+    {
+      title: "Typed contracts",
+      body: "Shared TypeScript packages keep request, response, and domain shapes close to the systems that consume them instead of burying integration rules in prose.",
+      proof: "packages/contracts and packages/messaging",
+    },
+    {
+      title: "Messaging and work orchestration",
+      body: "RabbitMQ demos show durable publishing, retries, dead-letter handling, topic routing, priority queues, and competing consumers.",
+      proof: "widget, topic-routing, priority-queue demos",
+    },
+    {
+      title: "Processing engines",
+      body: "Background services consume platform work independently from user-facing pages. Future HTTP processing engines can call the same API surfaces.",
+      proof: "services/email-dispatcher and services/widget-consumer",
+    },
+    {
+      title: "State and observability",
+      body: "SQL Server stores visible workflow state and event history so asynchronous behavior can be inspected, repaired, and reasoned about.",
+      proof: "queue demo tables and email delivery records",
+    },
+    {
+      title: "Developer operations",
+      body: "PowerShell and npm scripts provide a repeatable local command surface for infrastructure, schema updates, workers, smoke tests, and webhook tooling.",
+      proof: "scripts, tools, docker, README runbooks",
+    },
+  ];
 
-      <div class="list-group mb-4">
-        <a class="list-group-item list-group-item-action" href="#register">
-          <div class="fw-semibold">Create Account</div>
-          <div class="text-muted">Create an account using an email address and password.</div>
-        </a>
-        <a class="list-group-item list-group-item-action" href="#login">
-          <div class="fw-semibold">Login</div>
-          <div class="text-muted">Authenticate with a password and establish an HTTP-only session cookie.</div>
-        </a>
-        <a class="list-group-item list-group-item-action" href="#account">
-          <div class="fw-semibold">My Account</div>
-          <div class="text-muted">Inspect the current authenticated session and account verification state.</div>
-        </a>
+  return `
+    <section class="platform-overview">
+      <div class="platform-hero">
+        <div>
+          <p class="platform-kicker">API-first application platform</p>
+          <h1>CM Platform</h1>
+          <p class="platform-lede">
+            CM Platform is a TypeScript platform for demonstrating meaningful understanding of backend application architecture: public and private API surfaces, durable messaging, SQL-backed workflow state, background processing, shared contracts, and operational automation.
+          </p>
+          <div class="platform-hero-actions">
+            <a class="platform-primary-link" href="${sourceCodeUrl}" target="_blank" rel="noreferrer">
+              View source on GitHub
+            </a>
+            <span>cmplatform.dev</span>
+          </div>
+        </div>
+        <div class="platform-stack" aria-label="Platform architecture summary">
+          <div class="platform-stack-row">
+            <span>Clients</span>
+            <strong>Public web, future HTTP engines, tools</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>API</span>
+            <strong>Fastify public, private, and webhook surfaces</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Platform</span>
+            <strong>Contracts, messaging, persistence, services</strong>
+          </div>
+        </div>
       </div>
 
-      <p class="mb-0 text-muted">
-        Planned additions include password recovery, email-based verification challenges, authenticator app support, OAuth login, and RBAC.
-      </p>
-    </div>
+      <section class="platform-credentials">
+        <div>
+          <p class="platform-kicker">Technical portfolio</p>
+          <h2>Built by John Clyde Masters</h2>
+          <p>
+            This site is hosted as a working portfolio of engineering skills. The emphasis is practical proof: running software, inspectable source code, and demos that expose the architecture behind the browser experience.
+          </p>
+          <a class="platform-source-link" href="${sourceCodeUrl}" target="_blank" rel="noreferrer">
+            GitHub: JohnClydeMastersA2/cm-platform
+          </a>
+        </div>
+        <div class="platform-credential-list" aria-label="Technical credentials demonstrated by this project">
+          ${credentials.map((credential) => `<span>${escapeHtml(credential)}</span>`).join("")}
+        </div>
+      </section>
+
+      <div class="platform-section">
+        <div>
+          <h2>Purpose</h2>
+          <p>
+            This is not only a public website. Public web is one demonstrable client of a broader platform. The central idea is that features begin at the API boundary, then can be used by browser experiences, internal operations, asynchronous workers, and future HTTP processing engines without each client inventing its own backend behavior.
+          </p>
+        </div>
+        <div class="platform-callout">
+          <span>Design lens</span>
+          <strong>Every demo should prove a platform capability, not just render a page.</strong>
+        </div>
+      </div>
+
+      <div class="platform-flow" aria-label="API-first platform flow">
+        <div>Public website</div>
+        <div>HTTP engines</div>
+        <div>Tools</div>
+        <div class="platform-flow-core">API surfaces</div>
+        <div>SQL Server</div>
+        <div>RabbitMQ</div>
+        <div>Workers</div>
+      </div>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Technology Evidence</h2>
+          <p>
+            These cards describe what each part of the platform is proving. They are meant to complement the navigation, not repeat it.
+          </p>
+        </div>
+        <div class="platform-card-grid">
+          ${platformCards.map((card) => `
+            <article class="platform-card">
+              <h3>${escapeHtml(card.title)}</h3>
+              <p>${escapeHtml(card.body)}</p>
+              <div class="platform-proof">${escapeHtml(card.proof)}</div>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+
+    </section>
+  `;
+}
+
+function infrastructurePage(): string {
+  const isRefreshing = platformStatusState.status === "submitting";
+  const checkedAt = platformStatus?.checkedAt ? formatDate(platformStatus.checkedAt) : "Not checked yet";
+
+  return `
+    <section class="platform-overview">
+      <div class="platform-hero">
+        <div>
+          <p class="platform-kicker">Platform operations</p>
+          <h1>Infrastructure Status</h1>
+          <p class="platform-lede">
+            This page shows the current disposition of the local cm-platform requirements that support the API, messaging demos, account verification, background processing, and email webhook flow.
+          </p>
+          <div class="platform-hero-actions">
+            <button class="btn btn-primary" type="button" data-action="refresh-platform-status" ${isRefreshing ? "disabled" : ""}>
+              Refresh Status
+            </button>
+            <span>Last checked: ${escapeHtml(checkedAt)}</span>
+          </div>
+        </div>
+        <div class="platform-stack" aria-label="Infrastructure status summary">
+          <div class="platform-stack-row">
+            <span>Status Source</span>
+            <strong>Fastify API readiness, SQL Server queries, RabbitMQ queue metadata, webhook event history</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Purpose</span>
+            <strong>Make required local services visible before running demos</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Limit</span>
+            <strong>RabbitMQ confirms attached consumers, not individual process names</strong>
+          </div>
+        </div>
+      </div>
+
+      ${platformStatusState.status === "error" ? statusMessage(platformStatusState) : ""}
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Required Infrastructure</h2>
+          <p>
+            Each row reports what the API can verify right now. Online means the requirement is reachable or active. Degraded means the platform can inspect the resource, but an expected runtime is missing. Unknown means the endpoint exists, but no activity has been recorded yet.
+          </p>
+        </div>
+        <div class="infrastructure-table-wrap">
+          <table class="table table-sm infrastructure-table">
+            <thead>
+              <tr>
+                <th>Requirement</th>
+                <th>Disposition</th>
+                <th>Evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${platformStatus?.requirements.length ? infrastructureRows(platformStatus.requirements) : `<tr><td colspan="3" class="text-muted">No infrastructure status loaded.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      ${platformStatus?.notes.length ? `
+        <section class="future-panel">
+          <div>
+            <p class="platform-kicker">Notes</p>
+            <h2>How To Read This Page</h2>
+            <p>
+              The status API is intentionally conservative. It reports direct checks where possible and calls out inferred checks where the current runtime does not expose richer identity.
+            </p>
+          </div>
+          <div class="infrastructure-note-list">
+            ${platformStatus.notes.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}
+          </div>
+        </section>
+      ` : ""}
+    </section>
+  `;
+}
+
+function containersPage(): string {
+  const containerCards = [
+    {
+      title: "Local infrastructure",
+      body: "Docker Compose owns SQL Server and RabbitMQ so the platform has repeatable local dependencies without installing those services directly on the workstation.",
+      proof: "docker/compose.dev.yml: db and rabbitmq",
+    },
+    {
+      title: "Background runtimes",
+      body: "The email dispatcher and fast/slow widget consumers now run as containers, which makes the asynchronous parts of the platform visible and restartable as a runtime group.",
+      proof: "infra:workers:up",
+    },
+    {
+      title: "Shared worker image",
+      body: "A single background-service image builds the shared packages and deployable worker services once. Compose then runs that image with different commands and environment values.",
+      proof: "docker/Dockerfile.background",
+    },
+    {
+      title: "Environment boundaries",
+      body: "Containerized workers use Compose service names such as db and rabbitmq, while the API and public web app continue to use localhost-facing ports during active development.",
+      proof: "DB_SERVER=db and RABBITMQ_URL=...@rabbitmq:5672",
+    },
+    {
+      title: "Secret handling",
+      body: "The email dispatcher reads SMTP credentials at runtime from the local secrets file mounted into the container. The file is not copied into the image.",
+      proof: "packages/secrets/cm-platform.env mounted read-only",
+    },
+    {
+      title: "Production portability",
+      body: "Compose is the local orchestration layer, not the application architecture. The same workers can map to another container platform as long as the runtime contract stays environment-based.",
+      proof: "service env vars, commands, logs, restart policy",
+    },
+  ];
+
+  return `
+    <section class="platform-overview">
+      <div class="platform-hero">
+        <div>
+          <p class="platform-kicker">Containers</p>
+          <h1>Docker Runtime Model</h1>
+          <p class="platform-lede">
+            Docker is used to make local infrastructure and background processing repeatable. SQL Server and RabbitMQ run as infrastructure containers, while the email dispatcher and widget consumers run as background service containers. The API and public web app stay local for a faster development loop.
+          </p>
+          <div class="platform-hero-actions">
+            <span>Local runtime command: npm run infra:workers:up</span>
+          </div>
+        </div>
+        <div class="platform-stack" aria-label="Container runtime summary">
+          <div class="platform-stack-row">
+            <span>Infrastructure</span>
+            <strong>SQL Server and RabbitMQ are managed by Docker Compose</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Workers</span>
+            <strong>Email dispatcher, fast-consumer, and slow-consumer use one shared image</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Development</span>
+            <strong>API and public web run locally through npm scripts</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="platform-flow" aria-label="Containerized local runtime flow">
+        <div>Public web</div>
+        <div>API</div>
+        <div class="platform-flow-core">Docker Compose</div>
+        <div>SQL Server</div>
+        <div>RabbitMQ</div>
+        <div>Email dispatcher</div>
+        <div>Widget consumers</div>
+      </div>
+
+      <section class="platform-section">
+        <div>
+          <h2>Purpose</h2>
+          <p>
+            The goal is to separate active application development from long-running runtime dependencies. Docker owns the services that should behave like platform infrastructure, while the API and browser experience remain easy to run, inspect, and change from the host machine.
+          </p>
+        </div>
+        <div class="platform-callout">
+          <span>Design lens</span>
+          <strong>Compose is a local implementation detail. The runtime contract is service boundaries plus environment variables.</strong>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>What Docker Demonstrates</h2>
+          <p>
+            These cards describe the container work currently present in cm-platform and how it supports the broader API-first platform.
+          </p>
+        </div>
+        <div class="platform-card-grid">
+          ${containerCards.map((card) => `
+            <article class="platform-card">
+              <h3>${escapeHtml(card.title)}</h3>
+              <p>${escapeHtml(card.body)}</p>
+              <div class="platform-proof">${escapeHtml(card.proof)}</div>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+
+      <section class="future-panel">
+        <div>
+          <p class="platform-kicker">Futures</p>
+          <h2>Container Direction</h2>
+          <p>
+            The current Docker setup focuses on local infrastructure and background services. Future work can add production-style images for the API, deployment-specific manifests, health checks, and a cleaner secret provider model.
+          </p>
+        </div>
+        <div class="future-list">
+          <span>API container image</span>
+          <span>Worker health checks</span>
+          <span>Deployment manifests</span>
+          <span>Managed secret provider</span>
+        </div>
+      </section>
+    </section>
+  `;
+}
+
+function iamPage(): string {
+  const workflowSteps = [
+    {
+      title: "Create account",
+      body: "The user submits an email address and password through the public registration form.",
+    },
+    {
+      title: "Queue verification email",
+      body: "The API creates the account, issues a short-lived verification token, and queues an email request for asynchronous delivery.",
+    },
+    {
+      title: "Verify email",
+      body: "The verification link calls the API, marks the address as verified, and returns the user to the login flow.",
+    },
+    {
+      title: "Start session",
+      body: "A successful login establishes an HTTP-only session cookie that the browser can use without exposing credentials to client code. This is visible on the My Account/ Session State page.",
+    },
+    {
+      title: "Inspect or reset",
+      body: "The account page shows current account and session state, and includes account deletion so the creation workflow can be repeated easily during demos.",
+    },
+  ];
+  const futureItems = [
+    "Password recovery",
+    "Authenticator app support",
+    "OAuth login",
+    "Role-based access control",
+  ];
+
+  return `
+    <section class="platform-overview">
+      <div class="platform-hero">
+        <div>
+          <p class="platform-kicker">Identity and access</p>
+          <h1>Account Creation Workflow</h1>
+          <p class="platform-lede">
+            This area demonstrates the platform's public authentication surface: registration, email verification, login, session inspection, logout, and account deletion. It is designed as a repeatable workflow so the full account lifecycle can be tested more than once without database cleanup.
+          </p>
+        </div>
+        <div class="platform-stack" aria-label="Identity workflow summary">
+          <div class="platform-stack-row">
+            <span>Public API</span>
+            <strong>Register, verify email, login, session lookup, logout, delete account</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Email</span>
+            <strong>Verification is queued through RabbitMQ and sent by a background dispatcher</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Session</span>
+            <strong>Login creates an HTTP-only browser session cookie</strong>
+          </div>
+        </div>
+      </div>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Current Workflow</h2>
+          <p>
+            The workflow intentionally includes account deletion because this page is part of a technical portfolio and demo environment. A reviewer can create an account, verify email delivery behavior, inspect the resulting session, delete the account, and then repeat the same flow with the same address.
+          </p>
+        </div>
+        <div class="iam-workflow">
+          ${workflowSteps.map((step, index) => `
+            <article class="iam-workflow-card">
+              <div class="iam-workflow-step">${index + 1}</div>
+              <div>
+                <h3>${escapeHtml(step.title)}</h3>
+                <p>${escapeHtml(step.body)}</p>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+
+      <section class="platform-section">
+        <div>
+          <h2>User Interface Design</h2>
+          <p>
+            The UI separates the account lifecycle into simple surfaces: Create Account, Login, and My Account. The My Account page exposes the active session and account verification state, plus explicit logout and delete-account actions. That delete action is deliberate: it lowers friction for repeatedly exercising the registration and verification path.
+          </p>
+        </div>
+        <div class="platform-callout">
+          <span>Demo design</span>
+          <strong>Account deletion makes the lifecycle easy to replay without manual SQL cleanup.</strong>
+        </div>
+      </section>
+
+      <section class="future-panel">
+        <div>
+          <p class="platform-kicker">Futures</p>
+          <h2>Planned IAM Capabilities</h2>
+          <p>
+            Future work will extend the same API-first model into recovery, stronger authentication, external identity providers, and authorization policy.
+          </p>
+        </div>
+        <div class="future-list">
+          ${futureItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+        </div>
+      </section>
+    </section>
   `;
 }
 
@@ -931,12 +1406,12 @@ async function submitLogin(form: HTMLFormElement): Promise<void> {
       throw new Error(await readError(response, "Unable to log in"));
     }
 
-    const body = (await response.json()) as { account: AuthAccount; session?: AuthSession | null };
-    account = body.account;
-    authSession = body.session ?? null;
+    await response.json();
+    await loadCurrentAccount();
     loginState.status = "idle";
     form.reset();
     window.location.hash = "account";
+    render();
   } catch (err) {
     loginState.status = "error";
     loginState.message = err instanceof Error ? err.message : "Unable to log in.";
@@ -1320,6 +1795,94 @@ async function loadPriorityQueue(): Promise<void> {
   }
 }
 
+async function loadPlatformStatus(): Promise<void> {
+  try {
+    const response = await fetch("/platform/status");
+
+    if (!response.ok) {
+      throw new Error(await readError(response, "Unable to load platform infrastructure status"));
+    }
+
+    platformStatus = await response.json() as PlatformStatus;
+    platformStatusState.status = "success";
+    platformStatusState.message = undefined;
+  } catch (err) {
+    platformStatus = buildUnavailablePlatformStatus(err);
+    platformStatusState.status = "error";
+    platformStatusState.message = `Live platform status is unavailable; showing expected requirements instead. ${err instanceof Error ? err.message : "Unable to load platform infrastructure status."}`;
+  }
+}
+
+function buildUnavailablePlatformStatus(err: unknown): PlatformStatus {
+  const checkedAt = new Date().toISOString();
+  const evidence = err instanceof Error ? err.message : "Unable to reach /platform/status.";
+  const unavailableRequirements: Array<{
+    key: string;
+    name: string;
+    disposition: InfrastructureDisposition;
+    detail: string;
+  }> = [
+    {
+      key: "api-service",
+      name: "API Service",
+      disposition: "offline",
+      detail: "The public web app could not reach the platform status API.",
+    },
+    {
+      key: "database",
+      name: "Database",
+      disposition: "unknown",
+      detail: "Database status cannot be checked until the API service is running.",
+    },
+    {
+      key: "rabbitmq-email-dispatcher",
+      name: "RabbitMQ - Email Dispatcher",
+      disposition: "unknown",
+      detail: "Email dispatcher status cannot be checked until the API service is running.",
+    },
+    {
+      key: "rabbitmq-slow-consumer",
+      name: "RabbitMQ - slow-consumer",
+      disposition: "unknown",
+      detail: "Worker status cannot be checked until the API service is running.",
+    },
+    {
+      key: "rabbitmq-fast-consumer",
+      name: "RabbitMQ - fast-consumer",
+      disposition: "unknown",
+      detail: "Worker status cannot be checked until the API service is running.",
+    },
+    {
+      key: "email-webhook",
+      name: "Email Webhook",
+      disposition: "unknown",
+      detail: "Webhook event history cannot be checked until the API service is running.",
+    },
+  ];
+
+  return {
+    checkedAt,
+    requirements: unavailableRequirements.map((requirement) => ({
+      ...requirement,
+      evidence,
+      checkedAt,
+    })),
+    notes: [
+      "These rows are a local fallback because /platform/status did not return a live status payload.",
+      "Start the API and supporting infrastructure to replace these fallback dispositions with live checks. Use npm run infra:workers:up to start the Docker-managed background workers.",
+    ],
+  };
+}
+
+async function refreshPlatformStatus(): Promise<void> {
+  platformStatusState.status = "submitting";
+  platformStatusState.message = undefined;
+  render();
+
+  await loadPlatformStatus();
+  render();
+}
+
 async function publishPriorityQueueJob(priority: number): Promise<void> {
   priorityQueueFormState.status = "submitting";
   priorityQueueFormState.message = undefined;
@@ -1515,6 +2078,10 @@ function bindEvents(): void {
   document.querySelector<HTMLButtonElement>('[data-action="purge-priority-queue"]')?.addEventListener("click", () => {
     void purgePriorityQueue();
   });
+
+  document.querySelector<HTMLButtonElement>('[data-action="refresh-platform-status"]')?.addEventListener("click", () => {
+    void refreshPlatformStatus();
+  });
 }
 
 function render(): void {
@@ -1532,32 +2099,42 @@ function render(): void {
   applyRouteMessage();
 
   const content =
-    page === "iam"
-      ? iamPage()
-      : page === "register"
-        ? registerPage()
-        : page === "account"
-          ? accountPage()
-        : page === "widgets"
-          ? widgetsPage()
-          : page === "competing-consumers"
-            ? competingConsumersPage()
-            : page === "topic-routing"
-              ? topicRoutingPage()
-              : page === "priority-queue"
-                ? priorityQueuePage()
-                : loginPage();
+    page === "home"
+      ? homePage()
+      : page === "infrastructure"
+        ? infrastructurePage()
+        : page === "containers"
+          ? containersPage()
+          : page === "iam"
+            ? iamPage()
+            : page === "register"
+              ? registerPage()
+              : page === "account"
+                ? accountPage()
+                : page === "widgets"
+                  ? widgetsPage()
+                  : page === "competing-consumers"
+                    ? competingConsumersPage()
+                    : page === "topic-routing"
+                      ? topicRoutingPage()
+                      : page === "priority-queue"
+                        ? priorityQueuePage()
+                        : loginPage();
 
   app.innerHTML = layout(content);
   bindEvents();
 }
 
 function syncSidebarSectionsFromDom(): void {
+  const platformPanel = document.querySelector<HTMLElement>("#platformNav");
+  const containersPanel = document.querySelector<HTMLElement>("#containersNav");
   const identityPanel = document.querySelector<HTMLElement>("#identityAccessNav");
   const accountPanel = document.querySelector<HTMLElement>("#myAccountNav");
   const messagingPanel = document.querySelector<HTMLElement>("#queueDemosNav");
 
   sidebarSectionsOpen = {
+    platform: platformPanel ? platformPanel.classList.contains("show") : sidebarSectionsOpen.platform,
+    containers: containersPanel ? containersPanel.classList.contains("show") : sidebarSectionsOpen.containers,
     identity: identityPanel ? identityPanel.classList.contains("show") : sidebarSectionsOpen.identity,
     account: accountPanel ? accountPanel.classList.contains("show") : sidebarSectionsOpen.account,
     messaging: messagingPanel ? messagingPanel.classList.contains("show") : sidebarSectionsOpen.messaging,
@@ -1774,6 +2351,35 @@ function priorityQueueProcessedRows(messages: ProcessedPriorityQueueMessage[]): 
   `).join("");
 }
 
+function infrastructureRows(requirements: InfrastructureRequirement[]): string {
+  return requirements.map((requirement) => `
+    <tr>
+      <td>
+        <div class="fw-semibold">${escapeHtml(requirement.name)}</div>
+        <div class="text-muted small">${escapeHtml(requirement.detail)}</div>
+      </td>
+      <td>${infrastructureBadge(requirement.disposition)}</td>
+      <td>
+        <div>${escapeHtml(requirement.evidence)}</div>
+        <div class="text-muted small">Checked ${formatDate(requirement.checkedAt)}</div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function infrastructureBadge(disposition: InfrastructureDisposition): string {
+  const badgeClass =
+    disposition === "online"
+      ? "text-bg-success"
+      : disposition === "degraded"
+        ? "text-bg-warning"
+        : disposition === "offline"
+          ? "text-bg-danger"
+          : "text-bg-secondary";
+
+  return `<span class="badge ${badgeClass}">${escapeHtml(disposition)}</span>`;
+}
+
 function priorityBadge(priority: number): string {
   const badgeClass =
     priority >= 9
@@ -1808,4 +2414,5 @@ await loadWidgets();
 await loadConsumerWidgets();
 await loadTopicRouting();
 await loadPriorityQueue();
+await loadPlatformStatus();
 render();

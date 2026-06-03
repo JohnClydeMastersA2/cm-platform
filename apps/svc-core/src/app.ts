@@ -4,6 +4,7 @@ import { dbPlugin } from "./plugins/db.js";
 import { messagingPlugin } from "./plugins/messaging.js";
 import { authAdminPlugin } from "./plugins/auth-admin.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
+import { platformStatusRoutes } from "./modules/platform_status/platform_status.routes.js";
 import { emailEventsWebhookRoutes } from "./routes/webhooks/email_events.js";
 import { priorityQueueRoutes } from "./modules/priority_queue/priority_queue.routes.js";
 import { topicRoutingRoutes } from "./modules/topic_routing/topic_routing.routes.js";
@@ -20,7 +21,7 @@ type BuildAppOptions = {
   dbPassword: string;
   dbDatabase: string;
   authApiBaseUrl: string;
-  publisherWebBaseUrl: string;
+  publicWebBaseUrl: string;
   rabbitMqUrl: string;
 };
 
@@ -76,13 +77,14 @@ export function buildApp(opts: BuildAppOptions) {
   app.register(authRoutes, {
     prefix: "/auth",
     authApiBaseUrl: opts.authApiBaseUrl,
-    publisherWebBaseUrl: opts.publisherWebBaseUrl,
+    publicWebBaseUrl: opts.publicWebBaseUrl,
   });
   app.register(emailEventsWebhookRoutes);
   app.register(widgetRoutes, { prefix: "/widgets" });
   app.register(widgetConsumerRoutes, { prefix: "/consumer-widgets" });
   app.register(topicRoutingRoutes, { prefix: "/topic-routing" });
   app.register(priorityQueueRoutes, { prefix: "/priority-queue" });
+  app.register(platformStatusRoutes, { prefix: "/platform/status" });
   app.register(internalSurface);
 
   return app;

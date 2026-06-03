@@ -28,9 +28,9 @@ api:build
 api:start
 api:verify
 
-publisher:dev
-publisher:build
-publisher:preview
+public:dev
+public:build
+public:preview
 
 contracts:build
 logging:build
@@ -39,6 +39,9 @@ etl:run
 
 infra:up
 infra:down
+infra:workers:build
+infra:workers:up
+infra:workers:logs
 db:schema
 ```
 
@@ -50,7 +53,7 @@ Short aliases like `build`, `clean`, and `dev` remain for common workflows.
 
 ```text
 apps/svc-core        API service
-apps/publisher-web   (public) publisher-facing web app
+apps/public-web      public-facing web app
 services/*           deployable background services and workers
 packages/contracts   shared API contracts
 packages/logging     shared logging package
@@ -85,7 +88,7 @@ PORT=3000
 HOST=0.0.0.0
 ADMIN_KEY=changeme-internal-key
 AUTH_API_BASE_URL=http://localhost:3000
-PUBLISHER_WEB_BASE_URL=http://localhost:5173
+PUBLIC_WEB_BASE_URL=http://localhost:5173
 RABBITMQ_URL=amqp://cm_platform:cm_platform_dev@localhost:5672
 ```
 
@@ -171,7 +174,7 @@ For normal development, start infrastructure first:
 npm run infra:up
 ```
 
-This starts the local database container. For now, Docker Desktop is used only to support SQL Server; the API and web app run locally through npm scripts.
+This starts the local database and RabbitMQ containers. The API and public web app run locally through npm scripts.
 
 Then start the API locally in watch mode:
 
@@ -185,30 +188,33 @@ Or use the shortcut:
 npm run dev
 ```
 
-When testing application email flows, start the email dispatcher in another PowerShell window:
+When you want background services running in the local Docker environment, build and start them separately:
 
 ```powershell
-npm run email-dispatcher:dev
+npm run infra:workers:build
+npm run infra:workers:up
 ```
 
-When testing the competing consumers demo, start one or more widget consumers in separate PowerShell windows. Give each instance a name and processing time to make RabbitMQ's work distribution visible:
+This starts the email dispatcher plus the fast and slow widget consumers:
 
-```powershell
-$env:WIDGET_CONSUMER_NAME="fast-consumer"
-$env:WIDGET_CONSUMER_PROCESSING_SECONDS="1"
-npm run widget-consumer:dev
+```text
+cm-platform-email-dispatcher
+cm-platform-widget-consumer-fast
+cm-platform-widget-consumer-slow
 ```
 
+Watch their logs:
+
 ```powershell
-$env:WIDGET_CONSUMER_NAME="slow-consumer"
-$env:WIDGET_CONSUMER_PROCESSING_SECONDS="5"
-npm run widget-consumer:dev
+npm run infra:workers:logs
 ```
 
-Start the publisher web app separately:
+The worker containers connect to SQL Server through the Compose service name `db` and to RabbitMQ through `rabbitmq`. The API and public web app continue to use localhost-facing ports.
+
+Start the public web app separately:
 
 ```powershell
-npm run publisher:dev
+npm run public:dev
 ```
 
 Useful infrastructure commands:
@@ -216,6 +222,8 @@ Useful infrastructure commands:
 ```powershell
 npm run infra:status
 npm run infra:logs
+npm run infra:workers:logs
+npm run infra:workers:down
 npm run infra:down
 npm run db:schema
 ```
@@ -234,7 +242,7 @@ That runs:
 packages/contracts
 packages/logging
 apps/svc-core
-apps/publisher-web
+apps/public-web
 tools/etl-csv-import
 ```
 
@@ -250,7 +258,7 @@ Build individual targets:
 npm run api:build
 npm run email-dispatcher:build
 npm run widget-consumer:build
-npm run publisher:build
+npm run public:build
 npm run contracts:build
 npm run secrets:build
 npm run email:build
@@ -294,9 +302,9 @@ npm run api:test:internal
 
 That script calls the internal advertiser, offer, and publisher endpoints using `ADMIN_KEY=changeme-internal-key`. It assumes the database is reachable and contains seed or development data for those resources.
 
-Publisher registration currently creates pending accounts without passwords. After a publisher is approved, the local publisher web app can set a password and then log in with email and password. See [docs/publisher-login-strategy.md](docs/publisher-login-strategy.md).
+Publisher registration currently creates pending accounts without passwords. After a publisher is approved, the public web app can set a password and then log in with email and password. See [docs/publisher-login-strategy.md](docs/publisher-login-strategy.md).
 
-The publisher web app is being migrated toward platform IAM fundamentals. The current auth slice supports email/password registration, email verification, login, session lookup, logout, and account deletion through:
+The public web app is being migrated toward platform IAM fundamentals. The current auth slice supports email/password registration, email verification, login, session lookup, logout, and account deletion through:
 
 ```text
 POST /auth/register
@@ -309,7 +317,7 @@ DELETE /auth/me
 
 See [docs/iam-strategy.md](docs/iam-strategy.md).
 
-Registration queues a verification email request through RabbitMQ. `services/email-dispatcher` consumes that request and sends the message through `@cm/email`. The verification link expires after five minutes. `svc-core` builds that link from `AUTH_API_BASE_URL` and redirects back to `PUBLISHER_WEB_BASE_URL`, so local development and production can use different public URLs without changing code.
+Registration queues a verification email request through RabbitMQ. `services/email-dispatcher` consumes that request and sends the message through `@cm/email`. The verification link expires after five minutes. `svc-core` builds that link from `AUTH_API_BASE_URL` and redirects back to `PUBLIC_WEB_BASE_URL`, so local development and production can use different public URLs without changing code.
 
 ## Background Services
 
@@ -319,9 +327,23 @@ Deployable non-user-facing runtimes live under `services/`.
 
 `services/widget-consumer` consumes RabbitMQ widget processing requests for the competing consumers demo. Multiple instances can run against the same queue by using different `WIDGET_CONSUMER_NAME` and `WIDGET_CONSUMER_PROCESSING_SECONDS` values.
 
+For local demo/runtime use, prefer the Docker-managed background services:
+
+```powershell
+npm run infra:workers:up
+```
+
+For active service development, the workers can still be run directly from PowerShell:
+
+```powershell
+npm run email-dispatcher:dev
+npm run widget-consumer:fast
+npm run widget-consumer:slow
+```
+
 ## Widget Queue Demo
 
-The publisher web app includes a Widget Queue page at:
+The public web app includes a Widget Queue page at:
 
 ```text
 #widgets
@@ -481,7 +503,7 @@ npm run api:dev
 In another PowerShell window:
 
 ```powershell
-npm run publisher:dev
+npm run public:dev
 ```
 
 Before handing off work:

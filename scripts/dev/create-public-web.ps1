@@ -1,10 +1,10 @@
 <#
-Creates the publisher-web application structure
+Creates the public-web application structure
 #>
 
-$base = "C:\cm-platform\apps\publisher-web"
+$base = "C:\cm-platform\apps\public-web"
 
-Write-Host "Creating publisher-web structure..." -ForegroundColor Cyan
+Write-Host "Creating public-web structure..." -ForegroundColor Cyan
 
 $folders = @(
     "$base",
@@ -22,4 +22,4 @@ foreach ($folder in $folders) {
 }
 
 Write-Host ""
-Write-Host "publisher-web structure created." -ForegroundColor Green
+Write-Host "public-web structure created." -ForegroundColor Green
