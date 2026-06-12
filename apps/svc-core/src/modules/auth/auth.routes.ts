@@ -15,8 +15,9 @@ import {
 } from "./auth.repo.js";
 import type { AuthAccount } from "./auth.schema.js";
 
-const sessionCookieOptions = "Path=/; HttpOnly; SameSite=Lax; Max-Age=604800";
-const expiredSessionCookie = "Path=/; HttpOnly; SameSite=Lax; Max-Age=0";
+const secureCookieAttribute = process.env.NODE_ENV === "production" ? "; Secure" : "";
+const sessionCookieOptions = `Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secureCookieAttribute}`;
+const expiredSessionCookie = `Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureCookieAttribute}`;
 const emailVerificationExpirationText = "5 minutes";
 
 type AuthRoutesOptions = {

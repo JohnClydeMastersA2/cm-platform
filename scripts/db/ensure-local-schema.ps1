@@ -1,8 +1,32 @@
 $ErrorActionPreference = "Stop"
 
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$envFile = Join-Path $repoRoot "packages\secrets\cm-platform.env"
 $containerName = "cm-platform-db"
 $databaseName = "CMPlatform"
-$saPassword = "#Pop,6300"
+
+function Get-DevEnvValue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    if (-not (Test-Path $envFile)) {
+        throw "Missing local secrets file: $envFile"
+    }
+
+    $line = Get-Content $envFile |
+        Where-Object { $_ -match "^\s*$([regex]::Escape($Name))=" } |
+        Select-Object -First 1
+
+    if (-not $line) {
+        throw "Missing required local secret '$Name' in $envFile"
+    }
+
+    return ($line -replace "^\s*$([regex]::Escape($Name))=", "").Trim()
+}
+
+$saPassword = Get-DevEnvValue -Name "MSSQL_SA_PASSWORD"
 
 $query = @"
 use [$databaseName];
@@ -59,104 +83,6 @@ if not exists (
 begin
     create nonclustered index IX_Publisher_ContactEmail
         on dbo.Publisher(ContactEmail);
-end
-
-if object_id('dbo.EmailDelivery', 'U') is null
-begin
-    create table dbo.EmailDelivery (
-        EmailDeliveryId int identity(1,1) not null
-            constraint PK_EmailDelivery primary key,
-        Provider varchar(50) not null,
-        ProviderEmailId varchar(100) not null,
-        RecipientEmail varchar(320) not null,
-        Subject varchar(500) null,
-        SenderEmail varchar(320) null
-    );
-end
-
-if exists (
-    select 1
-    from sys.indexes
-    where name = 'IX_EmailDelivery_LastEventAt'
-      and object_id = object_id('dbo.EmailDelivery')
-)
-begin
-    drop index IX_EmailDelivery_LastEventAt on dbo.EmailDelivery;
-end
-
-if object_id('DF_EmailDelivery_FirstEventAt', 'D') is not null
-    alter table dbo.EmailDelivery drop constraint DF_EmailDelivery_FirstEventAt;
-
-if object_id('DF_EmailDelivery_LastEventAt', 'D') is not null
-    alter table dbo.EmailDelivery drop constraint DF_EmailDelivery_LastEventAt;
-
-if COL_LENGTH('dbo.EmailDelivery', 'LatestEventType') is not null
-    alter table dbo.EmailDelivery drop column LatestEventType;
-
-if COL_LENGTH('dbo.EmailDelivery', 'FirstEventAt') is not null
-    alter table dbo.EmailDelivery drop column FirstEventAt;
-
-if COL_LENGTH('dbo.EmailDelivery', 'LastEventAt') is not null
-    alter table dbo.EmailDelivery drop column LastEventAt;
-
-if COL_LENGTH('dbo.EmailDelivery', 'SuppressedReason') is not null
-    alter table dbo.EmailDelivery drop column SuppressedReason;
-
-if COL_LENGTH('dbo.EmailDelivery', 'SuppressedType') is not null
-    alter table dbo.EmailDelivery drop column SuppressedType;
-
-if COL_LENGTH('dbo.EmailDelivery', 'SuppressedMessage') is not null
-    alter table dbo.EmailDelivery drop column SuppressedMessage;
-
-if not exists (
-    select 1
-    from sys.indexes
-    where name = 'UX_EmailDelivery_Provider_Email_Recipient'
-      and object_id = object_id('dbo.EmailDelivery')
-)
-begin
-    create unique nonclustered index UX_EmailDelivery_Provider_Email_Recipient
-        on dbo.EmailDelivery(Provider, ProviderEmailId, RecipientEmail);
-end
-
-if object_id('dbo.EmailDeliveryEvent', 'U') is null
-begin
-    create table dbo.EmailDeliveryEvent (
-        EmailDeliveryEventId int identity(1,1) not null
-            constraint PK_EmailDeliveryEvent primary key,
-        EmailDeliveryId int not null,
-        EventType varchar(100) not null,
-        EventPayload nvarchar(max) null,
-        ReceivedAt datetime2(0) not null
-            constraint DF_EmailDeliveryEvent_ReceivedAt default (sysutcdatetime()),
-        constraint FK_EmailDeliveryEvent_EmailDelivery
-            foreign key (EmailDeliveryId)
-            references dbo.EmailDelivery(EmailDeliveryId)
-    );
-end
-
-if exists (
-    select 1
-    from sys.indexes
-    where name = 'IX_EmailDeliveryEvent_EmailDelivery_ProviderEventAt'
-      and object_id = object_id('dbo.EmailDeliveryEvent')
-)
-begin
-    drop index IX_EmailDeliveryEvent_EmailDelivery_ProviderEventAt on dbo.EmailDeliveryEvent;
-end
-
-if COL_LENGTH('dbo.EmailDeliveryEvent', 'ProviderEventAt') is not null
-    alter table dbo.EmailDeliveryEvent drop column ProviderEventAt;
-
-if not exists (
-    select 1
-    from sys.indexes
-    where name = 'IX_EmailDeliveryEvent_EmailDelivery_ReceivedAt'
-      and object_id = object_id('dbo.EmailDeliveryEvent')
-)
-begin
-    create nonclustered index IX_EmailDeliveryEvent_EmailDelivery_ReceivedAt
-        on dbo.EmailDeliveryEvent(EmailDeliveryId, ReceivedAt desc);
 end
 
 if object_id('dbo.Account', 'U') is null

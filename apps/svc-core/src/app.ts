@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { createLogger } from "@cm/logging";
 import { dbPlugin } from "./plugins/db.js";
 import { messagingPlugin } from "./plugins/messaging.js";
+import { mongoPlugin } from "./plugins/mongo.js";
 import { authAdminPlugin } from "./plugins/auth-admin.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { platformStatusRoutes } from "./modules/platform_status/platform_status.routes.js";
@@ -11,6 +12,7 @@ import { topicRoutingRoutes } from "./modules/topic_routing/topic_routing.routes
 import { internalSurface } from "./surfaces/internal.surface.js";
 import { widgetRoutes } from "./modules/widget/widget.routes.js";
 import { widgetConsumerRoutes } from "./modules/widget_consumer/widget_consumer.routes.js";
+import { emailWebhookEventRoutes } from "./modules/email_webhook_event/email_webhook_event.routes.js";
 
 type BuildAppOptions = {
   logLevel: string;
@@ -23,6 +25,8 @@ type BuildAppOptions = {
   authApiBaseUrl: string;
   publicWebBaseUrl: string;
   rabbitMqUrl: string;
+  mongoDbUri: string;
+  mongoDbDatabase: string;
 };
 
 export function buildApp(opts: BuildAppOptions) {
@@ -48,6 +52,11 @@ export function buildApp(opts: BuildAppOptions) {
     rabbitMqUrl: opts.rabbitMqUrl,
   });
 
+  app.register(mongoPlugin, {
+    uri: opts.mongoDbUri,
+    database: opts.mongoDbDatabase,
+  });
+
   app.register(authAdminPlugin, {
     adminKey: opts.adminKey,
   });
@@ -71,6 +80,7 @@ export function buildApp(opts: BuildAppOptions) {
 
   app.get("/ready", async () => {
     await app.db.request().query("select 1 as ok");
+    await app.mongoDb.command({ ping: 1 });
     return { ok: true };
   });
 
@@ -80,6 +90,7 @@ export function buildApp(opts: BuildAppOptions) {
     publicWebBaseUrl: opts.publicWebBaseUrl,
   });
   app.register(emailEventsWebhookRoutes);
+  app.register(emailWebhookEventRoutes, { prefix: "/email-webhook-events" });
   app.register(widgetRoutes, { prefix: "/widgets" });
   app.register(widgetConsumerRoutes, { prefix: "/consumer-widgets" });
   app.register(topicRoutingRoutes, { prefix: "/topic-routing" });

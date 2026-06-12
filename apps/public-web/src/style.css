@@ -136,6 +136,25 @@ body {
   max-width: 72rem;
 }
 
+.mongodb-document-summary {
+  color: #0d6efd;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mongodb-document {
+  background: #17202a;
+  border-radius: 0.375rem;
+  color: #e9ecef;
+  font-size: 0.78rem;
+  max-height: 26rem;
+  max-width: 38rem;
+  overflow: auto;
+  padding: 0.85rem;
+  white-space: pre-wrap;
+}
+
 .platform-overview {
   color: #212529;
   display: grid;
@@ -254,6 +273,52 @@ body {
 .platform-callout strong {
   color: #212529;
   line-height: 1.35;
+}
+
+.mongodb-credentials {
+  border-top: 1px solid #dee2e6;
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.75rem;
+}
+
+.mongodb-credentials-heading {
+  color: #6c757d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mongodb-credential-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mongodb-credential {
+  align-items: center;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  min-width: 0;
+}
+
+.mongodb-credential img {
+  display: block;
+  height: auto;
+  width: 3.25rem;
+}
+
+.mongodb-credential strong {
+  color: #212529;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 575.98px) {
+  .mongodb-credential-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .platform-credentials {

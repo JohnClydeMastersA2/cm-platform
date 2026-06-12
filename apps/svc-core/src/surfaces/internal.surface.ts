@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { advertiserRoutes } from "../modules/advertiser/advertiser.routes.js";
-import { emailDeliveryRoutes } from "../modules/email_delivery/email_delivery.routes.js";
 import { offerRoutes } from "../modules/offer/offer.routes.js";
 import { publisherRoutes } from "../modules/publisher/publisher.routes.js";
 
@@ -14,7 +13,6 @@ export async function internalSurface(app: FastifyInstance): Promise<void> {
       });
 
       internalApp.register(advertiserRoutes, { prefix: "/advertisers" });
-      internalApp.register(emailDeliveryRoutes, { prefix: "/email-deliveries" });
       internalApp.register(offerRoutes, { prefix: "/offers" });
       internalApp.register(publisherRoutes, { prefix: "/publishers" });
     },

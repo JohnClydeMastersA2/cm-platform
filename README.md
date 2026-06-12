@@ -58,7 +58,7 @@ services/*           deployable background services and workers
 packages/contracts   shared API contracts
 packages/logging     shared logging package
 tools/*              operational utilities
-docker/*             local SQL Server infrastructure configuration
+docker/*             local SQL Server, MongoDB, and RabbitMQ infrastructure configuration
 scripts/*            PowerShell automation and smoke tests
 docs/*               project notes, architecture, and durable ops memory
 ```
@@ -73,32 +73,55 @@ npm install
 
 Start Docker Desktop manually before running infrastructure commands. Wait until Docker Desktop reports that the engine is running, then use the npm scripts below.
 
-The API requires environment variables. For local API development, keep them in `apps/svc-core/.env`.
+Local development uses `packages/secrets/cm-platform.env` for sensitive runtime values. Start from the committed example file and keep the real file local:
 
-Expected variables:
+```powershell
+Copy-Item packages/secrets/cm-platform.env.example packages/secrets/cm-platform.env
+```
+
+Expected local secret values:
+
+```powershell
+MSSQL_SA_PASSWORD=<local-sql-sa-password>
+DB_USER=cm_platform_app
+DB_PASSWORD=<local-sql-app-password>
+ADMIN_KEY=<local-admin-key>
+RABBITMQ_DEFAULT_USER=cm_platform
+RABBITMQ_DEFAULT_PASS=<local-rabbitmq-password>
+RABBITMQ_URL=amqp://cm_platform:<local-rabbitmq-password>@localhost:5672
+RABBITMQ_URL_CONTAINER=amqp://cm_platform:<local-rabbitmq-password>@rabbitmq:5672
+MONGODB_ROOT_USERNAME=cm_platform_root
+MONGODB_ROOT_PASSWORD=<local-mongodb-password>
+MONGODB_APP_USERNAME=cm_platform_app
+MONGODB_APP_PASSWORD=<local-mongodb-app-password>
+MONGODB_URI=mongodb://cm_platform_app:<local-mongodb-app-password>@localhost:27017/CMPlatformDocuments?authSource=CMPlatformDocuments
+MONGODB_URI_CONTAINER=mongodb://cm_platform_app:<local-mongodb-app-password>@mongodb:27017/CMPlatformDocuments?authSource=CMPlatformDocuments
+EMAIL_SMTP_USER=resend
+EMAIL_SMTP_PASS=<resend-api-key>
+```
+
+The API loads `apps/svc-core/.env` and then fills missing sensitive values from `packages/secrets/cm-platform.env`. Keep non-secret host configuration in `apps/svc-core/.env` or set it in the PowerShell session that starts the API:
 
 ```powershell
 DB_SERVER=localhost
 DB_PORT=1433
-DB_USER=sa
-DB_PASSWORD=<local-password>
 DB_DATABASE=CMPlatform
 LOG_LEVEL=info
 PORT=3000
 HOST=0.0.0.0
-ADMIN_KEY=changeme-internal-key
 AUTH_API_BASE_URL=http://localhost:3000
 PUBLIC_WEB_BASE_URL=http://localhost:5173
-RABBITMQ_URL=amqp://cm_platform:cm_platform_dev@localhost:5672
+MONGODB_DATABASE=CMPlatformDocuments
 ```
 
 The default local database is `CMPlatform` on SQL Server port `1433`. If that port is already in use, adjust `docker/compose.dev.yml` and the API `.env` together.
 
-Local infrastructure also starts RabbitMQ for asynchronous workflow experiments:
+Local infrastructure also starts RabbitMQ for asynchronous workflow experiments and MongoDB for document-oriented webhook event storage:
 
 ```text
-AMQP:       amqp://cm_platform:cm_platform_dev@localhost:5672
+AMQP:       uses RABBITMQ_URL from packages/secrets/cm-platform.env
 Management: http://localhost:15672
+MongoDB:    mongodb://localhost:27017
 ```
 
 For durable local-development context, especially database and Docker volume facts, see [docs/ops-memory.md](docs/ops-memory.md).
@@ -174,7 +197,7 @@ For normal development, start infrastructure first:
 npm run infra:up
 ```
 
-This starts the local database and RabbitMQ containers. The API and public web app run locally through npm scripts.
+This starts the local SQL Server, MongoDB, and RabbitMQ containers. The API and public web app run locally through npm scripts.
 
 Then start the API locally in watch mode:
 
@@ -300,7 +323,7 @@ For a deeper smoke test of the internal API:
 npm run api:test:internal
 ```
 
-That script calls the internal advertiser, offer, and publisher endpoints using `ADMIN_KEY=changeme-internal-key`. It assumes the database is reachable and contains seed or development data for those resources.
+That script loads `ADMIN_KEY` from the ignored local secrets file and calls the internal advertiser, offer, and publisher endpoints. It assumes the database is reachable and contains seed or development data for those resources.
 
 Publisher registration currently creates pending accounts without passwords. After a publisher is approved, the public web app can set a password and then log in with email and password. See [docs/publisher-login-strategy.md](docs/publisher-login-strategy.md).
 
@@ -459,33 +482,19 @@ Then send a test email:
 npm run email-send-test:run
 ```
 
-Webhook summaries are appended to:
+Webhook events are stored as documents in MongoDB:
 
 ```text
-logs/email-events-webhook.jsonl
+CMPlatformDocuments.emailWebhookEvents
 ```
 
-Webhook events are also stored in SQL Server:
+The MongoDB document is the authoritative event record. It contains normalized searchable fields and the complete original provider payload. Inspect the sanitized public view at:
 
 ```text
-dbo.EmailDelivery       latest delivery state per provider email id and recipient
-dbo.EmailDeliveryEvent  append-only event history
+http://localhost:5173/#mongodb
 ```
 
-Internal API endpoints for display:
-
-```text
-GET /internal/email-deliveries
-GET /internal/email-deliveries/:emailDeliveryId/events
-```
-
-These are internal endpoints and require the `x-admin-key` header.
-
-Watch the log while testing:
-
-```powershell
-npm run email-webhooks:watch
-```
+The explorer includes historical webhook summary documents imported when MongoDB was introduced. Their original source file and one-time importer have been removed.
 
 Browser code must not receive SMTP credentials. Publisher-facing workflows should call a server-side API or service that imports `@cm/email`.
 

@@ -4,7 +4,7 @@ services:
     container_name: cm-platform-db
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "#Pop,6300"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in packages/secrets/cm-platform.env}
       MSSQL_PID: "Developer"
     ports:
       - "1433:1433"
@@ -16,13 +16,25 @@ services:
     image: rabbitmq:3.13-management
     container_name: cm-platform-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: cm_platform
-      RABBITMQ_DEFAULT_PASS: cm_platform_dev
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in packages/secrets/cm-platform.env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in packages/secrets/cm-platform.env}
     ports:
       - "5672:5672"
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:8.0.12
+    container_name: cm-platform-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME:?Set MONGODB_ROOT_USERNAME in packages/secrets/cm-platform.env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD:?Set MONGODB_ROOT_PASSWORD in packages/secrets/cm-platform.env}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
     restart: unless-stopped
 
   email-dispatcher:
@@ -37,10 +49,10 @@ services:
     environment:
       LOG_LEVEL: info
       NODE_ENV: development
-      RABBITMQ_URL: amqp://cm_platform:cm_platform_dev@rabbitmq:5672
+      RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
       EMAIL_DISPATCHER_PREFETCH: "5"
-    volumes:
-      - ../packages/secrets/cm-platform.env:/app/packages/secrets/cm-platform.env:ro
+      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER:?Set EMAIL_SMTP_USER in packages/secrets/cm-platform.env}
+      EMAIL_SMTP_PASS: ${EMAIL_SMTP_PASS:?Set EMAIL_SMTP_PASS in packages/secrets/cm-platform.env}
     restart: unless-stopped
 
   widget-consumer-fast:
@@ -53,12 +65,12 @@ services:
     environment:
       DB_SERVER: db
       DB_PORT: "1433"
-      DB_USER: sa
-      DB_PASSWORD: "#Pop,6300"
+      DB_USER: ${DB_USER:-cm_platform_app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
       DB_DATABASE: CMPlatform
       LOG_LEVEL: info
       NODE_ENV: development
-      RABBITMQ_URL: amqp://cm_platform:cm_platform_dev@rabbitmq:5672
+      RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
       WIDGET_CONSUMER_NAME: fast-consumer
       WIDGET_CONSUMER_PROCESSING_SECONDS: "1"
     restart: unless-stopped
@@ -73,12 +85,12 @@ services:
     environment:
       DB_SERVER: db
       DB_PORT: "1433"
-      DB_USER: sa
-      DB_PASSWORD: "#Pop,6300"
+      DB_USER: ${DB_USER:-cm_platform_app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
       DB_DATABASE: CMPlatform
       LOG_LEVEL: info
       NODE_ENV: development
-      RABBITMQ_URL: amqp://cm_platform:cm_platform_dev@rabbitmq:5672
+      RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
       WIDGET_CONSUMER_NAME: slow-consumer
       WIDGET_CONSUMER_PROCESSING_SECONDS: "5"
     restart: unless-stopped
@@ -89,3 +101,5 @@ volumes:
     name: docker_mssql_data
   rabbitmq_data:
     name: cm_platform_rabbitmq_data
+  mongodb_data:
+    name: cm_platform_mongodb_data

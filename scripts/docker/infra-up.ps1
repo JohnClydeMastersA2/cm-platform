@@ -2,14 +2,45 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $composeFile = Join-Path $repoRoot "docker\compose.dev.yml"
+$envFile = Join-Path $repoRoot "packages\secrets\cm-platform.env"
 $volumeName = "docker_mssql_data"
 $containerName = "cm-platform-db"
 $rabbitMqContainerName = "cm-platform-rabbitmq"
-$saPassword = "#Pop,6300"
+$mongoContainerName = "cm-platform-mongodb"
 $devDatabaseNames = @("CMPlatform")
 $legacyDatabaseRenames = @{
     "Sandbox" = "CMPlatform"
 }
+
+function Get-DevEnvValue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    if (-not (Test-Path $envFile)) {
+        throw "Missing local secrets file: $envFile"
+    }
+
+    $line = Get-Content $envFile |
+        Where-Object { $_ -match "^\s*$([regex]::Escape($Name))=" } |
+        Select-Object -First 1
+
+    if (-not $line) {
+        throw "Missing required local secret '$Name' in $envFile"
+    }
+
+    return ($line -replace "^\s*$([regex]::Escape($Name))=", "").Trim()
+}
+
+$saPassword = Get-DevEnvValue -Name "MSSQL_SA_PASSWORD"
+$dbUser = Get-DevEnvValue -Name "DB_USER"
+$dbPassword = Get-DevEnvValue -Name "DB_PASSWORD"
+$mongoRootUsername = Get-DevEnvValue -Name "MONGODB_ROOT_USERNAME"
+$mongoRootPassword = Get-DevEnvValue -Name "MONGODB_ROOT_PASSWORD"
+$mongoAppUsername = Get-DevEnvValue -Name "MONGODB_APP_USERNAME"
+$mongoAppPassword = Get-DevEnvValue -Name "MONGODB_APP_PASSWORD"
+$mongoDatabaseName = "CMPlatformDocuments"
 
 function Invoke-SqlServerCommand {
     param(
@@ -30,9 +61,17 @@ function Wait-ForSqlServer {
     $maxAttempts = 60
 
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
-        Invoke-SqlServerCommand -Query "select 1 as ok" *> $null
+        $previousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
 
-        if ($LASTEXITCODE -eq 0) {
+        try {
+            Invoke-SqlServerCommand -Query "select 1 as ok" *> $null
+            $sqlServerPingExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+
+        if ($sqlServerPingExitCode -eq 0) {
             Write-Host "SQL Server is ready."
             return
         }
@@ -89,6 +128,59 @@ end
     }
 }
 
+function Ensure-SqlAppLogin {
+    $escapedUser = $dbUser.Replace("'", "''")
+    $escapedPassword = $dbPassword.Replace("'", "''")
+    $query = @"
+declare @loginName sysname = N'$escapedUser';
+declare @password nvarchar(128) = N'$escapedPassword';
+declare @sql nvarchar(max);
+
+if not exists (select 1 from sys.server_principals where name = @loginName)
+begin
+    set @sql = N'create login ' + QUOTENAME(@loginName) +
+        N' with password = ' + QUOTENAME(@password, '''') +
+        N', check_policy = on;';
+    exec (@sql);
+end
+else
+begin
+    set @sql = N'alter login ' + QUOTENAME(@loginName) +
+        N' with password = ' + QUOTENAME(@password, '''') + N';';
+    exec (@sql);
+end
+
+use [CMPlatform];
+
+if not exists (select 1 from sys.database_principals where name = @loginName)
+begin
+    set @sql = N'create user ' + QUOTENAME(@loginName) +
+        N' for login ' + QUOTENAME(@loginName) + N';';
+    exec (@sql);
+end
+
+if IS_ROLEMEMBER(N'db_datareader', @loginName) <> 1
+begin
+    set @sql = N'alter role [db_datareader] add member ' + QUOTENAME(@loginName) + N';';
+    exec (@sql);
+end
+
+if IS_ROLEMEMBER(N'db_datawriter', @loginName) <> 1
+begin
+    set @sql = N'alter role [db_datawriter] add member ' + QUOTENAME(@loginName) + N';';
+    exec (@sql);
+end
+"@
+
+    Invoke-SqlServerCommand -Query $query | Out-Null
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to ensure the SQL Server application login."
+    }
+
+    Write-Host "SQL Server application login is available for CMPlatform."
+}
+
 function Wait-ForRabbitMq {
     $maxAttempts = 60
 
@@ -114,6 +206,67 @@ function Wait-ForRabbitMq {
     throw "RabbitMQ did not become ready after $($maxAttempts * 2) seconds."
 }
 
+function Wait-ForMongoDb {
+    $maxAttempts = 60
+
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        $previousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+
+        try {
+            docker exec $mongoContainerName mongosh `
+                --quiet `
+                --username $mongoRootUsername `
+                --password $mongoRootPassword `
+                --authenticationDatabase admin `
+                --eval "db.adminCommand({ ping: 1 }).ok" *> $null
+            $mongoPingExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+
+        if ($mongoPingExitCode -eq 0) {
+            Write-Host "MongoDB is ready."
+            return
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    throw "MongoDB did not become ready after $($maxAttempts * 2) seconds."
+}
+
+function Ensure-MongoAppUser {
+    $escapedUsername = $mongoAppUsername.Replace("\", "\\").Replace("'", "\'")
+    $escapedPassword = $mongoAppPassword.Replace("\", "\\").Replace("'", "\'")
+    $escapedDatabaseName = $mongoDatabaseName.Replace("\", "\\").Replace("'", "\'")
+    $script = @"
+const appDb = db.getSiblingDB('$escapedDatabaseName');
+const username = '$escapedUsername';
+const password = '$escapedPassword';
+const roles = [{ role: 'readWrite', db: '$escapedDatabaseName' }];
+
+if (appDb.getUser(username)) {
+    appDb.updateUser(username, { pwd: password, roles });
+} else {
+    appDb.createUser({ user: username, pwd: password, roles });
+}
+"@
+
+    docker exec $mongoContainerName mongosh `
+        --quiet `
+        --username $mongoRootUsername `
+        --password $mongoRootPassword `
+        --authenticationDatabase admin `
+        --eval $script | Out-Null
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to ensure the MongoDB application user."
+    }
+
+    Write-Host "MongoDB application user is available for $mongoDatabaseName."
+}
+
 $existingVolume = docker volume ls --quiet --filter "name=^$volumeName$"
 
 if (-not $existingVolume) {
@@ -121,7 +274,7 @@ if (-not $existingVolume) {
     docker volume create $volumeName | Out-Null
 }
 
-docker compose -f $composeFile up -d db rabbitmq
+docker compose --env-file $envFile -f $composeFile up -d db rabbitmq mongodb
 
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
@@ -129,6 +282,9 @@ if ($LASTEXITCODE -ne 0) {
 
 Wait-ForSqlServer
 Wait-ForRabbitMq
+Wait-ForMongoDb
+Ensure-MongoAppUser
 Ensure-DevDatabases
+Ensure-SqlAppLogin
 
 exit $LASTEXITCODE

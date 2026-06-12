@@ -1,4 +1,22 @@
-$headers = @{ "x-admin-key" = "changeme-internal-key" }
+$ErrorActionPreference = "Stop"
+
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$envFile = Join-Path $repoRoot "packages\secrets\cm-platform.env"
+
+if (-not (Test-Path $envFile)) {
+    throw "Missing local secrets file: $envFile"
+}
+
+$adminKeyLine = Get-Content $envFile |
+    Where-Object { $_ -match "^\s*ADMIN_KEY=" } |
+    Select-Object -First 1
+
+if (-not $adminKeyLine) {
+    throw "Missing required secret 'ADMIN_KEY' in $envFile"
+}
+
+$adminKey = ($adminKeyLine -replace "^\s*ADMIN_KEY=", "").Trim()
+$headers = @{ "x-admin-key" = $adminKey }
 $baseUrl = "http://localhost:3000"
 
 function Assert-True {

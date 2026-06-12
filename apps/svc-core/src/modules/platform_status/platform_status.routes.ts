@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { emailWebhookEvents } from "../email_webhook_event/email_webhook_event.repo.js";
 
 type Disposition = "online" | "degraded" | "offline" | "unknown";
 
@@ -22,12 +23,14 @@ export async function platformStatusRoutes(app: FastifyInstance): Promise<void> 
     const [
       api,
       database,
+      documentDatabase,
       emailDispatcher,
       widgetConsumers,
       emailWebhook,
     ] = await Promise.all([
       getApiRequirement(app, checkedAt),
       getDatabaseRequirement(app, checkedAt),
+      getDocumentDatabaseRequirement(app, checkedAt),
       getEmailDispatcherRequirement(app, checkedAt),
       getWidgetConsumerRequirements(app, checkedAt),
       getEmailWebhookRequirement(app, checkedAt),
@@ -38,6 +41,7 @@ export async function platformStatusRoutes(app: FastifyInstance): Promise<void> 
       requirements: [
         api,
         database,
+        documentDatabase,
         emailDispatcher,
         ...widgetConsumers,
         emailWebhook,
@@ -112,6 +116,32 @@ async function queryDatabaseName(app: FastifyInstance): Promise<string> {
   `);
 
   return result.recordset[0]?.databaseName ?? "unknown";
+}
+
+async function getDocumentDatabaseRequirement(
+  app: FastifyInstance,
+  checkedAt: string,
+): Promise<InfrastructureRequirement> {
+  try {
+    await app.mongoDb.command({ ping: 1 });
+
+    return {
+      key: "document-database",
+      name: "MongoDB",
+      disposition: "online",
+      detail: "MongoDB accepted a readiness query.",
+      evidence: `Connected to MongoDB database ${app.mongoDb.databaseName}.`,
+      checkedAt,
+    };
+  } catch (err) {
+    return failedRequirement(
+      "document-database",
+      "MongoDB",
+      "MongoDB readiness query failed.",
+      err,
+      checkedAt,
+    );
+  }
 }
 
 async function getEmailDispatcherRequirement(
@@ -222,20 +252,19 @@ async function getEmailWebhookRequirement(
 }
 
 async function getEmailWebhookSummary(app: FastifyInstance): Promise<EmailWebhookSummary> {
-  const result = await app.db.request().query<{
-    RecentEventCount: number;
-    LastReceivedAt: Date | null;
-  }>(`
-    select
-      count(case when ReceivedAt >= dateadd(hour, -24, sysutcdatetime()) then 1 end) as RecentEventCount,
-      max(ReceivedAt) as LastReceivedAt
-    from dbo.EmailDeliveryEvent;
-  `);
-  const row = result.recordset[0];
+  const collection = emailWebhookEvents(app.mongoDb);
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const [recentEventCount, latestEvent] = await Promise.all([
+    collection.countDocuments({ receivedAt: { $gte: since } }),
+    collection.findOne({}, {
+      projection: { receivedAt: 1 },
+      sort: { receivedAt: -1 },
+    }),
+  ]);
 
   return {
-    recentEventCount: row?.RecentEventCount ?? 0,
-    lastReceivedAt: row?.LastReceivedAt?.toISOString() ?? null,
+    recentEventCount,
+    lastReceivedAt: latestEvent?.receivedAt.toISOString() ?? null,
   };
 }
 

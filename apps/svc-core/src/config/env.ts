@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
 
 const EnvSchema = z.object({
@@ -15,12 +18,16 @@ const EnvSchema = z.object({
 
   AUTH_API_BASE_URL: z.url().default("http://localhost:3000"),
   PUBLIC_WEB_BASE_URL: z.url().default("http://localhost:5173"),
-  RABBITMQ_URL: z.url().default("amqp://cm_platform:cm_platform_dev@localhost:5672"),
+  RABBITMQ_URL: z.url(),
+  MONGODB_URI: z.url(),
+  MONGODB_DATABASE: z.string().min(1).default("CMPlatformDocuments"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
 
 export function loadEnv(): Env {
+  loadLocalEnvFiles();
+
   const rawEnv = {
     ...process.env,
     PUBLIC_WEB_BASE_URL: process.env.PUBLIC_WEB_BASE_URL ?? process.env.PUBLISHER_WEB_BASE_URL,
@@ -33,4 +40,18 @@ export function loadEnv(): Env {
   }
 
   return parsed.data;
+}
+
+function loadLocalEnvFiles(): void {
+  const candidatePaths = [
+    resolve(process.cwd(), ".env"),
+    resolve(process.cwd(), "packages/secrets/cm-platform.env"),
+    resolve(process.cwd(), "../../packages/secrets/cm-platform.env"),
+  ];
+
+  for (const path of candidatePaths) {
+    if (existsSync(path)) {
+      loadDotenv({ path, quiet: true });
+    }
+  }
 }

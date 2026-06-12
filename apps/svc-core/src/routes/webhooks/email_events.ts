@@ -1,9 +1,8 @@
-import { mkdir, appendFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import type { FastifyBaseLogger, FastifyPluginAsync } from "fastify";
-import { recordEmailDeliveryEvent } from "../../modules/email_delivery/email_delivery.repo.js";
+import { recordEmailWebhookEvent } from "../../modules/email_webhook_event/email_webhook_event.repo.js";
 
-type EmailEventPayload = {
+type EmailEventPayload = Record<string, unknown> & {
+  id?: string;
   type?: string;
   data?: unknown;
 };
@@ -16,11 +15,6 @@ type EmailEventLogEntry = {
   subject?: string;
   to?: string[];
 };
-
-const emailEventsLogPath = resolve(
-  process.cwd(),
-  "../../logs/email-events-webhook.jsonl",
-);
 
 export const emailEventsWebhookRoutes: FastifyPluginAsync = async (app) => {
   app.post("/webhooks/email-events", async (request) => {
@@ -36,45 +30,27 @@ export const emailEventsWebhookRoutes: FastifyPluginAsync = async (app) => {
       "Received email events webhook",
     );
 
-    await recordEmailEventDeliveries(app, event, logEntry);
-    await appendEmailEventLog(logEntry);
+    await recordEmailWebhookEvent(app.mongoDb, {
+      provider: "resend",
+      ...(event.id ? { providerEventId: event.id } : {}),
+      eventType: logEntry.eventType ?? "unknown",
+      ...(logEntry.emailId ? { emailId: logEntry.emailId } : {}),
+      recipients: logEntry.to ?? [],
+      ...(logEntry.from ? { sender: logEntry.from } : {}),
+      ...(logEntry.subject ? { subject: logEntry.subject } : {}),
+      receivedAt: new Date(logEntry.receivedAt),
+      source: "webhook",
+      payloadAvailable: true,
+      payload: event,
+      processing: {
+        status: "acknowledged",
+      },
+    });
     await handleEmailEvent(event, request.log);
 
     return { ok: true };
   });
 };
-
-async function recordEmailEventDeliveries(
-  app: Parameters<FastifyPluginAsync>[0],
-  event: EmailEventPayload,
-  logEntry: EmailEventLogEntry,
-): Promise<void> {
-  if (!logEntry.eventType || !logEntry.emailId || !logEntry.to?.length) {
-    app.log.warn(
-      {
-        eventType: logEntry.eventType,
-        emailId: logEntry.emailId,
-        to: logEntry.to,
-      },
-      "Email event missing persistence key fields",
-    );
-    return;
-  }
-
-  const eventPayload = JSON.stringify(event);
-
-  for (const recipientEmail of logEntry.to) {
-    await recordEmailDeliveryEvent(app.db, {
-      provider: "resend",
-      providerEmailId: logEntry.emailId,
-      recipientEmail,
-      eventType: logEntry.eventType,
-      ...(logEntry.subject ? { subject: logEntry.subject } : {}),
-      ...(logEntry.from ? { senderEmail: logEntry.from } : {}),
-      eventPayload,
-    });
-  }
-}
 
 async function handleEmailEvent(
   event: EmailEventPayload,
@@ -121,11 +97,6 @@ async function handleEmailDeliveryDelayed(
   log: FastifyBaseLogger,
 ): Promise<void> {
   log.warn(createEmailEventLogEntry(event), "Email delivery delayed");
-}
-
-async function appendEmailEventLog(entry: EmailEventLogEntry): Promise<void> {
-  await mkdir(resolve(emailEventsLogPath, ".."), { recursive: true });
-  await appendFile(emailEventsLogPath, `${JSON.stringify(entry)}\n`, "utf8");
 }
 
 function createEmailEventLogEntry(event: EmailEventPayload): EmailEventLogEntry {

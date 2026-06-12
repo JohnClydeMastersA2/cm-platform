@@ -2,9 +2,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "./style.css";
 
-type Page = "home" | "infrastructure" | "containers" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue";
+type Page = "home" | "infrastructure" | "containers" | "secrets" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
 type FormStatus = "idle" | "submitting" | "success" | "error";
-type SidebarSection = "platform" | "containers" | "identity" | "account" | "messaging";
+type SidebarSection = "platform" | "containers" | "identity" | "account" | "messaging" | "data";
 
 type AuthAccount = {
   accountId: number;
@@ -150,6 +150,40 @@ type PriorityQueueState = {
   processedMessages: ProcessedPriorityQueueMessage[];
 };
 
+type MongoWebhookEvent = {
+  id: string;
+  provider: string;
+  eventType: string;
+  emailId: string | null;
+  recipients: string[];
+  sender: string | null;
+  subject: string | null;
+  receivedAt: string;
+  source: "webhook" | "imported-jsonl";
+  payloadAvailable: boolean;
+  payload: unknown | null;
+  processing: {
+    status: string;
+    message?: string;
+  };
+};
+
+type MongoWebhookExplorerState = {
+  page: number;
+  pageSize: number;
+  total: number;
+  pageCount: number;
+  eventTypeCounts: Array<{ _id: string; count: number }>;
+  sourceCounts: Array<{ _id: string; count: number }>;
+  events: MongoWebhookEvent[];
+};
+
+type MongoWebhookFilters = {
+  q: string;
+  eventType: string;
+  source: string;
+};
+
 let account: AuthAccount | null = null;
 let authSession: AuthSession | null = null;
 let currentPage: Page | null = null;
@@ -159,6 +193,7 @@ let sidebarSectionsOpen: Record<SidebarSection, boolean> = {
   identity: true,
   account: true,
   messaging: true,
+  data: true,
 };
 let platformStatus: PlatformStatus | null = null;
 let widgetQueueState: WidgetQueueState = {
@@ -185,6 +220,20 @@ let priorityQueueState: PriorityQueueState = {
   publishedMessages: [],
   processedMessages: [],
 };
+let mongoWebhookExplorerState: MongoWebhookExplorerState = {
+  page: 1,
+  pageSize: 20,
+  total: 0,
+  pageCount: 1,
+  eventTypeCounts: [],
+  sourceCounts: [],
+  events: [],
+};
+let mongoWebhookFilters: MongoWebhookFilters = {
+  q: "",
+  eventType: "",
+  source: "",
+};
 
 const loginState: FormState = { status: "idle" };
 const registerState: FormState = { status: "idle" };
@@ -194,6 +243,7 @@ const widgetState: FormState = { status: "idle" };
 const widgetConsumerState: FormState = { status: "idle" };
 const topicRoutingFormState: FormState = { status: "idle" };
 const priorityQueueFormState: FormState = { status: "idle" };
+const mongoWebhookFormState: FormState = { status: "idle" };
 
 function getCurrentPage(): Page {
   const hash = window.location.hash.replace("#", "");
@@ -201,6 +251,7 @@ function getCurrentPage(): Page {
   if (hash === "home") return "home";
   if (hash === "infrastructure") return "infrastructure";
   if (hash === "containers") return "containers";
+  if (hash === "secrets") return "secrets";
   if (hash === "iam") return "iam";
   if (hash === "register") return "register";
   if (hash === "login") return "login";
@@ -209,6 +260,7 @@ function getCurrentPage(): Page {
   if (hash === "competing-consumers") return "competing-consumers";
   if (hash === "topic-routing") return "topic-routing";
   if (hash === "priority-queue") return "priority-queue";
+  if (hash === "mongodb") return "mongodb";
 
   return "home";
 }
@@ -219,6 +271,7 @@ function layout(content: string): string {
   const identityOpen = sidebarSectionsOpen.identity;
   const accountOpen = sidebarSectionsOpen.account;
   const messagingOpen = sidebarSectionsOpen.messaging;
+  const dataOpen = sidebarSectionsOpen.data;
 
   return `
     <div class="public-shell">
@@ -258,6 +311,22 @@ function layout(content: string): string {
             </div>
 
             <button
+              class="public-nav-toggle ${dataOpen ? "" : "collapsed"}"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#dataStoresNav"
+              aria-expanded="${dataOpen ? "true" : "false"}"
+              aria-controls="dataStoresNav"
+            >
+              Data Stores
+            </button>
+            <div class="collapse ${dataOpen ? "show" : ""}" id="dataStoresNav">
+              <div class="public-nav-group">
+                <a class="public-nav-link" href="#mongodb">NoSQL with MongoDB</a>
+              </div>
+            </div>
+
+            <button
               class="public-nav-toggle ${containersOpen ? "" : "collapsed"}"
               type="button"
               data-bs-toggle="collapse"
@@ -270,6 +339,7 @@ function layout(content: string): string {
             <div class="collapse ${containersOpen ? "show" : ""}" id="containersNav">
               <div class="public-nav-group">
                 <a class="public-nav-link" href="#containers">Overview</a>
+                <a class="public-nav-link" href="#secrets">Secrets</a>
               </div>
             </div>
 
@@ -343,6 +413,7 @@ function homePage(): string {
     "TypeScript full-stack development",
     "Fastify service architecture",
     "SQL Server workflow persistence",
+    "MongoDB document persistence",
     "RabbitMQ messaging patterns",
     "Background services and workers",
     "PowerShell automation",
@@ -497,7 +568,7 @@ function infrastructurePage(): string {
         <div class="platform-stack" aria-label="Infrastructure status summary">
           <div class="platform-stack-row">
             <span>Status Source</span>
-            <strong>Fastify API readiness, SQL Server queries, RabbitMQ queue metadata, webhook event history</strong>
+            <strong>Fastify API readiness, SQL Server and MongoDB queries, RabbitMQ queue metadata, webhook event history</strong>
           </div>
           <div class="platform-stack-row">
             <span>Purpose</span>
@@ -557,8 +628,8 @@ function containersPage(): string {
   const containerCards = [
     {
       title: "Local infrastructure",
-      body: "Docker Compose owns SQL Server and RabbitMQ so the platform has repeatable local dependencies without installing those services directly on the workstation.",
-      proof: "docker/compose.dev.yml: db and rabbitmq",
+      body: "Docker Compose owns SQL Server, MongoDB, and RabbitMQ so the platform has repeatable local dependencies without installing those services directly on the workstation.",
+      proof: "docker/compose.dev.yml: db, mongodb, and rabbitmq",
     },
     {
       title: "Background runtimes",
@@ -572,13 +643,13 @@ function containersPage(): string {
     },
     {
       title: "Environment boundaries",
-      body: "Containerized workers use Compose service names such as db and rabbitmq, while the API and public web app continue to use localhost-facing ports during active development.",
-      proof: "DB_SERVER=db and RABBITMQ_URL=...@rabbitmq:5672",
+      body: "Containerized services use Compose names such as db, mongodb, and rabbitmq, while the locally running API and public web app use localhost-facing ports during active development.",
+      proof: "DB_SERVER=db, MONGODB_URI=...@mongodb:27017, RABBITMQ_URL=...@rabbitmq:5672",
     },
     {
       title: "Secret handling",
-      body: "The email dispatcher reads SMTP credentials at runtime from the local secrets file mounted into the container. The file is not copied into the image.",
-      proof: "packages/secrets/cm-platform.env mounted read-only",
+      body: "Docker Compose injects only the RabbitMQ and SMTP values required by the email dispatcher. The shared secrets file is not mounted into the container or copied into the image.",
+      proof: "explicit runtime environment variables",
     },
     {
       title: "Production portability",
@@ -594,7 +665,9 @@ function containersPage(): string {
           <p class="platform-kicker">Containers</p>
           <h1>Docker Runtime Model</h1>
           <p class="platform-lede">
-            Docker is used to make local infrastructure and background processing repeatable. SQL Server and RabbitMQ run as infrastructure containers, while the email dispatcher and widget consumers run as background service containers. The API and public web app stay local for a faster development loop.
+            Docker is used to make local infrastructure and background processing repeatable. SQL Server, MongoDB,
+            and RabbitMQ run as infrastructure containers, while the email dispatcher and widget consumers run as
+            background service containers. The API and public web app stay local for a faster development loop.
           </p>
           <div class="platform-hero-actions">
             <span>Local runtime command: npm run infra:workers:up</span>
@@ -603,7 +676,7 @@ function containersPage(): string {
         <div class="platform-stack" aria-label="Container runtime summary">
           <div class="platform-stack-row">
             <span>Infrastructure</span>
-            <strong>SQL Server and RabbitMQ are managed by Docker Compose</strong>
+            <strong>SQL Server, MongoDB, and RabbitMQ are managed by Docker Compose</strong>
           </div>
           <div class="platform-stack-row">
             <span>Workers</span>
@@ -621,6 +694,7 @@ function containersPage(): string {
         <div>API</div>
         <div class="platform-flow-core">Docker Compose</div>
         <div>SQL Server</div>
+        <div>MongoDB</div>
         <div>RabbitMQ</div>
         <div>Email dispatcher</div>
         <div>Widget consumers</div>
@@ -670,6 +744,197 @@ function containersPage(): string {
           <span>Worker health checks</span>
           <span>Deployment manifests</span>
           <span>Managed secret provider</span>
+        </div>
+      </section>
+    </section>
+  `;
+}
+
+function secretsPage(): string {
+  const secretConcerns = [
+    {
+      title: "Where secrets live",
+      body: "Local development can use a machine-local env file. Stage and production should use the deployment platform's secret store instead of committed files.",
+    },
+    {
+      title: "How each environment gets them",
+      body: "The same variable names should work across environments, but the source changes: dev reads local files, while stage and production receive injected runtime values.",
+    },
+    {
+      title: "How the app proves configuration",
+      body: "Services should validate required settings on startup and report readiness without logging or exposing the actual secret values.",
+    },
+  ];
+
+  const environmentRows = [
+    {
+      environment: "Development",
+      source: "packages/secrets/cm-platform.env",
+      note: "Developer-owned local values used by npm scripts and Docker Compose.",
+    },
+    {
+      environment: "Stage",
+      source: "Platform secret store",
+      note: "Staging database, RabbitMQ, email, webhook, and signing values injected at runtime.",
+    },
+    {
+      environment: "Production",
+      source: "Platform secret store",
+      note: "Production secrets injected by the host or orchestrator, never copied from the repository.",
+    },
+  ];
+
+  const platformExamples = [
+    "Docker host or Compose: server-local env file outside Git",
+    "Kubernetes: Kubernetes Secrets, External Secrets, or sealed secrets",
+    "AWS: Secrets Manager or SSM Parameter Store",
+    "Azure: Key Vault",
+    "GCP: Secret Manager",
+    "Cloudflare: environment secrets for edge workloads",
+  ];
+
+  return `
+    <section class="platform-overview">
+      <div class="platform-hero">
+        <div>
+          <p class="platform-kicker">Containers / Secrets</p>
+          <h1>Secret Handling Across Environments</h1>
+          <p class="platform-lede">
+            Secrets are part of the runtime contract for cm-platform. The goal is to keep local development convenient while making stage and production depend on injected secrets rather than values committed to the repository or baked into Docker images.
+          </p>
+          <div class="platform-hero-actions">
+            <span>Same image, same variable names, different secret sources per environment.</span>
+          </div>
+        </div>
+        <div class="platform-stack" aria-label="Secret handling summary">
+          <div class="platform-stack-row">
+            <span>Development</span>
+            <strong>Local env file stays machine-local and out of Git</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Stage</span>
+            <strong>Deployment platform injects staging-only secret values</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Production</span>
+            <strong>Production values come from a managed secret source</strong>
+          </div>
+        </div>
+      </div>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Three Concerns</h2>
+          <p>
+            The secrets model should be evaluated through three practical questions. This keeps the design clear whether the app is running from npm scripts, Docker Compose, Kubernetes, or another container platform.
+          </p>
+        </div>
+        <div class="platform-card-grid">
+          ${secretConcerns.map((concern) => `
+            <article class="platform-card">
+              <h3>${escapeHtml(concern.title)}</h3>
+              <p>${escapeHtml(concern.body)}</p>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+
+      <section class="platform-section">
+        <div>
+          <h2>Environment Model</h2>
+          <p>
+            Development can stay simple with packages/secrets/cm-platform.env. Stage and production should use the same variable names, but those values should be supplied by the host or orchestration layer at runtime.
+          </p>
+        </div>
+        <div class="platform-callout">
+          <span>Docker rule</span>
+          <strong>Secrets should be mounted or injected into containers, not copied into image layers.</strong>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Disposition By Environment</h2>
+          <p>
+            This is the intended direction for cm-platform as it moves from local demonstration toward stage and production hosting.
+          </p>
+        </div>
+        <div class="infrastructure-table-wrap">
+          <table class="table table-sm infrastructure-table">
+            <thead>
+              <tr>
+                <th>Environment</th>
+                <th>Secret Source</th>
+                <th>Disposition</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${environmentRows.map((row) => `
+                <tr>
+                  <td>${escapeHtml(row.environment)}</td>
+                  <td>${escapeHtml(row.source)}</td>
+                  <td>${escapeHtml(row.note)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Configuration Versus Secrets</h2>
+          <p>
+            Public URLs, ports, feature flags, and log levels are configuration. Database passwords, session signing keys, RabbitMQ credentials, SMTP keys, and webhook signing secrets are secrets.
+          </p>
+          <p>
+            Frontend values bundled into the Vite public web app should be treated as public. Anything exposed through a VITE_* variable must be safe for a browser user to see.
+          </p>
+        </div>
+        <div class="platform-card-grid">
+          <article class="platform-card">
+            <h3>Committed example</h3>
+            <p>Keep a safe example file with variable names and placeholder values so each environment knows what it must provide.</p>
+            <div class="platform-proof">packages/secrets/cm-platform.env.example</div>
+          </article>
+          <article class="platform-card">
+            <h3>Local-only values</h3>
+            <p>The real development env file can remain useful locally, but it should stay ignored by Git and treated as workstation state.</p>
+            <div class="platform-proof">packages/secrets/cm-platform.env</div>
+          </article>
+          <article class="platform-card">
+            <h3>Runtime validation</h3>
+            <p>Backend services should fail fast or report degraded readiness when required variables are missing, without printing secret values.</p>
+            <div class="platform-proof">startup validation and status checks</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="platform-section">
+        <div>
+          <h2>Provider Options</h2>
+          <p>
+            The platform-specific provider can change without changing the app contract. The important part is that stage and production inject the expected environment variables from an appropriate secret source.
+          </p>
+        </div>
+        <div class="future-list">
+          ${platformExamples.map((example) => `<span>${escapeHtml(example)}</span>`).join("")}
+        </div>
+      </section>
+
+      <section class="future-panel">
+        <div>
+          <p class="platform-kicker">Futures</p>
+          <h2>Secret Management Direction</h2>
+          <p>
+            Future work can formalize required variables by service, add stronger startup validation, and document the exact provider used by the eventual staging and production hosts.
+          </p>
+        </div>
+        <div class="future-list">
+          <span>Required variables by service</span>
+          <span>Secret rotation notes</span>
+          <span>Managed provider selection</span>
+          <span>Readiness checks without value exposure</span>
         </div>
       </section>
     </section>
@@ -1219,6 +1484,215 @@ function registerPage(): string {
   `;
 }
 
+function mongodbPage(): string {
+  const isLoading = mongoWebhookFormState.status === "submitting";
+  const importedCount = mongoWebhookExplorerState.sourceCounts.find((item) => item._id === "imported-jsonl")?.count ?? 0;
+  const liveCount = mongoWebhookExplorerState.sourceCounts.find((item) => item._id === "webhook")?.count ?? 0;
+
+  return `
+    <div class="platform-overview queue-panel">
+      <section class="platform-hero">
+        <div>
+          <div class="platform-kicker">Document-oriented NoSQL</div>
+          <h1 class="h3 mb-2">Email Webhook Explorer with MongoDB</h1>
+          <p class="platform-lede">
+            CM Platform includes email delivery through the Resend API and a webhook that tracks delivery outcomes.
+            Each webhook arrives as a JSON payload and is stored as a document in MongoDB. This page demonstrates
+            how a document database can store these payloads and search specific fields within them.
+          </p>
+          <p class="platform-lede mt-3">
+            MongoDB stores each provider webhook as one document containing normalized searchable fields, nested
+            processing metadata, recipient arrays, and the original payload when available. SQL Server remains
+            responsible for relational business state.
+          </p>
+        </div>
+        <div class="platform-stack">
+          <div class="platform-stack-row">
+            <span>Collection</span>
+            <strong>emailWebhookEvents</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Persistence</span>
+            <strong>Docker volume cm_platform_mongodb_data</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Privacy</span>
+            <strong>Public API masks email addresses recursively</strong>
+          </div>
+          <div class="mongodb-credentials">
+            <span class="mongodb-credentials-heading">MongoDB University skills</span>
+            <div class="mongodb-credential-grid">
+              <div class="mongodb-credential">
+                <img
+                  src="/mongodb-university-overview-badge.png"
+                  alt="MongoDB University MongoDB Overview skill badge"
+                >
+                <strong>MongoDB Overview</strong>
+              </div>
+              <div class="mongodb-credential">
+                <img
+                  src="/mongodb-university-relational-document-badge.png"
+                  alt="MongoDB University Relational to Document Model skill badge"
+                >
+                <strong>Relational to Document Model</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      ${statusMessage(mongoWebhookFormState)}
+
+      <section class="row g-3">
+        ${metricCard("Matching documents", mongoWebhookExplorerState.total)}
+        ${metricCard("Imported JSONL", importedCount)}
+        ${metricCard("Live webhooks", liveCount)}
+        ${metricCard("Event types", mongoWebhookExplorerState.eventTypeCounts.length)}
+      </section>
+
+      <div class="alert alert-secondary mb-0">
+        <strong>Imported JSONL</strong> counts webhook summaries that were imported when MongoDB was introduced.
+        The original JSONL file and importer have been removed; these retained documents provide realistic historical demo data
+        but do not contain the complete provider payload available on newer live webhook documents.
+      </div>
+
+      <section class="card shadow-sm">
+        <div class="card-body">
+          <form class="row g-3 align-items-end" data-form="mongodb-search">
+            <div class="col-lg-5">
+              <label class="form-label" for="mongodb-search">Search document fields</label>
+              <input
+                class="form-control"
+                id="mongodb-search"
+                name="q"
+                value="${escapeHtml(mongoWebhookFilters.q)}"
+                placeholder="Recipient, subject, email ID, sender..."
+              >
+            </div>
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label" for="mongodb-event-type">Event type</label>
+              <select class="form-select" id="mongodb-event-type" name="eventType">
+                <option value="">All event types</option>
+                ${mongoEventTypeOptions()}
+              </select>
+            </div>
+            <div class="col-md-4 col-lg-2">
+              <label class="form-label" for="mongodb-source">Source</label>
+              <select class="form-select" id="mongodb-source" name="source">
+                <option value="">All sources</option>
+                <option value="webhook" ${mongoWebhookFilters.source === "webhook" ? "selected" : ""}>Live webhook</option>
+                <option value="imported-jsonl" ${mongoWebhookFilters.source === "imported-jsonl" ? "selected" : ""}>Imported JSONL</option>
+              </select>
+            </div>
+            <div class="col-md-4 col-lg-2 d-grid">
+              <button class="btn btn-primary" type="submit" ${isLoading ? "disabled" : ""}>
+                ${isLoading ? "Searching..." : "Search"}
+              </button>
+            </div>
+          </form>
+          <div class="small text-muted mt-3">
+            Indexed fields include receivedAt, eventType, recipients, emailId, and providerEventId.
+          </div>
+        </div>
+      </section>
+
+      <section class="card shadow-sm">
+        <div class="card-header d-flex align-items-center justify-content-between gap-3">
+          <strong>Webhook documents</strong>
+          <button class="btn btn-sm btn-outline-secondary" type="button" data-action="refresh-mongodb" ${isLoading ? "disabled" : ""}>
+            Refresh
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Received</th>
+                <th>Event</th>
+                <th>Recipient</th>
+                <th>Subject</th>
+                <th>Source</th>
+                <th>Document</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${mongoWebhookExplorerState.events.length
+                ? mongoWebhookRows()
+                : `<tr><td colspan="6" class="text-muted p-4">No MongoDB documents matched these filters.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between">
+          <span class="text-muted small">
+            Page ${mongoWebhookExplorerState.page} of ${mongoWebhookExplorerState.pageCount}
+          </span>
+          <div class="btn-group">
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              data-action="mongodb-page"
+              data-page="${mongoWebhookExplorerState.page - 1}"
+              ${mongoWebhookExplorerState.page <= 1 || isLoading ? "disabled" : ""}
+            >Previous</button>
+            <button
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              data-action="mongodb-page"
+              data-page="${mongoWebhookExplorerState.page + 1}"
+              ${mongoWebhookExplorerState.page >= mongoWebhookExplorerState.pageCount || isLoading ? "disabled" : ""}
+            >Next</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function metricCard(label: string, value: number): string {
+  return `
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">${escapeHtml(label)}</div>
+          <div class="fs-3 fw-semibold">${value}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function mongoEventTypeOptions(): string {
+  return mongoWebhookExplorerState.eventTypeCounts.map((item) => `
+    <option value="${escapeHtml(item._id)}" ${mongoWebhookFilters.eventType === item._id ? "selected" : ""}>
+      ${escapeHtml(item._id)} (${item.count})
+    </option>
+  `).join("");
+}
+
+function mongoWebhookRows(): string {
+  return mongoWebhookExplorerState.events.map((event) => `
+    <tr>
+      <td class="text-nowrap">${formatDate(event.receivedAt)}</td>
+      <td><code>${escapeHtml(event.eventType)}</code></td>
+      <td>${event.recipients.length ? event.recipients.map(escapeHtml).join("<br>") : "None"}</td>
+      <td>${escapeHtml(event.subject ?? "Not supplied")}</td>
+      <td>${mongoSourceBadge(event.source)}</td>
+      <td>
+        <details>
+          <summary class="mongodb-document-summary">View fields</summary>
+          <pre class="mongodb-document mt-2 mb-0">${escapeHtml(JSON.stringify(event, null, 2))}</pre>
+        </details>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function mongoSourceBadge(source: MongoWebhookEvent["source"]): string {
+  const badgeClass = source === "webhook" ? "text-bg-success" : "text-bg-secondary";
+  const label = source === "webhook" ? "Live" : "Imported";
+  return `<span class="badge ${badgeClass}">${label}</span>`;
+}
+
 function accountPage(): string {
   if (!account) {
     return `
@@ -1349,6 +1823,10 @@ function resetStateForPageChange(nextPage: Page): void {
 
   if (nextPage !== "priority-queue") {
     resetFormState(priorityQueueFormState);
+  }
+
+  if (nextPage !== "mongodb") {
+    resetFormState(mongoWebhookFormState);
   }
 }
 
@@ -1972,10 +2450,61 @@ async function readError(response: Response, fallback: string): Promise<string> 
   return body?.error ?? `${fallback} (${response.status})`;
 }
 
+async function loadMongoWebhookEvents(page = 1): Promise<void> {
+  mongoWebhookFormState.status = "submitting";
+  mongoWebhookFormState.message = undefined;
+
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(mongoWebhookExplorerState.pageSize),
+  });
+
+  if (mongoWebhookFilters.q) {
+    query.set("q", mongoWebhookFilters.q);
+  }
+
+  if (mongoWebhookFilters.eventType) {
+    query.set("eventType", mongoWebhookFilters.eventType);
+  }
+
+  if (mongoWebhookFilters.source) {
+    query.set("source", mongoWebhookFilters.source);
+  }
+
+  try {
+    const response = await fetch(`/email-webhook-events?${query}`);
+
+    if (!response.ok) {
+      throw new Error(await readError(response, "Unable to load MongoDB webhook events"));
+    }
+
+    mongoWebhookExplorerState = await response.json() as MongoWebhookExplorerState;
+    mongoWebhookFormState.status = "idle";
+    mongoWebhookFormState.message = undefined;
+  } catch (err) {
+    mongoWebhookFormState.status = "error";
+    mongoWebhookFormState.message = err instanceof Error
+      ? err.message
+      : "Unable to load MongoDB webhook events.";
+  }
+}
+
+async function submitMongoWebhookSearch(form: HTMLFormElement): Promise<void> {
+  const formData = new FormData(form);
+  mongoWebhookFilters = {
+    q: String(formData.get("q") ?? "").trim(),
+    eventType: String(formData.get("eventType") ?? ""),
+    source: String(formData.get("source") ?? ""),
+  };
+  await loadMongoWebhookEvents(1);
+  render();
+}
+
 function bindEvents(): void {
   const registerForm = document.querySelector<HTMLFormElement>('[data-form="register"]');
   const loginForm = document.querySelector<HTMLFormElement>('[data-form="login"]');
   const topicRoutingForm = document.querySelector<HTMLFormElement>('[data-form="topic-routing"]');
+  const mongoSearchForm = document.querySelector<HTMLFormElement>('[data-form="mongodb-search"]');
 
   registerForm?.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1991,6 +2520,11 @@ function bindEvents(): void {
     event.preventDefault();
     const formData = new FormData(topicRoutingForm);
     void publishTopicRoutingEvent(String(formData.get("routingKey") ?? ""));
+  });
+
+  mongoSearchForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void submitMongoWebhookSearch(mongoSearchForm);
   });
 
   document.querySelector<HTMLButtonElement>('[data-action="logout"]')?.addEventListener("click", () => {
@@ -2082,6 +2616,16 @@ function bindEvents(): void {
   document.querySelector<HTMLButtonElement>('[data-action="refresh-platform-status"]')?.addEventListener("click", () => {
     void refreshPlatformStatus();
   });
+
+  document.querySelector<HTMLButtonElement>('[data-action="refresh-mongodb"]')?.addEventListener("click", () => {
+    void loadMongoWebhookEvents(mongoWebhookExplorerState.page).then(render);
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-action="mongodb-page"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      void loadMongoWebhookEvents(Number(button.dataset.page ?? "1")).then(render);
+    });
+  });
 }
 
 function render(): void {
@@ -2105,21 +2649,25 @@ function render(): void {
         ? infrastructurePage()
         : page === "containers"
           ? containersPage()
-          : page === "iam"
-            ? iamPage()
-            : page === "register"
-              ? registerPage()
-              : page === "account"
-                ? accountPage()
-                : page === "widgets"
-                  ? widgetsPage()
-                  : page === "competing-consumers"
-                    ? competingConsumersPage()
-                    : page === "topic-routing"
-                      ? topicRoutingPage()
-                      : page === "priority-queue"
-                        ? priorityQueuePage()
-                        : loginPage();
+          : page === "secrets"
+            ? secretsPage()
+            : page === "iam"
+              ? iamPage()
+              : page === "register"
+                ? registerPage()
+                : page === "account"
+                  ? accountPage()
+                  : page === "widgets"
+                    ? widgetsPage()
+                    : page === "competing-consumers"
+                      ? competingConsumersPage()
+                      : page === "topic-routing"
+                        ? topicRoutingPage()
+                        : page === "priority-queue"
+                          ? priorityQueuePage()
+                          : page === "mongodb"
+                            ? mongodbPage()
+                            : loginPage();
 
   app.innerHTML = layout(content);
   bindEvents();
@@ -2131,6 +2679,7 @@ function syncSidebarSectionsFromDom(): void {
   const identityPanel = document.querySelector<HTMLElement>("#identityAccessNav");
   const accountPanel = document.querySelector<HTMLElement>("#myAccountNav");
   const messagingPanel = document.querySelector<HTMLElement>("#queueDemosNav");
+  const dataPanel = document.querySelector<HTMLElement>("#dataStoresNav");
 
   sidebarSectionsOpen = {
     platform: platformPanel ? platformPanel.classList.contains("show") : sidebarSectionsOpen.platform,
@@ -2138,6 +2687,7 @@ function syncSidebarSectionsFromDom(): void {
     identity: identityPanel ? identityPanel.classList.contains("show") : sidebarSectionsOpen.identity,
     account: accountPanel ? accountPanel.classList.contains("show") : sidebarSectionsOpen.account,
     messaging: messagingPanel ? messagingPanel.classList.contains("show") : sidebarSectionsOpen.messaging,
+    data: dataPanel ? dataPanel.classList.contains("show") : sidebarSectionsOpen.data,
   };
 }
 
@@ -2414,5 +2964,6 @@ await loadWidgets();
 await loadConsumerWidgets();
 await loadTopicRouting();
 await loadPriorityQueue();
+await loadMongoWebhookEvents();
 await loadPlatformStatus();
 render();
