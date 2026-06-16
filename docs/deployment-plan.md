@@ -553,6 +553,12 @@ Evidence captured during implementation:
 
 This slice proves image construction, not full production runtime behavior. Full runtime validation still needs a production-like Compose file or Azure Container Apps revision with real environment variables, managed data services, health probes, and smoke tests.
 
+Security maintenance follow-up:
+
+```text
+After adding the container-build job, GitHub and npm audit surfaced dependency advisories in the JavaScript toolchain and email package. The follow-up maintenance slice updated the affected direct dependencies, verified `npm audit` returned zero known vulnerabilities, rebuilt source, and rebuilt all production baseline images. This demonstrates that CI/CD includes ongoing supply-chain hygiene, not only application packaging.
+```
+
 Azure account creation starts after Step 2, unless an account already exists. The first Azure tasks should be non-application setup: subscription confirmation, budget alerts, resource group naming, and OIDC planning. Avoid creating Container Apps, Azure SQL, or Log Analytics resources until the local/CI image baseline is working.
 
 ## Delivery Phases
