@@ -508,6 +508,19 @@ Portfolio note:
 The first CI/CD slice moved the primary build workflow from a Windows runner to a Linux runner so the repository is tested in an environment closer to the future production container runtime. This demonstrates GitHub Actions fundamentals: event triggers, hosted runners, Node setup, dependency caching, clean installs, monorepo build orchestration, and required-check readiness.
 ```
 
+Recommended `main` branch protection after the first CI baseline is stable:
+
+- require pull requests before merging;
+- require the `Build` status check;
+- require the `CodeQL` status check;
+- require branches to be up to date before merging;
+- block force pushes;
+- block branch deletion;
+- allow repository administrators to bypass only when an emergency fix is needed;
+- defer stricter rules, such as signed commits and required linear history, until the deployment pipeline is less experimental.
+
+Branch protection should be enabled after verifying that local development, CI, and deployment changes can still move at a reasonable learning pace. The policy should make quality visible without trapping the project behind unfinished automation.
+
 Step 2 is the production image baseline:
 
 - add `.dockerignore`;
