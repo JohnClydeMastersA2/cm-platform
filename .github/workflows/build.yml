@@ -35,3 +35,24 @@ jobs:
 
       - name: Build source
         run: npm run build
+
+  container-build:
+    name: Container Build
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f docker/Dockerfile.api -t cm-platform/svc-core:${{ github.sha }} .
+
+      - name: Build public web image
+        run: docker build -f docker/Dockerfile.public-web -t cm-platform/public-web:${{ github.sha }} .
+
+      - name: Build email dispatcher image
+        run: docker build -f docker/Dockerfile.email-dispatcher -t cm-platform/email-dispatcher:${{ github.sha }} .
+
+      - name: Build widget consumer image
+        run: docker build -f docker/Dockerfile.widget-consumer -t cm-platform/widget-consumer:${{ github.sha }} .

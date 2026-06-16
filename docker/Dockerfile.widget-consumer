@@ -1,0 +1,28 @@
+FROM node:24-bookworm-slim AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY apps ./apps
+COPY packages ./packages
+COPY services ./services
+COPY tools ./tools
+
+RUN npm ci
+RUN npm run widget-consumer:deps:build && npm run widget-consumer:build
+RUN npm prune --omit=dev
+
+FROM node:24-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+COPY --from=build /app/package.json /app/package-lock.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/services/widget-consumer/package.json ./services/widget-consumer/package.json
+COPY --from=build /app/services/widget-consumer/dist ./services/widget-consumer/dist
+COPY --from=build /app/packages ./packages
+
+CMD ["npm", "--workspace", "services/widget-consumer", "run", "start"]
+

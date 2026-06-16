@@ -536,6 +536,23 @@ Exit criterion:
 The application can be built into immutable production-style images, and CI can prove those images compile.
 ```
 
+Portfolio note:
+
+```text
+The second CI/CD slice introduced production-style container images for the public web gateway, API, email dispatcher, and widget consumer. The web image serves the compiled Vite site through Nginx and proxies same-origin API paths to the API sidecar, preserving browser cookie behavior. The CI workflow now includes a container-build job that validates image construction without pushing or deploying anything.
+```
+
+Evidence captured during implementation:
+
+- `npm run build` passed locally;
+- `docker build -f docker/Dockerfile.api -t cm-platform/svc-core:local .` passed;
+- `docker build -f docker/Dockerfile.public-web -t cm-platform/public-web:local .` passed;
+- `docker build -f docker/Dockerfile.email-dispatcher -t cm-platform/email-dispatcher:local .` passed;
+- `docker build -f docker/Dockerfile.widget-consumer -t cm-platform/widget-consumer:local .` passed;
+- `docker run --rm cm-platform/public-web:local nginx -t` passed.
+
+This slice proves image construction, not full production runtime behavior. Full runtime validation still needs a production-like Compose file or Azure Container Apps revision with real environment variables, managed data services, health probes, and smoke tests.
+
 Azure account creation starts after Step 2, unless an account already exists. The first Azure tasks should be non-application setup: subscription confirmation, budget alerts, resource group naming, and OIDC planning. Avoid creating Container Apps, Azure SQL, or Log Analytics resources until the local/CI image baseline is working.
 
 ## Delivery Phases

@@ -1,0 +1,32 @@
+FROM node:24-bookworm-slim AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY apps ./apps
+COPY packages ./packages
+COPY services ./services
+COPY tools ./tools
+
+RUN npm ci
+RUN npm run api:deps:build && npm run api:build
+RUN npm prune --omit=dev
+
+FROM node:24-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=3000
+
+WORKDIR /app
+
+COPY --from=build /app/package.json /app/package-lock.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/apps/svc-core/package.json ./apps/svc-core/package.json
+COPY --from=build /app/apps/svc-core/dist ./apps/svc-core/dist
+COPY --from=build /app/packages ./packages
+
+EXPOSE 3000
+
+CMD ["npm", "--workspace", "apps/svc-core", "run", "start"]
+
