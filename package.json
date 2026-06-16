@@ -17,6 +17,11 @@
     "infra:workers:up": "docker compose --env-file packages/secrets/cm-platform.env -f docker/compose.dev.yml up -d email-dispatcher widget-consumer-fast widget-consumer-slow",
     "infra:workers:down": "docker compose --env-file packages/secrets/cm-platform.env -f docker/compose.dev.yml stop email-dispatcher widget-consumer-fast widget-consumer-slow",
     "infra:workers:logs": "docker compose --env-file packages/secrets/cm-platform.env -f docker/compose.dev.yml logs -f --tail=200 email-dispatcher widget-consumer-fast widget-consumer-slow",
+    "prod-local:build": "docker compose --env-file packages/secrets/cm-platform.env -f docker/compose.prod-local.yml build public-web svc-core email-dispatcher widget-consumer-fast widget-consumer-slow",
+    "prod-local:up": "powershell -ExecutionPolicy Bypass -File scripts/docker/prod-local-up.ps1",
+    "prod-local:down": "powershell -ExecutionPolicy Bypass -File scripts/docker/prod-local-down.ps1",
+    "prod-local:logs": "docker compose --env-file packages/secrets/cm-platform.env -f docker/compose.prod-local.yml logs -f --tail=200 public-web svc-core email-dispatcher widget-consumer-fast widget-consumer-slow",
+    "prod-local:verify": "powershell -ExecutionPolicy Bypass -File scripts/docker/verify-prod-local.ps1",
     "db:schema": "powershell -ExecutionPolicy Bypass -File scripts/db/ensure-local-schema.ps1",
 
     "api:dev": "npm run api:deps:build && npm --workspace apps/svc-core run dev",

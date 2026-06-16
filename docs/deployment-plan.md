@@ -559,7 +559,37 @@ Security maintenance follow-up:
 After adding the container-build job, GitHub and npm audit surfaced dependency advisories in the JavaScript toolchain and email package. The follow-up maintenance slice updated the affected direct dependencies, verified `npm audit` returned zero known vulnerabilities, rebuilt source, and rebuilt all production baseline images. This demonstrates that CI/CD includes ongoing supply-chain hygiene, not only application packaging.
 ```
 
-Azure account creation starts after Step 2, unless an account already exists. The first Azure tasks should be non-application setup: subscription confirmation, budget alerts, resource group naming, and OIDC planning. Avoid creating Container Apps, Azure SQL, or Log Analytics resources until the local/CI image baseline is working.
+Step 3 is the production-like local runtime baseline:
+
+- add a `docker/compose.prod-local.yml` file that runs production images against local SQL Server, MongoDB, and RabbitMQ;
+- preserve the planned Azure sidecar behavior by sharing the API container network namespace with the public web gateway container;
+- expose only the web gateway on local port `8080`;
+- add scripts to build, start, stop, log, and verify the prod-local runtime;
+- smoke test the public page, `/health`, `/ready`, unauthenticated `/auth/me`, and `/platform/status`.
+
+Exit criterion:
+
+```text
+The production-built images can start locally, the web gateway can proxy to the API through localhost sidecar routing, dependencies are reachable, and a smoke test passes through the gateway.
+```
+
+Portfolio note:
+
+```text
+The third CI/CD slice moved from "the images compile" to "the images actually run together." The prod-local Compose topology mirrors the planned Azure Container Apps sidecar design by having Nginx proxy same-origin browser requests to the API over localhost, while workers connect to local SQL Server and RabbitMQ through injected environment variables.
+```
+
+Evidence captured during implementation:
+
+- `npm run prod-local:build` passed;
+- `npm run prod-local:up` prepared local infrastructure, applied schema, and started the production images;
+- `npm run prod-local:verify` passed against `http://localhost:8080`;
+- `GET /health` returned `200` through Nginx;
+- service logs showed `svc-core`, `email-dispatcher`, `widget-consumer-fast`, and `widget-consumer-slow` ready.
+
+This slice still uses local SQL Server Developer edition and local Docker volumes. It proves runtime wiring, not production licensing, cloud networking, managed secrets, or Azure availability.
+
+Azure account creation starts after Step 3, unless an account already exists. The first Azure tasks should be non-application setup: subscription confirmation, budget alerts, resource group naming, and OIDC planning. Avoid creating Container Apps, Azure SQL, or Log Analytics resources until the local/CI image and runtime baselines are working.
 
 ## Delivery Phases
 

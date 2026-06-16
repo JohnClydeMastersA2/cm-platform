@@ -1,0 +1,152 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: cm-platform-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in packages/secrets/cm-platform.env}
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: cm-platform-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in packages/secrets/cm-platform.env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in packages/secrets/cm-platform.env}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:8.0.12
+    container_name: cm-platform-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME:?Set MONGODB_ROOT_USERNAME in packages/secrets/cm-platform.env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD:?Set MONGODB_ROOT_PASSWORD in packages/secrets/cm-platform.env}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  public-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.public-web
+    image: cm-platform/public-web:prod-local
+    container_name: cm-platform-public-web-prod-local
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - rabbitmq
+      - mongodb
+    restart: unless-stopped
+
+  svc-core:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    image: cm-platform/svc-core:prod-local
+    container_name: cm-platform-svc-core-prod-local
+    network_mode: "service:public-web"
+    depends_on:
+      - public-web
+      - db
+      - rabbitmq
+      - mongodb
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DB_SERVER: db
+      DB_PORT: "1433"
+      DB_USER: ${DB_USER:-cm_platform_app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
+      DB_DATABASE: CMPlatform
+      ADMIN_KEY: ${ADMIN_KEY:?Set ADMIN_KEY in packages/secrets/cm-platform.env}
+      AUTH_API_BASE_URL: http://localhost:8080
+      PUBLIC_WEB_BASE_URL: http://localhost:8080
+      RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
+      MONGODB_URI: ${MONGODB_URI_CONTAINER:?Set MONGODB_URI_CONTAINER in packages/secrets/cm-platform.env}
+      MONGODB_DATABASE: CMPlatformDocuments
+    restart: unless-stopped
+
+  email-dispatcher:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.email-dispatcher
+    image: cm-platform/email-dispatcher:prod-local
+    container_name: cm-platform-email-dispatcher-prod-local
+    depends_on:
+      - rabbitmq
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
+      EMAIL_DISPATCHER_PREFETCH: "5"
+      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER:?Set EMAIL_SMTP_USER in packages/secrets/cm-platform.env}
+      EMAIL_SMTP_PASS: ${EMAIL_SMTP_PASS:?Set EMAIL_SMTP_PASS in packages/secrets/cm-platform.env}
+    restart: unless-stopped
+
+  widget-consumer-fast:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.widget-consumer
+    image: cm-platform/widget-consumer:prod-local
+    container_name: cm-platform-widget-consumer-fast-prod-local
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      DB_SERVER: db
+      DB_PORT: "1433"
+      DB_USER: ${DB_USER:-cm_platform_app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
+      DB_DATABASE: CMPlatform
+      RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
+      WIDGET_CONSUMER_NAME: fast-consumer
+      WIDGET_CONSUMER_PROCESSING_SECONDS: "1"
+    restart: unless-stopped
+
+  widget-consumer-slow:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.widget-consumer
+    image: cm-platform/widget-consumer:prod-local
+    container_name: cm-platform-widget-consumer-slow-prod-local
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+      DB_SERVER: db
+      DB_PORT: "1433"
+      DB_USER: ${DB_USER:-cm_platform_app}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
+      DB_DATABASE: CMPlatform
+      RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
+      WIDGET_CONSUMER_NAME: slow-consumer
+      WIDGET_CONSUMER_PROCESSING_SECONDS: "5"
+    restart: unless-stopped
+
+volumes:
+  mssql_data:
+    external: true
+    name: docker_mssql_data
+  rabbitmq_data:
+    name: cm_platform_rabbitmq_data
+  mongodb_data:
+    name: cm_platform_mongodb_data
