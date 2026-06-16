@@ -50,6 +50,7 @@ export async function platformStatusRoutes(app: FastifyInstance): Promise<void> 
         "Local background services are Docker-managed by default. Use npm run infra:workers:up to start the email dispatcher and the fast/slow widget consumers.",
         "RabbitMQ consumer counts confirm that consumers are attached to a queue, but this first status page does not yet identify individual consumer process names from the broker.",
         "fast-consumer and slow-consumer are shown as healthy when the competing-consumer queue has at least two attached consumers.",
+        "The local Cloudflare Tunnel for email webhooks is an operator-started process and is not directly observed by svc-core. Email webhook status reflects route availability and stored webhook event history, not current tunnel uptime.",
       ],
     };
   });
@@ -226,18 +227,23 @@ async function getEmailWebhookRequirement(
 ): Promise<InfrastructureRequirement> {
   try {
     const summary = await getEmailWebhookSummary(app);
-    const hasRecentEvent = Boolean(summary.lastReceivedAt);
+    const hasRecentEvent = summary.recentEventCount > 0;
+    const hasStoredEvent = Boolean(summary.lastReceivedAt);
 
     return {
       key: "email-webhook",
       name: "Email Webhook",
       disposition: hasRecentEvent ? "online" : "unknown",
       detail: hasRecentEvent
-        ? "Email webhook events have been received and stored."
-        : "The webhook route is registered, but no stored events were found.",
+        ? "Email webhook events have been received and stored in the last 24 hours."
+        : hasStoredEvent
+          ? "The webhook route is registered, but no events were stored in the last 24 hours."
+          : "The webhook route is registered, but no stored events were found.",
       evidence: hasRecentEvent
         ? `${summary.recentEventCount} event${summary.recentEventCount === 1 ? "" : "s"} stored in the last 24 hours. Last event: ${summary.lastReceivedAt}.`
-        : "POST /webhooks/email-events is available; send a provider event to populate history.",
+        : hasStoredEvent
+          ? `Last stored event: ${summary.lastReceivedAt}. Start the Cloudflare Tunnel and send a provider event to prove live ingestion.`
+          : "POST /webhooks/email-events is available; start the Cloudflare Tunnel and send a provider event to populate history.",
       checkedAt,
     };
   } catch (err) {
