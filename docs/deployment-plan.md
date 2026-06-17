@@ -623,6 +623,42 @@ ghcr.io/johnclydemastersa2/cm-platform/widget-consumer:<git-sha>
 
 After Step 4, create or confirm the Azure subscription, add a $5 budget alert, reserve naming for the production resource group, and configure GitHub-to-Azure OIDC before creating application infrastructure.
 
+Step 5 is the Azure foundation baseline:
+
+- create or confirm the Azure account and subscription;
+- create a subscription-level monthly budget alert before application resources are created;
+- reserve a resource group name and primary Azure region;
+- decide the production naming convention for Container Apps, Azure SQL, Log Analytics, and managed identities;
+- create a GitHub `production` environment with manual approval;
+- plan GitHub OIDC federation so deployment can use short-lived Azure tokens instead of a stored Azure password;
+- do not create Container Apps, Azure SQL, Log Analytics, or public DNS records in this step.
+
+Exit criterion:
+
+```text
+The Azure subscription has cost guardrails, names are reserved, and the identity model is documented before any billable application resources are created.
+```
+
+Recommended initial Azure choices:
+
+```text
+Subscription: user-owned Azure subscription
+Budget: $5/month actual cost alert, optional $10 review threshold
+Resource group: rg-cm-platform-prod
+Region: eastus or the closest low-cost region with required services
+Container Apps environment: cae-cm-platform-prod
+Log Analytics workspace: log-cm-platform-prod
+Deployment identity: mi-cm-platform-github-deploy or app registration equivalent
+GitHub environment: production
+Production URL: https://cmplatform.dev
+```
+
+Learning note:
+
+```text
+This slice is intentionally administrative. Modern CI/CD is not only a YAML file; it also includes cost controls, environment protection, least-privilege deployment identity, and naming discipline before the first cloud resource is deployed.
+```
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
