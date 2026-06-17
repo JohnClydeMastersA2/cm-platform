@@ -594,11 +594,11 @@ Azure account creation starts after Step 3, unless an account already exists. Th
 Step 4 is the image publication baseline:
 
 - keep CI and CD separate;
-- add a GitHub Actions workflow or job that publishes production images to GitHub Container Registry only from `main` or manual dispatch;
+- publish production images to GitHub Container Registry only from `main` or manual dispatch;
 - tag each image with the immutable Git SHA;
 - avoid using `latest` as the deployment contract;
 - grant the workflow only the package write permission needed to push images;
-- record image names and digests as release evidence.
+- record image names in the GitHub Actions job summary.
 
 Exit criterion:
 
@@ -610,6 +610,15 @@ Portfolio note:
 
 ```text
 The fourth CI/CD slice separates packaging from deployment. GitHub Actions builds the same production images proven by local Compose, authenticates to GHCR with short-lived workflow credentials, and publishes immutable SHA-tagged artifacts that a later Azure deployment can reference exactly.
+```
+
+Expected image names:
+
+```text
+ghcr.io/johnclydemastersa2/cm-platform/svc-core:<git-sha>
+ghcr.io/johnclydemastersa2/cm-platform/public-web:<git-sha>
+ghcr.io/johnclydemastersa2/cm-platform/email-dispatcher:<git-sha>
+ghcr.io/johnclydemastersa2/cm-platform/widget-consumer:<git-sha>
 ```
 
 After Step 4, create or confirm the Azure subscription, add a $5 budget alert, reserve naming for the production resource group, and configure GitHub-to-Azure OIDC before creating application infrastructure.
@@ -756,10 +765,9 @@ Add these only after the first production release is stable:
 
 ## Current Repository Gaps
 
-The repository already has a Linux build workflow, CodeQL, production image builds, a same-origin production web gateway, a production-like local Compose runtime, health/readiness endpoints, structured logging, and graceful worker shutdown. The main gaps are:
+The repository already has a Linux build workflow, CodeQL, production image builds, GHCR image publication, a same-origin production web gateway, a production-like local Compose runtime, health/readiness endpoints, structured logging, and graceful worker shutdown. The main gaps are:
 
 - no infrastructure as code;
-- no GHCR image publication workflow;
 - no deployment workflow;
 - no automated test suite or lint job;
 - local-only schema management through `docker exec`;

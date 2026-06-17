@@ -56,3 +56,70 @@ jobs:
 
       - name: Build widget consumer image
         run: docker build -f docker/Dockerfile.widget-consumer -t cm-platform/widget-consumer:${{ github.sha }} .
+
+  publish-images:
+    name: Publish Images
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - container-build
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare image names
+        shell: bash
+        run: |
+          owner_lower="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          image_prefix="ghcr.io/${owner_lower}/cm-platform"
+          echo "IMAGE_PREFIX=${image_prefix}" >> "${GITHUB_ENV}"
+          echo "Publishing images under ${image_prefix}"
+
+      - name: Log in to GHCR
+        shell: bash
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push API image
+        shell: bash
+        run: |
+          image="${IMAGE_PREFIX}/svc-core:${GITHUB_SHA}"
+          docker build -f docker/Dockerfile.api -t "${image}" .
+          docker push "${image}"
+
+      - name: Build and push public web image
+        shell: bash
+        run: |
+          image="${IMAGE_PREFIX}/public-web:${GITHUB_SHA}"
+          docker build -f docker/Dockerfile.public-web -t "${image}" .
+          docker push "${image}"
+
+      - name: Build and push email dispatcher image
+        shell: bash
+        run: |
+          image="${IMAGE_PREFIX}/email-dispatcher:${GITHUB_SHA}"
+          docker build -f docker/Dockerfile.email-dispatcher -t "${image}" .
+          docker push "${image}"
+
+      - name: Build and push widget consumer image
+        shell: bash
+        run: |
+          image="${IMAGE_PREFIX}/widget-consumer:${GITHUB_SHA}"
+          docker build -f docker/Dockerfile.widget-consumer -t "${image}" .
+          docker push "${image}"
+
+      - name: Record published images
+        shell: bash
+        run: |
+          {
+            echo "## Published Images"
+            echo ""
+            echo "- ${IMAGE_PREFIX}/svc-core:${GITHUB_SHA}"
+            echo "- ${IMAGE_PREFIX}/public-web:${GITHUB_SHA}"
+            echo "- ${IMAGE_PREFIX}/email-dispatcher:${GITHUB_SHA}"
+            echo "- ${IMAGE_PREFIX}/widget-consumer:${GITHUB_SHA}"
+          } >> "${GITHUB_STEP_SUMMARY}"
