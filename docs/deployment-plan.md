@@ -653,6 +653,13 @@ GitHub environment: production
 Production URL: https://cmplatform.dev
 ```
 
+Evidence captured during implementation:
+
+- Azure subscription confirmed: `Azure subscription 1`;
+- primary Azure region selected: `East US`;
+- Azure monthly budget alert created;
+- GitHub Environment created: `production`.
+
 Learning note:
 
 ```text
