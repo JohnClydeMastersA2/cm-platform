@@ -1,6 +1,6 @@
 # Deployment and CI/CD Plan
 
-Last reviewed: June 15, 2026
+Last reviewed: June 17, 2026
 
 ## Purpose
 
@@ -124,11 +124,11 @@ If a self-hosted SQL Server fallback is used, run a production-permitted edition
 
 ### Public Web and API
 
-Create production multi-stage Dockerfiles:
+Production multi-stage Dockerfiles now exist:
 
 ```text
-docker/Dockerfile.web
 docker/Dockerfile.api
+docker/Dockerfile.public-web
 docker/Dockerfile.email-dispatcher
 docker/Dockerfile.widget-consumer
 ```
@@ -591,6 +591,29 @@ This slice still uses local SQL Server Developer edition and local Docker volume
 
 Azure account creation starts after Step 3, unless an account already exists. The first Azure tasks should be non-application setup: subscription confirmation, budget alerts, resource group naming, and OIDC planning. Avoid creating Container Apps, Azure SQL, or Log Analytics resources until the local/CI image and runtime baselines are working.
 
+Step 4 is the image publication baseline:
+
+- keep CI and CD separate;
+- add a GitHub Actions workflow or job that publishes production images to GitHub Container Registry only from `main` or manual dispatch;
+- tag each image with the immutable Git SHA;
+- avoid using `latest` as the deployment contract;
+- grant the workflow only the package write permission needed to push images;
+- record image names and digests as release evidence.
+
+Exit criterion:
+
+```text
+Every merge to main can produce immutable, SHA-tagged images in GHCR without creating Azure resources or deploying the application.
+```
+
+Portfolio note:
+
+```text
+The fourth CI/CD slice separates packaging from deployment. GitHub Actions builds the same production images proven by local Compose, authenticates to GHCR with short-lived workflow credentials, and publishes immutable SHA-tagged artifacts that a later Azure deployment can reference exactly.
+```
+
+After Step 4, create or confirm the Azure subscription, add a $5 budget alert, reserve naming for the production resource group, and configure GitHub-to-Azure OIDC before creating application infrastructure.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
@@ -607,10 +630,10 @@ Exit criterion: CI can prove a clean checkout is buildable and testable without 
 
 ### Phase 1: Containerization
 
-- Add `.dockerignore`.
-- Add production multi-stage Dockerfiles.
-- Add the same-origin web gateway configuration.
-- Run images locally with a production-like Compose file.
+- Added `.dockerignore`.
+- Added production multi-stage Dockerfiles.
+- Added the same-origin web gateway configuration.
+- Added and verified a production-like local Compose runtime.
 - Confirm health checks, shutdown, and read-only filesystems where possible.
 
 Exit criterion: the complete application runs locally from immutable production images.
@@ -733,16 +756,15 @@ Add these only after the first production release is stable:
 
 ## Current Repository Gaps
 
-The repository already has a build workflow, CodeQL, health/readiness endpoints, structured logging, and graceful worker shutdown. The main gaps are:
+The repository already has a Linux build workflow, CodeQL, production image builds, a same-origin production web gateway, a production-like local Compose runtime, health/readiness endpoints, structured logging, and graceful worker shutdown. The main gaps are:
 
-- no production web/API Dockerfiles;
 - no infrastructure as code;
+- no GHCR image publication workflow;
 - no deployment workflow;
 - no automated test suite or lint job;
 - local-only schema management through `docker exec`;
 - SQL encryption settings intended for local development;
 - no graceful shutdown in `svc-core`;
-- no production gateway for same-origin API routing;
 - no documented webhook signature verification;
 - production secrets still modeled primarily as local env files.
 

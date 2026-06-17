@@ -632,19 +632,19 @@ function containersPage(): string {
       proof: "docker/compose.dev.yml: db, mongodb, and rabbitmq",
     },
     {
-      title: "Background runtimes",
-      body: "The email dispatcher and fast/slow widget consumers now run as containers, which makes the asynchronous parts of the platform visible and restartable as a runtime group.",
-      proof: "infra:workers:up",
+      title: "Production-style images",
+      body: "The public web gateway, API, email dispatcher, and widget consumer each build into deployable images so CI can prove packaging before any cloud deployment exists.",
+      proof: "docker/Dockerfile.public-web, api, email-dispatcher, widget-consumer",
     },
     {
-      title: "Shared worker image",
-      body: "A single background-service image builds the shared packages and deployable worker services once. Compose then runs that image with different commands and environment values.",
-      proof: "docker/Dockerfile.background",
+      title: "Same-origin gateway",
+      body: "Nginx serves the compiled Vite site and proxies API routes to svc-core over localhost, preserving browser cookie behavior and matching the planned Azure sidecar shape.",
+      proof: "docker/nginx.public-web.conf",
     },
     {
-      title: "Environment boundaries",
-      body: "Containerized services use Compose names such as db, mongodb, and rabbitmq, while the locally running API and public web app use localhost-facing ports during active development.",
-      proof: "DB_SERVER=db, MONGODB_URI=...@mongodb:27017, RABBITMQ_URL=...@rabbitmq:5672",
+      title: "Production-like local runtime",
+      body: "The production images can run together locally against SQL Server, MongoDB, and RabbitMQ with only the web gateway exposed on localhost.",
+      proof: "npm run prod-local:up and npm run prod-local:verify",
     },
     {
       title: "Secret handling",
@@ -665,12 +665,12 @@ function containersPage(): string {
           <p class="platform-kicker">Containers</p>
           <h1>Docker Runtime Model</h1>
           <p class="platform-lede">
-            Docker is used to make local infrastructure and background processing repeatable. SQL Server, MongoDB,
-            and RabbitMQ run as infrastructure containers, while the email dispatcher and widget consumers run as
-            background service containers. The API and public web app stay local for a faster development loop.
+            Docker is used to make local infrastructure and production packaging repeatable. SQL Server, MongoDB,
+            and RabbitMQ run as infrastructure containers, while the public web gateway, API, email dispatcher,
+            and widget consumers can run from production-style images for smoke testing.
           </p>
           <div class="platform-hero-actions">
-            <span>Local runtime command: npm run infra:workers:up</span>
+            <span>Production-like local command: npm run prod-local:up</span>
           </div>
         </div>
         <div class="platform-stack" aria-label="Container runtime summary">
@@ -680,11 +680,11 @@ function containersPage(): string {
           </div>
           <div class="platform-stack-row">
             <span>Workers</span>
-            <strong>Email dispatcher, fast-consumer, and slow-consumer use one shared image</strong>
+            <strong>Public web, API, email dispatcher, and widget consumers use production-style images</strong>
           </div>
           <div class="platform-stack-row">
-            <span>Development</span>
-            <strong>API and public web run locally through npm scripts</strong>
+            <span>Prod-local</span>
+            <strong>Nginx proxies same-origin API calls to svc-core over localhost sidecar routing</strong>
           </div>
         </div>
       </div>
@@ -717,7 +717,7 @@ function containersPage(): string {
         <div>
           <h2>What Docker Demonstrates</h2>
           <p>
-            These cards describe the container work currently present in cm-platform and how it supports the broader API-first platform.
+            These cards describe the container work currently present in cm-platform and how it supports the broader CI/CD deployment path.
           </p>
         </div>
         <div class="platform-card-grid">
@@ -736,11 +736,11 @@ function containersPage(): string {
           <p class="platform-kicker">Futures</p>
           <h2>Container Direction</h2>
           <p>
-            The current Docker setup focuses on local infrastructure and background services. Future work can add production-style images for the API, deployment-specific manifests, health checks, and a cleaner secret provider model.
+            The current Docker setup now proves local infrastructure, production-style image builds, and a production-like Compose runtime. Future work can publish immutable images to GHCR, add deployment-specific manifests, and move production secrets into the hosting platform.
           </p>
         </div>
         <div class="future-list">
-          <span>API container image</span>
+          <span>GHCR image publication</span>
           <span>Worker health checks</span>
           <span>Deployment manifests</span>
           <span>Managed secret provider</span>
