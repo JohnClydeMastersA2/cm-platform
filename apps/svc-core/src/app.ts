@@ -22,6 +22,8 @@ type BuildAppOptions = {
   dbUser: string;
   dbPassword: string;
   dbDatabase: string;
+  dbEncrypt: boolean;
+  dbTrustServerCertificate: boolean;
   authApiBaseUrl: string;
   publicWebBaseUrl: string;
   rabbitMqUrl: string;
@@ -46,6 +48,8 @@ export function buildApp(opts: BuildAppOptions) {
     user: opts.dbUser,
     password: opts.dbPassword,
     database: opts.dbDatabase,
+    encrypt: opts.dbEncrypt,
+    trustServerCertificate: opts.dbTrustServerCertificate,
   });
 
   app.register(messagingPlugin, {

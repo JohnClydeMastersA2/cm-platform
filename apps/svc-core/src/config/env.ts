@@ -9,8 +9,11 @@ const EnvSchema = z.object({
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
   DB_DATABASE: z.string().min(1),
+  DB_ENCRYPT: z.coerce.boolean().default(false),
+  DB_TRUST_SERVER_CERTIFICATE: z.coerce.boolean().default(true),
 
   LOG_LEVEL: z.string().default("info"),
+  NODE_ENV: z.string().default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   HOST: z.string().default("0.0.0.0"),
 

@@ -17,6 +17,8 @@ async function start() {
     dbUser: env.DB_USER,
     dbPassword: env.DB_PASSWORD,
     dbDatabase: env.DB_DATABASE,
+    dbEncrypt: env.DB_ENCRYPT,
+    dbTrustServerCertificate: env.DB_TRUST_SERVER_CERTIFICATE,
     authApiBaseUrl: env.AUTH_API_BASE_URL,
     publicWebBaseUrl: env.PUBLIC_WEB_BASE_URL,
     rabbitMqUrl: env.RABBITMQ_URL,

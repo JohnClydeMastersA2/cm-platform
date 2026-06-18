@@ -14,8 +14,8 @@ export async function connectDb(env: Env): Promise<sql.ConnectionPool> {
       idleTimeoutMillis: 30_000,
     },
     options: {
-      encrypt: false,
-      trustServerCertificate: true,
+      encrypt: env.DB_ENCRYPT,
+      trustServerCertificate: env.DB_TRUST_SERVER_CERTIFICATE,
     },
   });
 

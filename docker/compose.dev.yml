@@ -68,6 +68,8 @@ services:
       DB_USER: ${DB_USER:-cm_platform_app}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
       DB_DATABASE: CMPlatform
+      DB_ENCRYPT: "false"
+      DB_TRUST_SERVER_CERTIFICATE: "true"
       LOG_LEVEL: info
       NODE_ENV: development
       RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
@@ -88,6 +90,8 @@ services:
       DB_USER: ${DB_USER:-cm_platform_app}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
       DB_DATABASE: CMPlatform
+      DB_ENCRYPT: "false"
+      DB_TRUST_SERVER_CERTIFICATE: "true"
       LOG_LEVEL: info
       NODE_ENV: development
       RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}

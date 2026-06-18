@@ -345,6 +345,8 @@ DB_PORT
 DB_USER
 DB_PASSWORD
 DB_DATABASE
+DB_ENCRYPT
+DB_TRUST_SERVER_CERTIFICATE
 ADMIN_KEY
 RABBITMQ_URL
 MONGODB_URI
@@ -807,6 +809,34 @@ Evidence captured during implementation:
 - Container Apps managed environment confirmed: `cae-cm-platform-prod`, `East US`, provisioning state `Succeeded`;
 - no application containers, Azure SQL databases, secrets, custom domains, or public app endpoints were deployed in this slice.
 
+Step 9 is the Azure SQL readiness baseline:
+
+- keep Azure SQL deployment out of scope until schema migration is repeatable;
+- remove hard-coded local SQL TLS behavior from application code;
+- make SQL encryption and certificate trust explicit runtime settings;
+- keep local SQL Server Developer edition on `DB_ENCRYPT=false` and `DB_TRUST_SERVER_CERTIFICATE=true`;
+- require Azure SQL runtime settings to use `DB_ENCRYPT=true` and `DB_TRUST_SERVER_CERTIFICATE=false`;
+- plan a versioned SQL migration path before creating the production database.
+
+Exit criterion:
+
+```text
+The API and SQL-backed workers can be configured for either local SQL Server or Azure SQL without code changes, and the production TLS requirement is represented as runtime configuration.
+```
+
+Portfolio note:
+
+```text
+The ninth CI/CD slice handles a quiet but important production boundary: database transport security. Local SQL Server keeps its self-signed development behavior, while Azure SQL will require encrypted transport and certificate validation through explicit environment settings.
+```
+
+Evidence captured during implementation:
+
+- `svc-core` SQL connection now reads `DB_ENCRYPT` and `DB_TRUST_SERVER_CERTIFICATE`;
+- `widget-consumer` SQL connection now reads the same runtime settings;
+- local Compose and prod-local Compose explicitly set local SQL TLS behavior;
+- `packages/secrets/cm-platform.env.example` documents the local SQL TLS variables.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
@@ -955,7 +985,7 @@ The repository already has a Linux build workflow, CodeQL, production image buil
 - no deployment workflow;
 - no automated test suite or lint job;
 - local-only schema management through `docker exec`;
-- SQL encryption settings intended for local development;
+- Azure SQL database and versioned migration workflow not yet deployed;
 - no graceful shutdown in `svc-core`;
 - no documented webhook signature verification;
 - production secrets still modeled primarily as local env files.

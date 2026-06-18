@@ -73,6 +73,8 @@ services:
       DB_USER: ${DB_USER:-cm_platform_app}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
       DB_DATABASE: CMPlatform
+      DB_ENCRYPT: "false"
+      DB_TRUST_SERVER_CERTIFICATE: "true"
       ADMIN_KEY: ${ADMIN_KEY:?Set ADMIN_KEY in packages/secrets/cm-platform.env}
       AUTH_API_BASE_URL: http://localhost:8080
       PUBLIC_WEB_BASE_URL: http://localhost:8080
@@ -115,6 +117,8 @@ services:
       DB_USER: ${DB_USER:-cm_platform_app}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
       DB_DATABASE: CMPlatform
+      DB_ENCRYPT: "false"
+      DB_TRUST_SERVER_CERTIFICATE: "true"
       RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
       WIDGET_CONSUMER_NAME: fast-consumer
       WIDGET_CONSUMER_PROCESSING_SECONDS: "1"
@@ -137,6 +141,8 @@ services:
       DB_USER: ${DB_USER:-cm_platform_app}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
       DB_DATABASE: CMPlatform
+      DB_ENCRYPT: "false"
+      DB_TRUST_SERVER_CERTIFICATE: "true"
       RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
       WIDGET_CONSUMER_NAME: slow-consumer
       WIDGET_CONSUMER_PROCESSING_SECONDS: "5"

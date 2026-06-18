@@ -8,6 +8,8 @@ type DbPluginOptions = {
   user: string;
   password: string;
   database: string;
+  encrypt: boolean;
+  trustServerCertificate: boolean;
 };
 
 async function dbPluginImpl(app: FastifyInstance, opts: DbPluginOptions): Promise<void> {
@@ -23,8 +25,8 @@ async function dbPluginImpl(app: FastifyInstance, opts: DbPluginOptions): Promis
       idleTimeoutMillis: 30_000,
     },
     options: {
-      encrypt: false,
-      trustServerCertificate: true,
+      encrypt: opts.encrypt,
+      trustServerCertificate: opts.trustServerCertificate,
     },
   };
 
