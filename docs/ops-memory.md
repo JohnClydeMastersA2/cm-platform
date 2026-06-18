@@ -31,18 +31,52 @@ The accidental empty volume `cm-platform-mssql-data` is not the active project d
 
 ## Current Docker Scope
 
-For the current development phase, Docker Desktop should contain only the resources needed to run SQL Server for `cm-platform`.
+For the current development phase, Docker Desktop should contain shared local infrastructure plus temporary app containers when explicitly testing production-like runtime.
 
 Keep:
 
 ```text
 cm-platform-db
+cm-platform-mongodb
+cm-platform-rabbitmq
 docker_mssql_data
 mcr.microsoft.com/mssql/server:2022-latest
 docker_default
 ```
 
-The API and public web app run locally through npm scripts. API Docker images and containers are disposable future assets and should be recreated from source when the project is ready to containerize the full stack.
+The API and public web app usually run locally through npm scripts. Production-like app containers are disposable and can be recreated from source with:
+
+```powershell
+npm run prod-local:build
+npm run prod-local:up
+npm run prod-local:verify
+```
+
+Stop only the production-like app containers with:
+
+```powershell
+npm run prod-local:down
+```
+
+This leaves SQL Server, MongoDB, RabbitMQ, and their volumes running.
+
+Current pause checkpoint, June 18, 2026:
+
+```text
+Azure foundation resources are deployed from Bicep:
+  log-cm-platform-prod
+  cae-cm-platform-prod
+
+GitHub OIDC works through the protected production environment.
+GHCR image publishing works.
+SQL TLS runtime settings are ready for Azure SQL:
+  local: DB_ENCRYPT=false, DB_TRUST_SERVER_CERTIFICATE=true
+  Azure SQL later: DB_ENCRYPT=true, DB_TRUST_SERVER_CERTIFICATE=false
+
+Prod-local app containers were stopped after verification.
+Shared local infra remains running.
+Next large deployment slice: versioned SQL migrations before creating Azure SQL.
+```
 
 ## Startup
 
