@@ -666,6 +666,51 @@ Learning note:
 This slice is intentionally administrative. Modern CI/CD is not only a YAML file; it also includes cost controls, environment protection, least-privilege deployment identity, and naming discipline before the first cloud resource is deployed.
 ```
 
+Step 6 is the GitHub-to-Azure OIDC baseline:
+
+- create the production Azure resource group before application resources are created;
+- create a Microsoft Entra application/service principal for GitHub Actions deployment;
+- add a federated credential that trusts only this repository's GitHub `production` environment;
+- grant the deployment identity access only to the production resource group, not the whole subscription;
+- store only non-secret Azure identifiers in the GitHub `production` environment;
+- add a manual GitHub Actions workflow that proves Azure login with OIDC and runs a read-only Azure command.
+
+Recommended Azure portal values:
+
+```text
+Resource group: rg-cm-platform-prod
+Resource group region: East US
+Entra application name: app-cm-platform-github-deploy
+Federated credential name: github-cm-platform-production
+Issuer: https://token.actions.githubusercontent.com
+Subject: repo:JohnClydeMastersA2/cm-platform:environment:production
+Audience: api://AzureADTokenExchange
+Initial role scope: rg-cm-platform-prod
+Initial role: Contributor, narrowed later if practical
+```
+
+Recommended GitHub `production` environment values:
+
+```text
+AZURE_CLIENT_ID=<Entra application client ID>
+AZURE_TENANT_ID=<Azure directory tenant ID>
+AZURE_SUBSCRIPTION_ID=<Azure subscription ID>
+```
+
+These values identify Azure resources but are not passwords. Still keep them in the protected `production` environment so deployment configuration stays with deployment approvals.
+
+Exit criterion:
+
+```text
+A manually approved GitHub Actions workflow can authenticate to Azure through OIDC and run `az account show` without any Azure client secret stored in GitHub.
+```
+
+Portfolio note:
+
+```text
+The sixth CI/CD slice replaces long-lived cloud credentials with workload identity federation. GitHub Actions receives permission to request a short-lived OIDC token only when a workflow targets the protected production environment, and Azure accepts that token only for the configured repository/environment subject.
+```
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
