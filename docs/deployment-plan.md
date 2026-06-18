@@ -796,6 +796,17 @@ Portfolio note:
 The eighth CI/CD slice moves from validation to controlled deployment. GitHub Actions uses the same OIDC identity, requires production approval, shows an Azure what-if plan, and then applies the version-controlled Bicep template to create the shared hosting foundation.
 ```
 
+Evidence captured during implementation:
+
+- Azure providers registered: `Microsoft.App`, `Microsoft.OperationalInsights`;
+- protected workflow added: `.github/workflows/bicep-deploy-foundation.yml`;
+- production approval gate completed for the foundation deployment;
+- GitHub deployment run succeeded: `Bicep Deploy Foundation`;
+- Azure deployment succeeded: `cm-platform-foundation-1`;
+- Log Analytics workspace confirmed: `log-cm-platform-prod`, `eastus`, `PerGB2018`, `30` day retention;
+- Container Apps managed environment confirmed: `cae-cm-platform-prod`, `East US`, provisioning state `Succeeded`;
+- no application containers, Azure SQL databases, secrets, custom domains, or public app endpoints were deployed in this slice.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
