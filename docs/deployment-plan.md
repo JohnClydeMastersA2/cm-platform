@@ -716,6 +716,16 @@ Local tooling evidence:
 - Azure CLI installed on the development workstation: `azure-cli 2.87.0`;
 - current Codex shell may require the full path until a new terminal refreshes `PATH`: `C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd`.
 
+Evidence captured during implementation:
+
+- production resource group confirmed: `rg-cm-platform-prod` in `eastus`;
+- Microsoft Entra application created: `app-cm-platform-github-deploy`;
+- service principal created for the deployment identity;
+- federated credential created for the GitHub `production` environment subject;
+- Contributor role assigned only at the `rg-cm-platform-prod` resource-group scope;
+- GitHub `production` environment variables set for Azure client, tenant, and subscription identifiers;
+- manual OIDC verification workflow added: `.github/workflows/azure-oidc-check.yml`.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness

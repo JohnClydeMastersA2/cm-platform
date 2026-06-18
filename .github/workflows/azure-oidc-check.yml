@@ -1,0 +1,43 @@
+name: Azure OIDC Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_RESOURCE_GROUP: rg-cm-platform-prod
+
+jobs:
+  azure-oidc-check:
+    name: Azure OIDC Check
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Show Azure context
+        run: |
+          az account show --query "{subscription:name, tenantId:tenantId, user:user.name}" -o table
+
+      - name: Verify production resource group
+        run: |
+          az group show --name "${AZURE_RESOURCE_GROUP}" --query "{name:name, location:location}" -o table
+
+      - name: Record verification summary
+        run: |
+          {
+            echo "## Azure OIDC Check"
+            echo ""
+            echo "- Authenticated with Azure using GitHub OIDC"
+            echo "- Verified resource group: ${AZURE_RESOURCE_GROUP}"
+            echo "- No Azure client secret was used"
+          } >> "${GITHUB_STEP_SUMMARY}"
