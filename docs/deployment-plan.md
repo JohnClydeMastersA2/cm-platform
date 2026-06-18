@@ -769,6 +769,33 @@ Evidence captured during implementation:
 - automatic GitHub `Bicep Build` passed on push;
 - manual GitHub `Azure Validate` passed after `production` approval without deploying resources.
 
+Step 8 is the foundation deployment baseline:
+
+- register only the Azure resource providers required for the first Bicep foundation deployment;
+- add a protected manual GitHub Actions workflow that runs Azure `what-if` before deployment;
+- deploy the initial shared Azure foundation resources from Bicep through GitHub OIDC;
+- keep application containers, Azure SQL, custom domains, and production secrets out of scope;
+- confirm the deployed resources from Azure after the workflow completes.
+
+Initial deployed resources:
+
+```text
+log-cm-platform-prod
+cae-cm-platform-prod
+```
+
+Exit criterion:
+
+```text
+The protected GitHub deployment workflow creates or updates the Log Analytics workspace and Container Apps managed environment from Bicep, with no manual portal resource creation.
+```
+
+Portfolio note:
+
+```text
+The eighth CI/CD slice moves from validation to controlled deployment. GitHub Actions uses the same OIDC identity, requires production approval, shows an Azure what-if plan, and then applies the version-controlled Bicep template to create the shared hosting foundation.
+```
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness

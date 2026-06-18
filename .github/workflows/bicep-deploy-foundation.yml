@@ -1,0 +1,62 @@
+name: Bicep Deploy Foundation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_RESOURCE_GROUP: rg-cm-platform-prod
+  BICEP_TEMPLATE: infra/bicep/main.bicep
+  BICEP_PARAMETERS: infra/bicep/parameters/production.bicepparam
+
+jobs:
+  deploy-foundation:
+    name: Deploy Foundation
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: What-if foundation deployment
+        run: |
+          az deployment group what-if \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --template-file "${BICEP_TEMPLATE}" \
+            --parameters "${BICEP_PARAMETERS}"
+
+      - name: Deploy foundation resources
+        run: |
+          deployment_name="cm-platform-foundation-${GITHUB_RUN_NUMBER}"
+          az deployment group create \
+            --name "${deployment_name}" \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --template-file "${BICEP_TEMPLATE}" \
+            --parameters "${BICEP_PARAMETERS}" \
+            --query "{name:name, state:properties.provisioningState}" \
+            -o table
+
+      - name: Record deployment summary
+        run: |
+          {
+            echo "## Foundation Deployment"
+            echo ""
+            echo "- Resource group: ${AZURE_RESOURCE_GROUP}"
+            echo "- Template: ${BICEP_TEMPLATE}"
+            echo "- Parameters: ${BICEP_PARAMETERS}"
+            echo "- Created/updated: Log Analytics workspace and Container Apps managed environment"
+          } >> "${GITHUB_STEP_SUMMARY}"
