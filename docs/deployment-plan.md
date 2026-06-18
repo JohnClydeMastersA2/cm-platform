@@ -765,7 +765,9 @@ Evidence captured during implementation:
 - generated Bicep JSON ignored with `infra/bicep/.gitignore`;
 - manual validation workflow added: `.github/workflows/bicep-validate.yml`;
 - local `az bicep build --file infra/bicep/main.bicep` passed;
-- local `az deployment group validate` against `rg-cm-platform-prod` returned `Succeeded`.
+- local `az deployment group validate` against `rg-cm-platform-prod` returned `Succeeded`;
+- automatic GitHub `Bicep Build` passed on push;
+- manual GitHub `Azure Validate` passed after `production` approval without deploying resources.
 
 ## Delivery Phases
 
