@@ -711,6 +711,11 @@ Portfolio note:
 The sixth CI/CD slice replaces long-lived cloud credentials with workload identity federation. GitHub Actions receives permission to request a short-lived OIDC token only when a workflow targets the protected production environment, and Azure accepts that token only for the configured repository/environment subject.
 ```
 
+Local tooling evidence:
+
+- Azure CLI installed on the development workstation: `azure-cli 2.87.0`;
+- current Codex shell may require the full path until a new terminal refreshes `PATH`: `C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd`.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
