@@ -108,6 +108,15 @@ The Resend webhook becomes:
 https://cmplatform.dev/webhooks/email-events
 ```
 
+Resend API keys should be separated by environment:
+
+```text
+cm-platform-dev       local development and manual testing
+cm-platform-prod      production email from cmplatform.dev
+```
+
+Do not reuse the local development Resend key in Azure. Keep the original key only as a short-lived transition or rollback credential, then retire it after the new environment-specific keys are verified.
+
 ## Important Licensing Decision
 
 The current local Compose file sets:
@@ -354,6 +363,13 @@ MONGODB_DATABASE
 EMAIL_SMTP_USER
 EMAIL_SMTP_PASS
 ```
+
+Email secret policy:
+
+- local development uses the `cm-platform-dev` Resend key in `packages/secrets/cm-platform.env`;
+- production uses the `cm-platform-prod` Resend key stored as an Azure Container Apps secret;
+- the original Resend key remains temporarily for transition only and should be deleted after verification;
+- Resend key values must not be committed, placed in Bicep parameters, printed in workflow logs, or copied into Docker images.
 
 Keep non-secret settings in Bicep:
 
