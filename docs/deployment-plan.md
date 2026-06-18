@@ -1,6 +1,6 @@
 # Deployment and CI/CD Plan
 
-Last reviewed: June 17, 2026
+Last reviewed: June 18, 2026
 
 ## Purpose
 
@@ -729,6 +729,44 @@ Evidence captured during implementation:
 - Azure OIDC verification run succeeded against `rg-cm-platform-prod`;
 - `azure/login` upgraded from `v2` to `v3` after GitHub warned that the `v2` action targeted deprecated Node.js 20 metadata.
 
+Step 7 is the infrastructure-as-code validation baseline:
+
+- add the initial Azure Bicep layout under `infra/bicep`;
+- model only the first low-cost shared Azure foundation resources;
+- keep application containers, Azure SQL, secrets, custom domains, and public ingress out of scope for this slice;
+- add a GitHub Actions workflow that builds Bicep on infrastructure changes;
+- add a manual, production-approved workflow path that validates the Bicep template against Azure through OIDC;
+- do not deploy resources from CI yet.
+
+Initial Bicep resources:
+
+```text
+Log Analytics workspace: log-cm-platform-prod
+Container Apps managed environment: cae-cm-platform-prod
+```
+
+Exit criterion:
+
+```text
+Bicep source can be built locally and in GitHub Actions, and Azure can validate the template against rg-cm-platform-prod without deploying resources.
+```
+
+Portfolio note:
+
+```text
+The seventh CI/CD slice introduces infrastructure as code before deployment. Bicep gives the Azure foundation a reviewable, version-controlled source of truth, while the GitHub workflow separates syntax/build validation from a manually approved Azure validation step.
+```
+
+Evidence captured during implementation:
+
+- Bicep CLI installed through Azure CLI: `0.44.1`;
+- Bicep source added: `infra/bicep/main.bicep`;
+- production parameters added: `infra/bicep/parameters/production.bicepparam`;
+- generated Bicep JSON ignored with `infra/bicep/.gitignore`;
+- manual validation workflow added: `.github/workflows/bicep-validate.yml`;
+- local `az bicep build --file infra/bicep/main.bicep` passed;
+- local `az deployment group validate` against `rg-cm-platform-prod` returned `Succeeded`.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
@@ -871,9 +909,9 @@ Add these only after the first production release is stable:
 
 ## Current Repository Gaps
 
-The repository already has a Linux build workflow, CodeQL, production image builds, GHCR image publication, a same-origin production web gateway, a production-like local Compose runtime, health/readiness endpoints, structured logging, and graceful worker shutdown. The main gaps are:
+The repository already has a Linux build workflow, CodeQL, production image builds, GHCR image publication, GitHub-to-Azure OIDC, an initial Bicep validation workflow, a same-origin production web gateway, a production-like local Compose runtime, health/readiness endpoints, structured logging, and graceful worker shutdown. The main gaps are:
 
-- no infrastructure as code;
+- no deployed Azure application infrastructure yet;
 - no deployment workflow;
 - no automated test suite or lint job;
 - local-only schema management through `docker exec`;

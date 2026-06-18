@@ -1,0 +1,77 @@
+name: Bicep Validate
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - infra/bicep/**
+      - .github/workflows/bicep-validate.yml
+  push:
+    branches:
+      - main
+    paths:
+      - infra/bicep/**
+      - .github/workflows/bicep-validate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AZURE_RESOURCE_GROUP: rg-cm-platform-prod
+  BICEP_TEMPLATE: infra/bicep/main.bicep
+  BICEP_PARAMETERS: infra/bicep/parameters/production.bicepparam
+
+jobs:
+  bicep-build:
+    name: Bicep Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: Build Bicep template
+        run: az bicep build --file "${BICEP_TEMPLATE}"
+
+  azure-validate:
+    name: Azure Validate
+    runs-on: ubuntu-latest
+    needs: bicep-build
+    if: github.event_name == 'workflow_dispatch'
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate Bicep deployment
+        run: |
+          az deployment group validate \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --template-file "${BICEP_TEMPLATE}" \
+            --parameters "${BICEP_PARAMETERS}"
+
+      - name: Record validation summary
+        run: |
+          {
+            echo "## Bicep Validation"
+            echo ""
+            echo "- Built ${BICEP_TEMPLATE}"
+            echo "- Validated against resource group: ${AZURE_RESOURCE_GROUP}"
+            echo "- No Azure resources were deployed"
+          } >> "${GITHUB_STEP_SUMMARY}"
