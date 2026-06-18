@@ -724,7 +724,10 @@ Evidence captured during implementation:
 - federated credential created for the GitHub `production` environment subject;
 - Contributor role assigned only at the `rg-cm-platform-prod` resource-group scope;
 - GitHub `production` environment variables set for Azure client, tenant, and subscription identifiers;
-- manual OIDC verification workflow added: `.github/workflows/azure-oidc-check.yml`.
+- manual OIDC verification workflow added: `.github/workflows/azure-oidc-check.yml`;
+- manually approved GitHub `production` environment gate allowed the OIDC verification run to continue;
+- Azure OIDC verification run succeeded against `rg-cm-platform-prod`;
+- `azure/login` upgraded from `v2` to `v3` after GitHub warned that the `v2` action targeted deprecated Node.js 20 metadata.
 
 ## Delivery Phases
 
