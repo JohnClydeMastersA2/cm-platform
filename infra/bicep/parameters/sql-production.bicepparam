@@ -5,8 +5,7 @@ param environmentName = 'prod'
 param sqlServerNamePrefix = 'sql-cmplatform-prod'
 param sqlDatabaseName = 'CMPlatform'
 param sqlAdministratorLogin = 'cmplatformddl'
-// Validation and deployment commands must override this value with a secret.
-param sqlAdministratorLoginPassword = ''
+param sqlAdministratorLoginPassword = readEnvironmentVariable('SQL_ADMIN_PASSWORD')
 param tags = {
   project: 'cm-platform'
   purpose: 'portfolio-production'

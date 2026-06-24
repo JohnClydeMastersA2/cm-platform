@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Bicep
         run: az bicep install
@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Azure login
         uses: azure/login@v3
@@ -73,8 +73,7 @@ jobs:
           az deployment group validate \
             --resource-group "${AZURE_RESOURCE_GROUP}" \
             --template-file "${SQL_BICEP_TEMPLATE}" \
-            --parameters "${SQL_BICEP_PARAMETERS}" \
-            --parameters sqlAdministratorLoginPassword="${SQL_ADMIN_PASSWORD}"
+            --parameters "${SQL_BICEP_PARAMETERS}"
 
       - name: What-if Azure SQL deployment
         env:
@@ -83,8 +82,7 @@ jobs:
           az deployment group what-if \
             --resource-group "${AZURE_RESOURCE_GROUP}" \
             --template-file "${SQL_BICEP_TEMPLATE}" \
-            --parameters "${SQL_BICEP_PARAMETERS}" \
-            --parameters sqlAdministratorLoginPassword="${SQL_ADMIN_PASSWORD}"
+            --parameters "${SQL_BICEP_PARAMETERS}"
 
       - name: Record SQL validation summary
         run: |
