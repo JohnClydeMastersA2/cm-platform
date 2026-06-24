@@ -1,6 +1,6 @@
 # Deployment and CI/CD Plan
 
-Last reviewed: June 18, 2026
+Last reviewed: June 24, 2026
 
 ## Purpose
 
@@ -853,6 +853,46 @@ Evidence captured during implementation:
 - local Compose and prod-local Compose explicitly set local SQL TLS behavior;
 - `packages/secrets/cm-platform.env.example` documents the local SQL TLS variables.
 
+Step 10 is the versioned SQL migration baseline:
+
+- add a cross-platform Node migration runner that targets local SQL Server or Azure SQL through environment settings;
+- store ordered SQL migrations under `scripts/db/migrations`;
+- create and maintain `dbo.SchemaMigration` with migration ID, SHA-256 checksum, and applied timestamp;
+- execute each migration in a transaction;
+- reject changed migration files after application;
+- use a privileged migration identity that is separate from the runtime application identity;
+- replace the local one-off schema patch script with the migration runner while preserving the existing `db:schema` command.
+
+Initial migration files:
+
+```text
+0001_core_schema.sql
+0002_iis_etl_schema.sql
+```
+
+Exit criterion:
+
+```text
+The migration runner adopts the existing local database without data loss, is idempotent on repeated runs, and can initialize a new empty SQL database with the complete current schema.
+```
+
+Portfolio note:
+
+```text
+The tenth CI/CD slice replaces workstation-only schema patching with ordered, checksummed, transactional SQL migrations. Runtime services retain a least-privilege application login, while schema changes use a separate migration identity suitable for a protected deployment job.
+```
+
+Evidence captured during implementation:
+
+- added migration workspace: `tools/sql-migrate`;
+- added migration tracking table: `dbo.SchemaMigration`;
+- replaced `scripts/db/ensure-local-schema.ps1` implementation with the cross-platform migration command;
+- corrected environment boolean parsing so the string `false` is not treated as truthy;
+- first local run applied both baseline migrations to the existing database;
+- second local run reported both migrations already applied;
+- fresh temporary database test created all `15` expected tables, including `SchemaMigration`;
+- temporary migration-test database was removed after verification.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
@@ -1000,8 +1040,7 @@ The repository already has a Linux build workflow, CodeQL, production image buil
 - no deployed Azure application infrastructure yet;
 - no deployment workflow;
 - no automated test suite or lint job;
-- local-only schema management through `docker exec`;
-- Azure SQL database and versioned migration workflow not yet deployed;
+- Azure SQL database and protected cloud migration job not yet deployed;
 - no graceful shutdown in `svc-core`;
 - no documented webhook signature verification;
 - production secrets still modeled primarily as local env files.

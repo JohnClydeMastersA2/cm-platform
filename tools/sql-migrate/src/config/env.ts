@@ -22,19 +22,17 @@ const EnvBoolean = z.preprocess((value) => {
 }, z.boolean());
 
 const EnvSchema = z.object({
-  DB_SERVER: z.string().min(1),
+  DB_SERVER: z.string().min(1).default("localhost"),
   DB_PORT: z.coerce.number().int().positive().default(1433),
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
-  DB_DATABASE: z.string().min(1),
+  DB_MIGRATION_USER: z.string().min(1).optional(),
+  DB_MIGRATION_PASSWORD: z.string().min(1).optional(),
+  MSSQL_SA_PASSWORD: z.string().min(1).optional(),
+  DB_DATABASE: z.string().min(1).default("CMPlatform"),
   DB_ENCRYPT: EnvBoolean.default(false),
   DB_TRUST_SERVER_CERTIFICATE: EnvBoolean.default(true),
-
-  LOG_LEVEL: z.string().default("info"),
-  NODE_ENV: z.string().default("development"),
-  RABBITMQ_URL: z.url(),
-  WIDGET_CONSUMER_NAME: z.string().min(1).default("widget-consumer"),
-  WIDGET_CONSUMER_PROCESSING_SECONDS: z.coerce.number().int().nonnegative().default(1),
+  DB_MIGRATIONS_DIR: z.string().min(1).default("scripts/db/migrations"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -46,7 +44,7 @@ export function loadEnv(): Env {
 
   if (!parsed.success) {
     console.error(z.treeifyError(parsed.error));
-    throw new Error("Invalid widget consumer environment variables");
+    throw new Error("Invalid SQL migration environment variables");
   }
 
   return parsed.data;

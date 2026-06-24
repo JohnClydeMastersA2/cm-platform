@@ -60,7 +60,7 @@ npm run prod-local:down
 
 This leaves SQL Server, MongoDB, RabbitMQ, and their volumes running.
 
-Current pause checkpoint, June 18, 2026:
+Current deployment checkpoint, June 24, 2026:
 
 ```text
 Azure foundation resources are deployed from Bicep:
@@ -75,7 +75,13 @@ SQL TLS runtime settings are ready for Azure SQL:
 
 Prod-local app containers were stopped after verification.
 Shared local infra remains running.
-Next large deployment slice: versioned SQL migrations before creating Azure SQL.
+Versioned SQL migrations are now implemented:
+  runner: tools/sql-migrate
+  migrations: scripts/db/migrations
+  tracking: dbo.SchemaMigration
+
+The baseline adopts the existing database and initializes an empty database.
+Next large deployment slice: plan and provision Azure SQL plus a protected cloud migration job.
 ```
 
 ## Startup
@@ -89,13 +95,15 @@ npm run api:dev
 
 The `infra:up` script starts SQL Server, waits for readiness, and ensures the `CMPlatform` database exists.
 
-Run this after schema changes or when validating a restored database:
+Run versioned migrations after pulling schema changes or when validating a restored database:
 
 ```powershell
-npm run db:schema
+npm run db:migrate
 ```
 
-The current local schema adds publisher registration and login fields to `dbo.Publisher`: `ContactName`, `ContactEmail`, `WebsiteUrl`, `RegistrationNotes`, `RegistrationStatus`, `PasswordHash`, `PasswordSetAt`, and `LastLoginAt`.
+`npm run db:schema` remains an alias for `npm run db:migrate`.
+
+Applied migrations are tracked in `dbo.SchemaMigration` with a SHA-256 checksum. Never edit an applied migration; add the next numbered `.sql` file instead.
 
 Current publisher account lifecycle:
 

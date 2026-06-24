@@ -22,7 +22,9 @@
     "prod-local:down": "powershell -ExecutionPolicy Bypass -File scripts/docker/prod-local-down.ps1",
     "prod-local:logs": "docker compose --env-file packages/secrets/cm-platform.env -f docker/compose.prod-local.yml logs -f --tail=200 public-web svc-core email-dispatcher widget-consumer-fast widget-consumer-slow",
     "prod-local:verify": "powershell -ExecutionPolicy Bypass -File scripts/docker/verify-prod-local.ps1",
-    "db:schema": "powershell -ExecutionPolicy Bypass -File scripts/db/ensure-local-schema.ps1",
+    "db:schema": "npm run db:migrate",
+    "db:migrate": "npm --workspace tools/sql-migrate run run",
+    "db:migrate:build": "npm --workspace tools/sql-migrate run build",
 
     "api:dev": "npm run api:deps:build && npm --workspace apps/svc-core run dev",
     "api:build": "npm --workspace apps/svc-core run build",
@@ -49,6 +51,7 @@
     "etl:run": "npm --workspace tools/etl-csv-import run run",
     "email-send-test:build": "npm --workspace tools/email-send-test run build",
     "email-send-test:run": "npm --workspace tools/email-send-test run run",
+    "sql-migrate:build": "npm --workspace tools/sql-migrate run build",
 
     "contracts:build": "npm --workspace packages/contracts run build",
     "auth:build": "npm --workspace packages/auth run build",
@@ -61,7 +64,7 @@
     "widget-consumer:deps:build": "npm run logging:build && npm run messaging:build",
 
     "core:build": "npm run api:deps:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build",
-    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run public:build && npm run etl:build && npm run email-send-test:build",
+    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run public:build && npm run etl:build && npm run email-send-test:build && npm run sql-migrate:build",
     "build": "npm run all:build",
 
     "api:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/svc-core/dist -ErrorAction SilentlyContinue\"",
@@ -76,7 +79,8 @@
     "secrets:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/secrets/dist -ErrorAction SilentlyContinue\"",
     "etl:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/etl-csv-import/dist -ErrorAction SilentlyContinue\"",
     "email-send-test:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/email-send-test/dist -ErrorAction SilentlyContinue\"",
-    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run messaging:clean && npm run secrets:clean && npm run email:clean && npm run email-dispatcher:clean && npm run widget-consumer:clean && npm run api:clean && npm run public:clean && npm run etl:clean && npm run email-send-test:clean",
+    "sql-migrate:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/sql-migrate/dist -ErrorAction SilentlyContinue\"",
+    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run messaging:clean && npm run secrets:clean && npm run email:clean && npm run email-dispatcher:clean && npm run widget-consumer:clean && npm run api:clean && npm run public:clean && npm run etl:clean && npm run email-send-test:clean && npm run sql-migrate:clean",
 
     "core:rebuild": "npm run api:clean && npm run core:build",
     "all:rebuild": "npm run clean && npm run all:build",
