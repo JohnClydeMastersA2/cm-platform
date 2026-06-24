@@ -894,6 +894,38 @@ Evidence captured during implementation:
 - temporary migration-test database was removed after verification;
 - GitHub `Build`, `Container Build`, `Publish Images`, and `CodeQL` passed for the migration baseline commit.
 
+Step 11 is the Azure SQL infrastructure validation baseline:
+
+- define the Azure SQL logical server and `CMPlatform` database in an isolated Bicep entry point;
+- request the Azure SQL Database free offer with serverless compute and automatic pause at the monthly free limit;
+- enforce TLS 1.2 and local backup redundancy;
+- store the bootstrap administrator password only as the protected GitHub `production` environment secret `SQL_ADMIN_PASSWORD`;
+- validate the template and run an Azure `what-if` preview through a manually approved GitHub Actions job;
+- keep SQL deployment, firewall access, application credentials, and schema migration out of this slice.
+
+Exit criterion:
+
+```text
+Azure accepts the proposed SQL resources, the what-if preview contains only the expected logical server and database, and no SQL resource is deployed.
+```
+
+Portfolio note:
+
+```text
+The eleventh CI/CD slice introduces Azure SQL as independently validated infrastructure as code. A protected, OIDC-authenticated GitHub Actions workflow can compile the Bicep, validate it against Azure, and preview the exact resource changes without deploying or exposing database credentials.
+```
+
+Evidence captured during implementation:
+
+- registered the `Microsoft.Sql` resource provider in the production subscription;
+- added reusable SQL module: `infra/bicep/modules/sql.bicep`;
+- added isolated SQL entry point and production parameters;
+- configured `SQL_ADMIN_PASSWORD` as a GitHub `production` environment secret;
+- local Bicep compilation and Azure deployment validation passed;
+- Azure `what-if` reported two creates: the SQL logical server and `CMPlatform` database;
+- the existing Container Apps environment and Log Analytics workspace were ignored;
+- no Azure SQL resources were deployed.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
