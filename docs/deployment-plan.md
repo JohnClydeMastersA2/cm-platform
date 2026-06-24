@@ -891,7 +891,8 @@ Evidence captured during implementation:
 - first local run applied both baseline migrations to the existing database;
 - second local run reported both migrations already applied;
 - fresh temporary database test created all `15` expected tables, including `SchemaMigration`;
-- temporary migration-test database was removed after verification.
+- temporary migration-test database was removed after verification;
+- GitHub `Build`, `Container Build`, `Publish Images`, and `CodeQL` passed for the migration baseline commit.
 
 ## Delivery Phases
 
