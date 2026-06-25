@@ -964,6 +964,23 @@ Region note:
 - the SQL server prefix includes `cus` so the globally unique name reflects the selected region and does not reuse the failed East US reservation;
 - application-region alignment must be revisited before public traffic to avoid unnecessary cross-region latency and transfer.
 
+Evidence captured during implementation:
+
+- protected deployment workflow: GitHub Actions run `28203030022`;
+- deployment record: `cm-platform-sql-2-1`;
+- logical server: `sql-cmplatform-prod-cus-qw3ws5xs6wfom`;
+- logical server state: `Ready` in `Central US`;
+- database: `CMPlatform`, state `Online`;
+- service objective: `GP_S_Gen5_2` General Purpose serverless;
+- free monthly allowance: enabled;
+- free-limit exhaustion behavior: `AutoPause`;
+- maximum data size: `32 GB`;
+- minimum capacity: `0.5` vCore with a `60` minute auto-pause delay;
+- backup storage redundancy: local;
+- minimum TLS version: `1.2`;
+- SQL firewall rules: none;
+- no schema migration or application data was applied in this slice.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
