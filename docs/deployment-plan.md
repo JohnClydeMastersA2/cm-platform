@@ -1060,6 +1060,22 @@ Recovery behavior:
 - the workflow does not delete or alter Azure SQL;
 - the workflow is intentionally one-time and refuses to run when the Central US environment already exists.
 
+Evidence captured during implementation:
+
+- protected replacement workflow: GitHub Actions run `28204489448`;
+- Central US deployment record: `cm-platform-foundation-cus-1-1`;
+- East US environment contained zero Container Apps before deletion;
+- Central US Log Analytics workspace: `log-cm-platform-prod-cus`;
+- Central US Container Apps environment: `cae-cm-platform-prod-cus`;
+- both Central US resources report provisioning state `Succeeded`;
+- Log Analytics retention remains `30` days with the `PerGB2018` SKU;
+- the environment and workspace share customer ID `21fe80f6-7360-4ca1-acb9-fe1789117d23`;
+- no Container Apps were created during replacement;
+- the active resource group contains no East US foundation resource;
+- Azure SQL remains in Central US and was not modified;
+- `production.bicepparam` now targets Central US;
+- the retired East US settings are preserved in `production-eastus-retired.bicepparam`.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness

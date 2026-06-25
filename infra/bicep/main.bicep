@@ -44,6 +44,16 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
   tags: commonTags
   properties: {
     zoneRedundant: false
+    peerAuthentication: {
+      mtls: {
+        enabled: false
+      }
+    }
+    peerTrafficConfiguration: {
+      encryption: {
+        enabled: false
+      }
+    }
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {

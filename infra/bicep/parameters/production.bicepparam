@@ -1,9 +1,9 @@
 using '../main.bicep'
 
-param location = 'eastus'
+param location = 'centralus'
 param environmentName = 'prod'
-param logAnalyticsWorkspaceName = 'log-cm-platform-prod'
-param containerAppsEnvironmentName = 'cae-cm-platform-prod'
+param logAnalyticsWorkspaceName = 'log-cm-platform-prod-cus'
+param containerAppsEnvironmentName = 'cae-cm-platform-prod-cus'
 param logRetentionInDays = 30
 param tags = {
   project: 'cm-platform'
