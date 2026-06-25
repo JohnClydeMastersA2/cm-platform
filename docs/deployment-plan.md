@@ -1109,6 +1109,18 @@ Security rationale:
 - the bootstrap SQL administrator is used only for this connectivity proof and will be replaced by a dedicated migration identity before schema changes;
 - firewall rules remain operational state rather than persistent Bicep resources because GitHub-hosted runner addresses are ephemeral.
 
+Evidence captured during implementation:
+
+- protected network workflow: GitHub Actions run `28205973115`;
+- the workflow created one exact-IP rule named `github-network-28205973115-1`;
+- the first two connection attempts timed out while Azure propagated the firewall update;
+- the third attempt connected to `CMPlatform` as `cmplatformddl`;
+- the connection used `DB_ENCRYPT=true` and `DB_TRUST_SERVER_CERTIFICATE=false`;
+- the check executed only `db_name()` and `suser_sname()`;
+- the temporary firewall rule was deleted and cleanup was verified inside the workflow;
+- an independent Azure CLI check returned an empty firewall-rule list after the workflow;
+- no migration file was applied in this slice.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
