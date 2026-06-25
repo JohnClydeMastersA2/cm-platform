@@ -956,6 +956,14 @@ Rollback and cost notes:
 - the database requests the lifetime free monthly allowance and pauses when that allowance is exhausted;
 - no firewall rule is created, so the database is not yet reachable from the workstation or application runtime.
 
+Region note:
+
+- the first deployment attempt in `East US` failed with Azure `ProvisioningDisabled`;
+- subscription eligibility checks reported the required serverless SKU as available in `Central US`;
+- Azure SQL therefore uses `Central US`, while the current shared Container Apps foundation remains in `East US`;
+- the SQL server prefix includes `cus` so the globally unique name reflects the selected region and does not reuse the failed East US reservation;
+- application-region alignment must be revisited before public traffic to avoid unnecessary cross-region latency and transfer.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness

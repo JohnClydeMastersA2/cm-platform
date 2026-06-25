@@ -1,8 +1,8 @@
 using '../sql-plan.bicep'
 
-param location = 'eastus'
+param location = 'centralus'
 param environmentName = 'prod'
-param sqlServerNamePrefix = 'sql-cmplatform-prod'
+param sqlServerNamePrefix = 'sql-cmplatform-prod-cus'
 param sqlDatabaseName = 'CMPlatform'
 param sqlAdministratorLogin = 'cmplatformddl'
 param sqlAdministratorLoginPassword = readEnvironmentVariable('SQL_ADMIN_PASSWORD')
