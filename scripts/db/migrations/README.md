@@ -29,6 +29,12 @@ Check connectivity without creating or modifying schema objects:
 npm run db:check
 ```
 
+Verify that the configured migration identity has the required permissions:
+
+```powershell
+npm run db:check:migration-permissions
+```
+
 Applied migrations are recorded in `dbo.SchemaMigration` with a SHA-256 checksum.
 The runner stops if an applied migration file's checksum changes.
 

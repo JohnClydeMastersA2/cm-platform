@@ -15,6 +15,15 @@ type ConnectionCheckRow = {
   LoginName: string;
 };
 
+type MigrationPermissionRow = {
+  CanCreateTable: boolean;
+  CanAlterSchema: boolean;
+  CanSelectSchema: boolean;
+  CanInsertSchema: boolean;
+  CanUpdateSchema: boolean;
+  CanDeleteSchema: boolean;
+};
+
 const migrationFilePattern = /^\d{4}_[a-z0-9_]+\.sql$/;
 
 async function main(): Promise<void> {
@@ -46,6 +55,11 @@ async function main(): Promise<void> {
   }).connect();
 
   try {
+    if (hasOption("--check-migration-permissions")) {
+      await checkMigrationPermissions(pool);
+      return;
+    }
+
     if (hasOption("--check-connection")) {
       await checkConnection(pool);
       return;
@@ -76,6 +90,33 @@ async function main(): Promise<void> {
   } finally {
     await pool.close();
   }
+}
+
+async function checkMigrationPermissions(pool: sql.ConnectionPool): Promise<void> {
+  const result = await pool.request().query<MigrationPermissionRow>(`
+    select
+      cast(has_perms_by_name(db_name(), 'DATABASE', 'CREATE TABLE') as bit)
+        as CanCreateTable,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'ALTER') as bit)
+        as CanAlterSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'SELECT') as bit)
+        as CanSelectSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'INSERT') as bit)
+        as CanInsertSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'UPDATE') as bit)
+        as CanUpdateSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'DELETE') as bit)
+        as CanDeleteSchema;
+  `);
+  const row = result.recordset[0];
+
+  if (!row || Object.values(row).some((value) => value !== true)) {
+    throw new Error("Migration identity permission check failed");
+  }
+
+  console.log(
+    "Migration permission check passed: CREATE TABLE; ALTER, SELECT, INSERT, UPDATE, DELETE on schema dbo",
+  );
 }
 
 function hasOption(name: string): boolean {

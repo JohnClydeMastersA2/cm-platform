@@ -1121,6 +1121,32 @@ Evidence captured during implementation:
 - an independent Azure CLI check returned an empty firewall-rule list after the workflow;
 - no migration file was applied in this slice.
 
+Step 16 is the dedicated migration identity:
+
+- create a contained Azure SQL database user named `cmplatform_migrator`;
+- store its generated password only as the GitHub `production` environment secret `SQL_MIGRATION_PASSWORD`;
+- refuse identity bootstrap unless `CMPlatform` still contains zero user tables;
+- grant `CREATE TABLE` at database scope;
+- grant `ALTER`, `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
+- do not grant Azure control-plane rights, server administrator rights, or broad Azure-services network access;
+- open one temporary exact-IP firewall rule for the protected job;
+- create or rotate the contained user through the bootstrap administrator;
+- reconnect as `cmplatform_migrator` and verify every required permission with `HAS_PERMS_BY_NAME`;
+- remove the temporary firewall rule;
+- do not execute migration files in this slice.
+
+Exit criterion:
+
+```text
+The contained cmplatform_migrator user can authenticate over encrypted transport and has only the documented migration-oriented database permissions, CMPlatform still has zero user tables, and Azure SQL has zero firewall rules.
+```
+
+Portfolio note:
+
+```text
+The sixteenth CI/CD slice separates schema deployment credentials from both the application identity and bootstrap administrator. A protected job provisions a contained database user, verifies its exact permission contract, and closes the temporary network path without applying schema changes.
+```
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
