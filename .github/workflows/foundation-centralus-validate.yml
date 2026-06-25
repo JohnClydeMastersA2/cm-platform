@@ -1,0 +1,93 @@
+name: Central US Foundation Validate
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - infra/bicep/main.bicep
+      - infra/bicep/parameters/production-centralus.bicepparam
+      - .github/workflows/foundation-centralus-validate.yml
+  push:
+    branches:
+      - main
+    paths:
+      - infra/bicep/main.bicep
+      - infra/bicep/parameters/production-centralus.bicepparam
+      - .github/workflows/foundation-centralus-validate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AZURE_RESOURCE_GROUP: rg-cm-platform-prod
+  FOUNDATION_TEMPLATE: infra/bicep/main.bicep
+  FOUNDATION_PARAMETERS: infra/bicep/parameters/production-centralus.bicepparam
+
+jobs:
+  centralus-foundation-build:
+    name: Central US Foundation Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: Build foundation template
+        run: az bicep build --file "${FOUNDATION_TEMPLATE}"
+
+      - name: Build Central US parameters
+        run: az bicep build-params --file "${FOUNDATION_PARAMETERS}" --stdout > /dev/null
+
+  centralus-foundation-validate:
+    name: Central US Foundation Azure Validate
+    runs-on: ubuntu-latest
+    needs: centralus-foundation-build
+    if: github.event_name == 'workflow_dispatch'
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: Validate Central US foundation
+        run: |
+          az deployment group validate \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --parameters "${FOUNDATION_PARAMETERS}" \
+            --output none
+
+      - name: Preview Central US foundation
+        run: |
+          az deployment group what-if \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --parameters "${FOUNDATION_PARAMETERS}" \
+            --result-format ResourceIdOnly
+
+      - name: Record validation summary
+        run: |
+          {
+            echo "## Central US Foundation Validation"
+            echo ""
+            echo "- Proposed Log Analytics workspace: log-cm-platform-prod-cus"
+            echo "- Proposed Container Apps environment: cae-cm-platform-prod-cus"
+            echo "- Existing East US foundation remains unchanged"
+            echo "- No Azure resources were deployed or deleted"
+          } >> "${GITHUB_STEP_SUMMARY}"

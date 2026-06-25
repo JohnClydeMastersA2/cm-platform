@@ -981,6 +981,53 @@ Evidence captured during implementation:
 - SQL firewall rules: none;
 - no schema migration or application data was applied in this slice.
 
+Step 13 is the Central US foundation replacement-readiness slice:
+
+- preserve `production.bicepparam` as the source of truth for the currently deployed East US foundation;
+- add a parallel `production-centralus.bicepparam` with region-qualified resource names;
+- preserve the existing low-cost settings: Consumption Container Apps environment, Log Analytics `PerGB2018`, `30` day retention, no VNet, and no zone redundancy;
+- confirm that no Container Apps depend on the East US environment;
+- build the Central US plan locally and through GitHub Actions;
+- provide a protected Azure validation and `what-if` path for use after the environment-count constraint is removed;
+- record Azure's current one-environment subscription quota before designing the replacement workflow;
+- do not deploy or delete any foundation resource in this slice.
+
+Proposed resources:
+
+```text
+log-cm-platform-prod-cus
+cae-cm-platform-prod-cus
+```
+
+Exit criterion:
+
+```text
+The Central US foundation compiles from version-controlled parameters, the current East US settings and dependencies are documented, the subscription quota constraint is proven, and no Azure resource is changed.
+```
+
+Portfolio note:
+
+```text
+The thirteenth CI/CD slice treats regional realignment as a replacement deployment rather than an in-place move. Parallel parameters preserve the existing environment as a known reference, while Azure preflight validation exposes a subscription quota that must be handled explicitly before replacement.
+```
+
+Evidence captured during implementation:
+
+- East US Log Analytics workspace is `Succeeded`, `PerGB2018`, with `30` day retention;
+- East US Container Apps environment is `Succeeded`, Consumption-only, without VNet or zone redundancy;
+- no Container Apps are deployed in or depend on the East US environment;
+- Central US parameter names are `log-cm-platform-prod-cus` and `cae-cm-platform-prod-cus`;
+- local Bicep template and parameter compilation passed;
+- Azure preflight returned `MaxNumberOfGlobalEnvironmentsInSubExceeded`;
+- the current subscription permits only one Container Apps environment;
+- no Central US resource was created and no East US resource was changed.
+
+Replacement decision:
+
+- a quota increase to two environments would allow parallel verification but can require Azure approval;
+- because the existing environment has no applications or public traffic, a protected delete-and-recreate workflow is the lowest-complexity path;
+- the replacement workflow must explicitly confirm the empty environment, delete only the East US Container Apps environment, validate and create Central US, verify it, and only then remove the unused East US Log Analytics workspace.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
