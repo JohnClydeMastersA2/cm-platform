@@ -1147,6 +1147,19 @@ Portfolio note:
 The sixteenth CI/CD slice separates schema deployment credentials from both the application identity and bootstrap administrator. A protected job provisions a contained database user, verifies its exact permission contract, and closes the temporary network path without applying schema changes.
 ```
 
+Evidence captured during implementation:
+
+- protected identity workflow: GitHub Actions run `28206768169`;
+- generated password stored as the GitHub `production` secret `SQL_MIGRATION_PASSWORD`;
+- bootstrap confirmed `existingUserTables=0`;
+- contained user created: `cmplatform_migrator`;
+- encrypted login succeeded as `cmplatform_migrator`;
+- verified `CREATE TABLE` at database scope;
+- verified `ALTER`, `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
+- no migration file was executed;
+- the temporary firewall rule was removed;
+- an independent Azure CLI check returned an empty firewall-rule list.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
