@@ -46,4 +46,6 @@ module sql 'modules/sql.bicep' = {
 
 output sqlServerName string = sql.outputs.serverName
 output sqlServerFullyQualifiedDomainName string = sql.outputs.serverFullyQualifiedDomainName
+output sqlServerId string = sql.outputs.serverId
 output sqlDatabaseName string = sql.outputs.databaseName
+output sqlDatabaseId string = sql.outputs.databaseId

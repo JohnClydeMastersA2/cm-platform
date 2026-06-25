@@ -926,6 +926,36 @@ Evidence captured during implementation:
 - the existing Container Apps environment and Log Analytics workspace were ignored;
 - no Azure SQL resources were deployed.
 
+Step 12 is the protected Azure SQL deployment:
+
+- add a separate, manually dispatched deployment workflow;
+- require the exact confirmation value `DEPLOY`;
+- retain the GitHub `production` environment approval boundary and OIDC authentication;
+- repeat Azure validation and `what-if` immediately before deployment;
+- deploy the same reviewed Bicep parameters used in Step 11;
+- verify after deployment that `useFreeLimit` is enabled, exhaustion behavior is `AutoPause`, and minimum TLS is `1.2`;
+- keep firewall rules, application database identities, connection secrets, and schema migration out of this slice.
+
+Exit criterion:
+
+```text
+The Azure SQL logical server and CMPlatform database exist, Azure reports the database as a free-offer database with AutoPause at the free limit, TLS 1.2 is enforced, and CI records the deployment evidence.
+```
+
+Portfolio note:
+
+```text
+The twelfth CI/CD slice promotes reviewed infrastructure through a protected deployment workflow. The job requires an explicit confirmation, authenticates without a stored Azure credential, repeats the deployment preview, applies the version-controlled Bicep, and asserts the production cost-control and TLS properties after creation.
+```
+
+Rollback and cost notes:
+
+- deleting the database and logical server is the infrastructure rollback before production data exists;
+- deletion must be an explicit, separately reviewed operation and is not automated by this workflow;
+- the logical server has no separate charge;
+- the database requests the lifetime free monthly allowance and pauses when that allowance is exhausted;
+- no firewall rule is created, so the database is not yet reachable from the workstation or application runtime.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
