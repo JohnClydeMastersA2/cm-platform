@@ -1076,6 +1076,39 @@ Evidence captured during implementation:
 - `production.bicepparam` now targets Central US;
 - the retired East US settings are preserved in `production-eastus-retired.bicepparam`.
 
+Step 15 is controlled Azure SQL network access:
+
+- keep the Azure SQL server public endpoint enabled but blocked by default with no persistent firewall rules;
+- add a read-only `--check-connection` mode to the migration runner;
+- require an explicit manual `CHECK` confirmation and the GitHub `production` approval gate;
+- authenticate the workflow to Azure through OIDC;
+- discover and validate the current GitHub-hosted runner public IPv4 address;
+- create one temporary server-level firewall rule whose start and end address are that exact IPv4 address;
+- connect with encryption enabled and server-certificate validation required;
+- execute only a read-only query against `CMPlatform`;
+- retry while Azure propagates the firewall rule;
+- remove the temporary rule in an `always()` cleanup step;
+- remove stale workflow-owned rules before opening access;
+- do not apply migrations or create database identities in this slice.
+
+Exit criterion:
+
+```text
+A protected GitHub-hosted runner can temporarily reach CMPlatform over encrypted Azure SQL transport, execute a read-only query, and leave the server with zero firewall rules.
+```
+
+Portfolio note:
+
+```text
+The fifteenth CI/CD slice grants database network access only for the lifetime of a protected job. The workflow allowlists one ephemeral runner address, proves encrypted connectivity without changing schema, and removes its firewall rule even when the test fails.
+```
+
+Security rationale:
+
+- the broad `0.0.0.0` Azure-services firewall rule is not used because it permits connection attempts from Azure resources outside this subscription;
+- the bootstrap SQL administrator is used only for this connectivity proof and will be replaced by a dedicated migration identity before schema changes;
+- firewall rules remain operational state rather than persistent Bicep resources because GitHub-hosted runner addresses are ephemeral.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness

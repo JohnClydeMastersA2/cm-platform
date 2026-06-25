@@ -24,6 +24,7 @@
     "prod-local:verify": "powershell -ExecutionPolicy Bypass -File scripts/docker/verify-prod-local.ps1",
     "db:schema": "npm run db:migrate",
     "db:migrate": "npm --workspace tools/sql-migrate run run",
+    "db:check": "npm --workspace tools/sql-migrate run run -- --check-connection",
     "db:migrate:build": "npm --workspace tools/sql-migrate run build",
 
     "api:dev": "npm run api:deps:build && npm --workspace apps/svc-core run dev",

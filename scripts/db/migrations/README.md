@@ -23,6 +23,12 @@ Run locally:
 npm run db:migrate
 ```
 
+Check connectivity without creating or modifying schema objects:
+
+```powershell
+npm run db:check
+```
+
 Applied migrations are recorded in `dbo.SchemaMigration` with a SHA-256 checksum.
 The runner stops if an applied migration file's checksum changes.
 

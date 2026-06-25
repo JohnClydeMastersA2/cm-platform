@@ -1,0 +1,177 @@
+name: SQL Network Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type CHECK to open temporary runner access and test Azure SQL connectivity
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: production-sql-maintenance
+  cancel-in-progress: false
+
+env:
+  AZURE_RESOURCE_GROUP: rg-cm-platform-prod
+  SQL_SERVER_NAME: sql-cmplatform-prod-cus-qw3ws5xs6wfom
+  SQL_SERVER_FQDN: sql-cmplatform-prod-cus-qw3ws5xs6wfom.database.windows.net
+  SQL_DATABASE_NAME: CMPlatform
+  FIREWALL_RULE_PREFIX: github-network-
+
+jobs:
+  check-sql-network:
+    name: Check Azure SQL Network Access
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Require explicit check confirmation
+        env:
+          NETWORK_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [[ "${NETWORK_CONFIRMATION}" != "CHECK" ]]; then
+            echo "Network confirmation must be exactly CHECK."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Remove stale temporary runner rules
+        run: |
+          mapfile -t stale_rules < <(
+            az sql server firewall-rule list \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --server "${SQL_SERVER_NAME}" \
+              --query "[?starts_with(name, '${FIREWALL_RULE_PREFIX}')].name" \
+              --output tsv
+          )
+
+          for rule in "${stale_rules[@]}"; do
+            [[ -z "${rule}" ]] && continue
+            echo "Removing stale temporary firewall rule: ${rule}"
+            az sql server firewall-rule delete \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --server "${SQL_SERVER_NAME}" \
+              --name "${rule}"
+          done
+
+      - name: Discover runner public IPv4 address
+        id: runner
+        run: |
+          runner_ip=$(curl --fail --silent --show-error https://api.ipify.org)
+
+          if [[ ! "${runner_ip}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+            echo "Runner public address is not a valid IPv4 address."
+            exit 1
+          fi
+
+          IFS='.' read -r octet1 octet2 octet3 octet4 <<< "${runner_ip}"
+          for octet in "${octet1}" "${octet2}" "${octet3}" "${octet4}"; do
+            if (( 10#${octet} > 255 )); then
+              echo "Runner public address contains an invalid IPv4 octet."
+              exit 1
+            fi
+          done
+
+          rule_name="${FIREWALL_RULE_PREFIX}${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          {
+            echo "ip=${runner_ip}"
+            echo "rule_name=${rule_name}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Open temporary runner firewall rule
+        env:
+          RUNNER_IP: ${{ steps.runner.outputs.ip }}
+          FIREWALL_RULE_NAME: ${{ steps.runner.outputs.rule_name }}
+        run: |
+          az sql server firewall-rule create \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --server "${SQL_SERVER_NAME}" \
+            --name "${FIREWALL_RULE_NAME}" \
+            --start-ip-address "${RUNNER_IP}" \
+            --end-ip-address "${RUNNER_IP}" \
+            --output none
+
+      - name: Check encrypted Azure SQL connection
+        env:
+          DB_SERVER: ${{ env.SQL_SERVER_FQDN }}
+          DB_PORT: "1433"
+          DB_USER: cmplatformddl
+          DB_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          DB_DATABASE: ${{ env.SQL_DATABASE_NAME }}
+          DB_ENCRYPT: "true"
+          DB_TRUST_SERVER_CERTIFICATE: "false"
+        run: |
+          for attempt in {1..20}; do
+            if npm run db:check; then
+              exit 0
+            fi
+
+            echo "Connection not ready; waiting for firewall propagation (${attempt}/20)..."
+            sleep 15
+          done
+
+          echo "Azure SQL connection check did not succeed before timeout."
+          exit 1
+
+      - name: Close temporary runner firewall rule
+        if: always() && steps.runner.outputs.rule_name != ''
+        env:
+          FIREWALL_RULE_NAME: ${{ steps.runner.outputs.rule_name }}
+        run: |
+          if az sql server firewall-rule show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --server "${SQL_SERVER_NAME}" \
+            --name "${FIREWALL_RULE_NAME}" \
+            --output none 2>/dev/null; then
+            az sql server firewall-rule delete \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --server "${SQL_SERVER_NAME}" \
+              --name "${FIREWALL_RULE_NAME}"
+          fi
+
+          if az sql server firewall-rule show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --server "${SQL_SERVER_NAME}" \
+            --name "${FIREWALL_RULE_NAME}" \
+            --output none 2>/dev/null; then
+            echo "Temporary firewall rule still exists after cleanup."
+            exit 1
+          fi
+
+          echo "Temporary firewall rule cleanup confirmed."
+
+      - name: Record network check summary
+        if: success()
+        run: |
+          {
+            echo "## Azure SQL Network Check"
+            echo ""
+            echo "- Opened one temporary firewall rule for the GitHub runner IPv4 address"
+            echo "- Connected to ${SQL_DATABASE_NAME} with encryption and certificate validation"
+            echo "- Performed a read-only SQL query; no migrations were applied"
+            echo "- Removed the temporary firewall rule"
+            echo "- Permanent Azure SQL firewall rules remain outside Bicep"
+          } >> "${GITHUB_STEP_SUMMARY}"

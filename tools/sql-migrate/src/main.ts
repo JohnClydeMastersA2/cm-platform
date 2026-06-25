@@ -10,6 +10,11 @@ type AppliedMigrationRow = {
   Checksum: string;
 };
 
+type ConnectionCheckRow = {
+  DatabaseName: string;
+  LoginName: string;
+};
+
 const migrationFilePattern = /^\d{4}_[a-z0-9_]+\.sql$/;
 
 async function main(): Promise<void> {
@@ -41,6 +46,11 @@ async function main(): Promise<void> {
   }).connect();
 
   try {
+    if (hasOption("--check-connection")) {
+      await checkConnection(pool);
+      return;
+    }
+
     await ensureMigrationTable(pool);
     const appliedMigrations = await loadAppliedMigrations(pool);
 
@@ -66,6 +76,10 @@ async function main(): Promise<void> {
   } finally {
     await pool.close();
   }
+}
+
+function hasOption(name: string): boolean {
+  return process.argv.includes(name);
 }
 
 function readOption(name: string): string | undefined {
@@ -115,6 +129,23 @@ function resolveMigrationCredentials(env: ReturnType<typeof loadEnv>): {
     user: env.DB_USER,
     password: env.DB_PASSWORD,
   };
+}
+
+async function checkConnection(pool: sql.ConnectionPool): Promise<void> {
+  const result = await pool.request().query<ConnectionCheckRow>(`
+    select
+      db_name() as DatabaseName,
+      suser_sname() as LoginName;
+  `);
+  const row = result.recordset[0];
+
+  if (!row) {
+    throw new Error("SQL connection check returned no result");
+  }
+
+  console.log(
+    `SQL connection check passed: database=${row.DatabaseName}, login=${row.LoginName}`,
+  );
 }
 
 async function ensureMigrationTable(pool: sql.ConnectionPool): Promise<void> {
