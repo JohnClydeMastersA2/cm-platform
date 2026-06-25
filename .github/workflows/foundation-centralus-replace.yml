@@ -1,0 +1,231 @@
+name: Replace Foundation With Central US
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type REPLACE EAST US to delete the empty East US environment and create Central US
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: production-foundation-replacement
+  cancel-in-progress: false
+
+env:
+  AZURE_RESOURCE_GROUP: rg-cm-platform-prod
+  EASTUS_ENVIRONMENT: cae-cm-platform-prod
+  EASTUS_WORKSPACE: log-cm-platform-prod
+  CENTRALUS_ENVIRONMENT: cae-cm-platform-prod-cus
+  CENTRALUS_WORKSPACE: log-cm-platform-prod-cus
+  CENTRALUS_PARAMETERS: infra/bicep/parameters/production-centralus.bicepparam
+
+jobs:
+  replace-foundation:
+    name: Replace Foundation
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Require explicit replacement confirmation
+        env:
+          REPLACEMENT_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [[ "${REPLACEMENT_CONFIRMATION}" != "REPLACE EAST US" ]]; then
+            echo "Replacement confirmation must be exactly REPLACE EAST US."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: Verify replacement preconditions
+        run: |
+          eastus_location=$(az containerapp env show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --name "${EASTUS_ENVIRONMENT}" \
+            --query location \
+            --output tsv)
+
+          if [[ "${eastus_location,,}" != "east us" && "${eastus_location,,}" != "eastus" ]]; then
+            echo "Expected ${EASTUS_ENVIRONMENT} in East US, found: ${eastus_location}"
+            exit 1
+          fi
+
+          eastus_environment_id=$(az containerapp env show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --name "${EASTUS_ENVIRONMENT}" \
+            --query id \
+            --output tsv)
+          app_count=$(az containerapp list \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --query "[?properties.environmentId=='${eastus_environment_id}'] | length(@)" \
+            --output tsv)
+
+          if [[ "${app_count}" != "0" ]]; then
+            echo "Refusing replacement: ${EASTUS_ENVIRONMENT} contains ${app_count} Container Apps."
+            exit 1
+          fi
+
+          if az containerapp env show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --name "${CENTRALUS_ENVIRONMENT}" \
+            --output none 2>/dev/null; then
+            echo "Refusing one-time replacement: ${CENTRALUS_ENVIRONMENT} already exists."
+            exit 1
+          fi
+
+          eastus_workspace_state=$(az monitor log-analytics workspace show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --workspace-name "${EASTUS_WORKSPACE}" \
+            --query provisioningState \
+            --output tsv)
+
+          if [[ "${eastus_workspace_state}" != "Succeeded" ]]; then
+            echo "Expected ${EASTUS_WORKSPACE} to be Succeeded, found: ${eastus_workspace_state}"
+            exit 1
+          fi
+
+          echo "Preconditions passed: East US environment is empty and Central US is absent."
+
+      - name: Delete empty East US Container Apps environment
+        run: |
+          az containerapp env delete \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --name "${EASTUS_ENVIRONMENT}" \
+            --yes
+
+          for attempt in {1..30}; do
+            if ! az containerapp env show \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --name "${EASTUS_ENVIRONMENT}" \
+              --output none 2>/dev/null; then
+              echo "East US environment deletion confirmed."
+              exit 0
+            fi
+
+            echo "Waiting for East US environment deletion (${attempt}/30)..."
+            sleep 10
+          done
+
+          echo "Timed out waiting for East US environment deletion."
+          exit 1
+
+      - name: Validate Central US foundation
+        run: |
+          az deployment group validate \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --parameters "${CENTRALUS_PARAMETERS}" \
+            --output none
+
+      - name: Preview Central US foundation
+        run: |
+          az deployment group what-if \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --parameters "${CENTRALUS_PARAMETERS}" \
+            --result-format ResourceIdOnly
+
+      - name: Deploy Central US foundation
+        id: deploy
+        run: |
+          deployment_name="cm-platform-foundation-cus-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+
+          az deployment group create \
+            --name "${deployment_name}" \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --parameters "${CENTRALUS_PARAMETERS}" \
+            --output none
+
+          echo "deployment_name=${deployment_name}" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify Central US foundation
+        run: |
+          workspace_location=$(az monitor log-analytics workspace show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --workspace-name "${CENTRALUS_WORKSPACE}" \
+            --query location \
+            --output tsv)
+          workspace_state=$(az monitor log-analytics workspace show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --workspace-name "${CENTRALUS_WORKSPACE}" \
+            --query provisioningState \
+            --output tsv)
+          workspace_customer_id=$(az monitor log-analytics workspace show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --workspace-name "${CENTRALUS_WORKSPACE}" \
+            --query customerId \
+            --output tsv)
+
+          environment_location=$(az containerapp env show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --name "${CENTRALUS_ENVIRONMENT}" \
+            --query location \
+            --output tsv)
+          environment_state=$(az containerapp env show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --name "${CENTRALUS_ENVIRONMENT}" \
+            --query properties.provisioningState \
+            --output tsv)
+          environment_customer_id=$(az containerapp env show \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --name "${CENTRALUS_ENVIRONMENT}" \
+            --query properties.appLogsConfiguration.logAnalyticsConfiguration.customerId \
+            --output tsv)
+
+          if [[ "${workspace_location,,}" != "centralus" ]]; then
+            echo "Central US workspace location verification failed: ${workspace_location}"
+            exit 1
+          fi
+
+          if [[ "${environment_location,,}" != "central us" && "${environment_location,,}" != "centralus" ]]; then
+            echo "Central US environment location verification failed: ${environment_location}"
+            exit 1
+          fi
+
+          if [[ "${workspace_state}" != "Succeeded" || "${environment_state}" != "Succeeded" ]]; then
+            echo "Provisioning verification failed: workspace=${workspace_state}, environment=${environment_state}"
+            exit 1
+          fi
+
+          if [[ "${workspace_customer_id,,}" != "${environment_customer_id,,}" ]]; then
+            echo "Log Analytics linkage verification failed."
+            exit 1
+          fi
+
+          echo "Central US foundation verification passed."
+
+      - name: Delete unused East US Log Analytics workspace
+        run: |
+          az monitor log-analytics workspace delete \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --workspace-name "${EASTUS_WORKSPACE}" \
+            --yes
+
+      - name: Record replacement summary
+        run: |
+          {
+            echo "## Central US Foundation Replacement"
+            echo ""
+            echo "- Deployment: ${{ steps.deploy.outputs.deployment_name }}"
+            echo "- Confirmed the East US environment contained zero Container Apps"
+            echo "- Deleted East US environment: ${EASTUS_ENVIRONMENT}"
+            echo "- Created Central US workspace: ${CENTRALUS_WORKSPACE}"
+            echo "- Created Central US environment: ${CENTRALUS_ENVIRONMENT}"
+            echo "- Verified provisioning state, region, and Log Analytics linkage"
+            echo "- Soft-deleted unused East US workspace: ${EASTUS_WORKSPACE}"
+            echo "- Azure SQL was not modified"
+          } >> "${GITHUB_STEP_SUMMARY}"

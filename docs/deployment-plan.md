@@ -1028,6 +1028,38 @@ Replacement decision:
 - because the existing environment has no applications or public traffic, a protected delete-and-recreate workflow is the lowest-complexity path;
 - the replacement workflow must explicitly confirm the empty environment, delete only the East US Container Apps environment, validate and create Central US, verify it, and only then remove the unused East US Log Analytics workspace.
 
+Step 14 is the protected Central US foundation replacement:
+
+- require the exact manual confirmation `REPLACE EAST US`;
+- run behind the GitHub `production` environment approval gate and authenticate with OIDC;
+- refuse to continue unless the existing environment is in East US, contains zero Container Apps, and the Central US environment is absent;
+- confirm the East US Log Analytics workspace is healthy before deletion begins;
+- delete only the empty East US Container Apps environment and wait until Azure releases it;
+- validate and preview the Central US Bicep after the one-environment quota is released;
+- deploy the region-qualified Central US workspace and Container Apps environment;
+- verify both resources are in Central US, report `Succeeded`, and share the expected Log Analytics customer ID;
+- soft-delete the East US Log Analytics workspace only after Central US verification succeeds, preserving Azure's recovery window;
+- leave Azure SQL unchanged.
+
+Exit criterion:
+
+```text
+The Central US Log Analytics workspace and Container Apps environment are healthy and linked, the unused East US foundation resources are gone, and Azure SQL remains unchanged.
+```
+
+Portfolio note:
+
+```text
+The fourteenth CI/CD slice performs a guarded regional replacement under a one-environment subscription quota. The workflow proves the old environment is unused, removes it, revalidates the target configuration after quota release, deploys and verifies Central US, and cleans up the old logging workspace only after the replacement is healthy.
+```
+
+Recovery behavior:
+
+- if deletion of the East US environment succeeds but Central US validation or deployment fails, rerun the reviewed Central US Bicep deployment; the East US Log Analytics workspace remains available because cleanup occurs last;
+- the old Log Analytics workspace is recoverable for Azure's standard soft-delete retention period;
+- the workflow does not delete or alter Azure SQL;
+- the workflow is intentionally one-time and refuses to run when the Central US environment already exists.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness
