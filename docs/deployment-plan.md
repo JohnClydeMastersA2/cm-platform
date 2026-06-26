@@ -1127,7 +1127,7 @@ Step 16 is the dedicated migration identity:
 - store its generated password only as the GitHub `production` environment secret `SQL_MIGRATION_PASSWORD`;
 - refuse identity bootstrap unless `CMPlatform` still contains zero user tables;
 - grant `CREATE TABLE` at database scope;
-- grant `ALTER`, `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
+- grant `ALTER`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
 - do not grant Azure control-plane rights, server administrator rights, or broad Azure-services network access;
 - open one temporary exact-IP firewall rule for the protected job;
 - create or rotate the contained user through the bootstrap administrator;
@@ -1155,7 +1155,7 @@ Evidence captured during implementation:
 - contained user created: `cmplatform_migrator`;
 - encrypted login succeeded as `cmplatform_migrator`;
 - verified `CREATE TABLE` at database scope;
-- verified `ALTER`, `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
+- verified `ALTER`, `REFERENCES`, `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
 - no migration file was executed;
 - the temporary firewall rule was removed;
 - an independent Azure CLI check returned an empty firewall-rule list.

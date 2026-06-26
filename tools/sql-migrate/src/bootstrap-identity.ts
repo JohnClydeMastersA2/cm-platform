@@ -2,6 +2,7 @@ import sql from "mssql";
 import { loadEnv } from "./config/env.js";
 
 const migrationUser = "cmplatform_migrator";
+const bootstrapAllowedExistingTables = ["SchemaMigration"];
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -29,16 +30,41 @@ async function main(): Promise<void> {
   }).connect();
 
   try {
-    const tableCountResult = await pool.request().query<{ TableCount: number }>(`
-      select count(*) as TableCount
-      from sys.tables
-      where is_ms_shipped = 0;
+    const tableResult = await pool.request().query<{ TableName: string }>(`
+      select t.name as TableName
+      from sys.tables t
+      inner join sys.schemas s
+        on s.schema_id = t.schema_id
+      where s.name = 'dbo'
+        and t.is_ms_shipped = 0
+      order by t.name;
     `);
-    const tableCount = tableCountResult.recordset[0]?.TableCount;
+    const existingTables = tableResult.recordset.map((row) => row.TableName);
+    const unexpectedTables = existingTables.filter(
+      (table) => !bootstrapAllowedExistingTables.includes(table),
+    );
 
-    if (tableCount !== 0) {
+    if (unexpectedTables.length) {
       throw new Error(
-        `Identity bootstrap requires an empty user schema; found ${tableCount ?? "unknown"} table(s)`,
+        `Identity bootstrap requires an empty or migration-ledger-only user schema; found ${unexpectedTables.join(", ")}`,
+      );
+    }
+
+    const migrationLedgerRowResult = await pool.request().query<{
+      MigrationCount: number;
+    }>(`
+      if object_id('dbo.SchemaMigration', 'U') is null
+        select cast(0 as int) as MigrationCount;
+      else
+        select count(*) as MigrationCount
+        from dbo.SchemaMigration;
+    `);
+    const migrationCount =
+      migrationLedgerRowResult.recordset[0]?.MigrationCount;
+
+    if (migrationCount !== 0) {
+      throw new Error(
+        `Identity bootstrap requires no applied migrations; found ${migrationCount ?? "unknown"} migration ledger row(s)`,
       );
     }
 
@@ -61,11 +87,12 @@ async function main(): Promise<void> {
 
         grant create table to [${migrationUser}];
         grant alter on schema::dbo to [${migrationUser}];
+        grant references on schema::dbo to [${migrationUser}];
         grant select, insert, update, delete on schema::dbo to [${migrationUser}];
       `);
 
     console.log(
-      `Migration identity prepared: user=${migrationUser}, existingUserTables=${tableCount}`,
+      `Migration identity prepared: user=${migrationUser}, existingUserTables=${existingTables.length}, appliedMigrations=${migrationCount}`,
     );
   } finally {
     await pool.close();

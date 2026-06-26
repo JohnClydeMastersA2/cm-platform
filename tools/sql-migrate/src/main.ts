@@ -18,6 +18,7 @@ type ConnectionCheckRow = {
 type MigrationPermissionRow = {
   CanCreateTable: boolean;
   CanAlterSchema: boolean;
+  CanReferenceSchema: boolean;
   CanSelectSchema: boolean;
   CanInsertSchema: boolean;
   CanUpdateSchema: boolean;
@@ -148,6 +149,8 @@ async function checkMigrationPermissions(pool: sql.ConnectionPool): Promise<void
         as CanCreateTable,
       cast(has_perms_by_name('dbo', 'SCHEMA', 'ALTER') as bit)
         as CanAlterSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'REFERENCES') as bit)
+        as CanReferenceSchema,
       cast(has_perms_by_name('dbo', 'SCHEMA', 'SELECT') as bit)
         as CanSelectSchema,
       cast(has_perms_by_name('dbo', 'SCHEMA', 'INSERT') as bit)
@@ -164,7 +167,7 @@ async function checkMigrationPermissions(pool: sql.ConnectionPool): Promise<void
   }
 
   console.log(
-    "Migration permission check passed: CREATE TABLE; ALTER, SELECT, INSERT, UPDATE, DELETE on schema dbo",
+    "Migration permission check passed: CREATE TABLE; ALTER, REFERENCES, SELECT, INSERT, UPDATE, DELETE on schema dbo",
   );
 }
 
@@ -337,7 +340,12 @@ async function applyMigration(
 
     await transaction.commit();
   } catch (error) {
-    await transaction.rollback();
+    try {
+      await transaction.rollback();
+    } catch (rollbackError) {
+      console.error("Transaction rollback failed after migration error:", rollbackError);
+    }
+
     throw error;
   }
 }
