@@ -1189,13 +1189,17 @@ Portfolio note:
 The seventeenth CI/CD slice performs the first real production database change through a protected migration job. The workflow demonstrates approval gates, short-lived network access, least-privilege schema credentials, bounded migration selection, idempotency verification, and post-change schema assertions.
 ```
 
-Evidence to capture during implementation:
+Evidence captured during implementation:
 
-- protected core schema migration workflow run ID;
+- initial protected core schema migration workflow run `28260440734` failed safely before applying schema;
+- the failed run removed its temporary firewall rule;
+- migration identity repair workflow run `28261103115` granted and verified `REFERENCES` on schema `dbo`;
+- successful protected core schema migration workflow run `28261220780`;
 - production approval completed;
 - first bounded migration applied `0001_core_schema.sql`;
 - second bounded migration reported `0001_core_schema.sql` already applied;
-- core schema verification passed;
+- core schema verification passed with `10` dbo tables;
+- `SchemaMigration` records only `0001_core_schema.sql`;
 - IIS ETL/reporting tables were not created;
 - no local data was moved;
 - the temporary firewall rule was removed;
