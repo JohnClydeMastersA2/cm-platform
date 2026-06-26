@@ -1243,6 +1243,51 @@ Evidence captured during implementation:
 - the temporary firewall rule was removed;
 - an independent Azure CLI check returned an empty firewall-rule list.
 
+Step 19 is the production Container Apps runtime wiring:
+
+- add a separate Bicep entry point for application Container Apps rather than changing the foundation deployment;
+- define the public web/API sidecar Container App with external ingress on port `8080`;
+- define worker Container Apps for email dispatch and widget consumers;
+- use immutable GHCR image tags based on a Git commit SHA;
+- inject runtime configuration through Container Apps environment variables;
+- store secret values as Container Apps secrets, populated from protected GitHub `production` environment secrets;
+- use the `cmplatform_app` database identity for runtime SQL access;
+- require Azure SQL TLS settings: `DB_ENCRYPT=true` and `DB_TRUST_SERVER_CERTIFICATE=false`;
+- keep replicas capped at `0..1` for the initial low-cost portfolio environment;
+- add a protected GitHub workflow that can run `WHATIF` first and deploy only with explicit `DEPLOY APPS` confirmation;
+- do not configure the custom domain in this slice.
+
+Required GitHub `production` secrets for this slice:
+
+```text
+SQL_APP_PASSWORD
+ADMIN_KEY
+RABBITMQ_URL
+MONGODB_URI
+```
+
+Exit criterion:
+
+```text
+GitHub Actions can validate and preview the Container Apps deployment from Bicep using protected runtime secrets, without printing secret values or deploying public traffic by accident.
+```
+
+Portfolio note:
+
+```text
+The nineteenth CI/CD slice turns the production runtime contract into infrastructure code. Application containers receive only injected configuration and secret references, while deployment remains protected by GitHub environment approval and explicit preview/deploy modes.
+```
+
+Evidence captured during implementation so far:
+
+- Container Apps Bicep template builds successfully;
+- GitHub `production` secret `SQL_APP_PASSWORD` is present;
+- GitHub `production` secrets still needed before `WHATIF`: `ADMIN_KEY`, `RABBITMQ_URL`, `MONGODB_URI`;
+- protected Container Apps workflow added but not yet run;
+- no application Container Apps were deployed;
+- no secret values were printed;
+- no custom domain was configured in this slice.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness

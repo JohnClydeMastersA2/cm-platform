@@ -1,0 +1,134 @@
+name: Container Apps Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Type WHATIF to preview or DEPLOY APPS to deploy Container Apps
+        required: true
+        type: string
+      image_tag:
+        description: Optional image tag. Defaults to the workflow commit SHA.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: production-container-apps
+  cancel-in-progress: false
+
+env:
+  AZURE_RESOURCE_GROUP: rg-cm-platform-prod
+  BICEP_TEMPLATE: infra/bicep/container-apps.bicep
+  BICEP_PARAMETERS: infra/bicep/parameters/container-apps-production.bicepparam
+
+jobs:
+  deploy-container-apps:
+    name: Deploy Container Apps
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Require explicit action confirmation
+        env:
+          REQUESTED_ACTION: ${{ inputs.action }}
+        run: |
+          if [[ "${REQUESTED_ACTION}" != "WHATIF" && "${REQUESTED_ACTION}" != "DEPLOY APPS" ]]; then
+            echo "Action must be exactly WHATIF or DEPLOY APPS."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: Resolve image tag
+        run: |
+          image_tag="${{ inputs.image_tag }}"
+          if [[ -z "${image_tag}" ]]; then
+            image_tag="${GITHUB_SHA}"
+          fi
+
+          echo "IMAGE_TAG=${image_tag}" >> "${GITHUB_ENV}"
+          echo "Using image tag: ${image_tag}"
+
+      - name: Validate required runtime secrets
+        env:
+          SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+          RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          missing=()
+
+          [[ -z "${SQL_APP_PASSWORD}" ]] && missing+=("SQL_APP_PASSWORD")
+          [[ -z "${ADMIN_KEY}" ]] && missing+=("ADMIN_KEY")
+          [[ -z "${RABBITMQ_URL}" ]] && missing+=("RABBITMQ_URL")
+          [[ -z "${MONGODB_URI}" ]] && missing+=("MONGODB_URI")
+
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing required GitHub production secret(s): %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+          echo "Required runtime secret names are present."
+
+      - name: Build Container Apps Bicep
+        run: az bicep build --file "${BICEP_TEMPLATE}"
+
+      - name: What-if Container Apps deployment
+        env:
+          SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+          RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          az deployment group what-if \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --template-file "${BICEP_TEMPLATE}" \
+            --parameters "${BICEP_PARAMETERS}"
+
+      - name: Deploy Container Apps
+        if: inputs.action == 'DEPLOY APPS'
+        env:
+          SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+          RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          deployment_name="cm-platform-apps-${GITHUB_RUN_NUMBER}"
+          az deployment group create \
+            --name "${deployment_name}" \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --template-file "${BICEP_TEMPLATE}" \
+            --parameters "${BICEP_PARAMETERS}" \
+            --query "{name:name, state:properties.provisioningState, outputs:properties.outputs}" \
+            --output json
+
+      - name: Record Container Apps summary
+        env:
+          REQUESTED_ACTION: ${{ inputs.action }}
+        run: |
+          {
+            echo "## Container Apps ${REQUESTED_ACTION}"
+            echo ""
+            echo "- Resource group: ${AZURE_RESOURCE_GROUP}"
+            echo "- Template: ${BICEP_TEMPLATE}"
+            echo "- Parameters: ${BICEP_PARAMETERS}"
+            echo "- Image tag: ${IMAGE_TAG}"
+            echo "- Public app: ca-cm-platform-web-prod"
+            echo "- Worker apps: ca-cm-platform-email-dispatcher-prod, ca-cm-platform-widget-fast-prod, ca-cm-platform-widget-slow-prod"
+            echo "- Secret values were supplied through the GitHub production environment"
+          } >> "${GITHUB_STEP_SUMMARY}"
