@@ -1231,11 +1231,10 @@ Portfolio note:
 The eighteenth CI/CD slice separates runtime application database access from schema deployment access. The protected job provisions a least-privilege contained user, verifies both allowed and denied permissions, and keeps production network access temporary.
 ```
 
-Evidence to capture during implementation:
+Evidence captured during implementation:
 
 - generated password stored as the GitHub `production` secret `SQL_APP_PASSWORD`;
-- protected application identity workflow run ID;
-- production approval completed;
+- protected application identity workflow run `28262231870`;
 - contained user created or rotated: `cmplatform_app`;
 - encrypted login succeeded as `cmplatform_app`;
 - verified `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
