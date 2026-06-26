@@ -1205,6 +1205,45 @@ Evidence captured during implementation:
 - the temporary firewall rule was removed;
 - an independent Azure CLI check returned an empty firewall-rule list.
 
+Step 18 is the production application database identity:
+
+- create a contained Azure SQL database user named `cmplatform_app`;
+- store its generated password only as the GitHub `production` environment secret `SQL_APP_PASSWORD`;
+- use the bootstrap administrator only to create or rotate the contained user;
+- grant `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
+- deny `CREATE TABLE` at database scope;
+- deny `ALTER` and `REFERENCES` on schema `dbo`;
+- do not grant schema migration permissions, server administrator rights, or Azure control-plane rights;
+- open one temporary exact-IP firewall rule for the protected job;
+- reconnect as `cmplatform_app` and verify the positive and negative permission contract;
+- remove the temporary firewall rule;
+- do not deploy application containers in this slice.
+
+Exit criterion:
+
+```text
+The contained cmplatform_app user can authenticate over encrypted transport, has only runtime CRUD permissions on dbo, cannot create or alter schema, and Azure SQL has zero firewall rules after the workflow completes.
+```
+
+Portfolio note:
+
+```text
+The eighteenth CI/CD slice separates runtime application database access from schema deployment access. The protected job provisions a least-privilege contained user, verifies both allowed and denied permissions, and keeps production network access temporary.
+```
+
+Evidence to capture during implementation:
+
+- generated password stored as the GitHub `production` secret `SQL_APP_PASSWORD`;
+- protected application identity workflow run ID;
+- production approval completed;
+- contained user created or rotated: `cmplatform_app`;
+- encrypted login succeeded as `cmplatform_app`;
+- verified `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on schema `dbo`;
+- verified no `CREATE TABLE`, `ALTER`, or `REFERENCES` permission;
+- no schema migration was executed;
+- the temporary firewall rule was removed;
+- an independent Azure CLI check returned an empty firewall-rule list.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness

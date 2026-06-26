@@ -26,6 +26,8 @@ const EnvSchema = z.object({
   DB_PORT: z.coerce.number().int().positive().default(1433),
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
+  DB_BOOTSTRAP_USER: z.string().min(1).optional(),
+  DB_BOOTSTRAP_PASSWORD: z.string().min(1).optional(),
   DB_MIGRATION_USER: z.string().min(1).optional(),
   DB_MIGRATION_PASSWORD: z.string().min(1).optional(),
   MSSQL_SA_PASSWORD: z.string().min(1).optional(),

@@ -25,6 +25,16 @@ type MigrationPermissionRow = {
   CanDeleteSchema: boolean;
 };
 
+type ApplicationPermissionRow = {
+  CanCreateTable: boolean;
+  CanAlterSchema: boolean;
+  CanReferenceSchema: boolean;
+  CanSelectSchema: boolean;
+  CanInsertSchema: boolean;
+  CanUpdateSchema: boolean;
+  CanDeleteSchema: boolean;
+};
+
 type TableNameRow = {
   TableName: string;
 };
@@ -86,6 +96,11 @@ async function main(): Promise<void> {
       return;
     }
 
+    if (hasOption("--check-app-permissions")) {
+      await checkApplicationPermissions(pool);
+      return;
+    }
+
     if (hasOption("--check-connection")) {
       await checkConnection(pool);
       return;
@@ -140,6 +155,44 @@ function limitMigrationFiles(
   }
 
   return migrationFiles.filter((file) => file <= throughMigration);
+}
+
+async function checkApplicationPermissions(pool: sql.ConnectionPool): Promise<void> {
+  const result = await pool.request().query<ApplicationPermissionRow>(`
+    select
+      cast(has_perms_by_name(db_name(), 'DATABASE', 'CREATE TABLE') as bit)
+        as CanCreateTable,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'ALTER') as bit)
+        as CanAlterSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'REFERENCES') as bit)
+        as CanReferenceSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'SELECT') as bit)
+        as CanSelectSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'INSERT') as bit)
+        as CanInsertSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'UPDATE') as bit)
+        as CanUpdateSchema,
+      cast(has_perms_by_name('dbo', 'SCHEMA', 'DELETE') as bit)
+        as CanDeleteSchema;
+  `);
+  const row = result.recordset[0];
+
+  if (
+    !row ||
+    row.CanCreateTable !== false ||
+    row.CanAlterSchema !== false ||
+    row.CanReferenceSchema !== false ||
+    row.CanSelectSchema !== true ||
+    row.CanInsertSchema !== true ||
+    row.CanUpdateSchema !== true ||
+    row.CanDeleteSchema !== true
+  ) {
+    throw new Error("Application identity permission check failed");
+  }
+
+  console.log(
+    "Application permission check passed: SELECT, INSERT, UPDATE, DELETE on schema dbo; no CREATE TABLE, ALTER, or REFERENCES",
+  );
 }
 
 async function checkMigrationPermissions(pool: sql.ConnectionPool): Promise<void> {

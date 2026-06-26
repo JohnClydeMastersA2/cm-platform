@@ -27,8 +27,10 @@
     "db:migrate:core": "npm --workspace tools/sql-migrate run run -- --through 0001_core_schema.sql",
     "db:check": "npm --workspace tools/sql-migrate run run -- --check-connection",
     "db:check:migration-permissions": "npm --workspace tools/sql-migrate run run -- --check-migration-permissions",
+    "db:check:app-permissions": "npm --workspace tools/sql-migrate run run -- --check-app-permissions",
     "db:verify:core-schema": "npm --workspace tools/sql-migrate run run -- --verify-core-schema",
     "db:bootstrap:migration-identity": "npm --workspace tools/sql-migrate run bootstrap-identity",
+    "db:bootstrap:app-identity": "npm --workspace tools/sql-migrate run bootstrap-app-identity",
     "db:migrate:build": "npm --workspace tools/sql-migrate run build",
 
     "api:dev": "npm run api:deps:build && npm --workspace apps/svc-core run dev",
