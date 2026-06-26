@@ -1160,6 +1160,47 @@ Evidence captured during implementation:
 - the temporary firewall rule was removed;
 - an independent Azure CLI check returned an empty firewall-rule list.
 
+Step 17 is the production core schema migration:
+
+- apply only `0001_core_schema.sql` to Azure SQL;
+- do not apply `0002_iis_etl_schema.sql` in this slice;
+- do not copy or import local database data;
+- require manual execution of the protected GitHub Actions workflow;
+- require the GitHub `production` environment approval gate;
+- use the contained `cmplatform_migrator` database user;
+- open one temporary exact-IP firewall rule for the GitHub runner;
+- run the bounded migration command through `0001_core_schema.sql`;
+- run the same bounded migration command a second time to prove idempotency;
+- verify that the only dbo tables are the core application tables plus `SchemaMigration`;
+- verify that the only applied migration ledger entry is `0001_core_schema.sql`;
+- remove the temporary firewall rule.
+
+The IIS ETL/reporting schema remains intentionally deferred. Those tables hold a large historical-data use case that is not needed for the first public production slice. When that feature becomes production-relevant, we will handle it as a separate migration/data-selection exercise and move only the records that are useful.
+
+Exit criterion:
+
+```text
+CMPlatform contains the core production schema only, SchemaMigration records only 0001_core_schema.sql, no IIS ETL/reporting tables exist, no local data has been imported, and Azure SQL has zero firewall rules after the workflow completes.
+```
+
+Portfolio note:
+
+```text
+The seventeenth CI/CD slice performs the first real production database change through a protected migration job. The workflow demonstrates approval gates, short-lived network access, least-privilege schema credentials, bounded migration selection, idempotency verification, and post-change schema assertions.
+```
+
+Evidence to capture during implementation:
+
+- protected core schema migration workflow run ID;
+- production approval completed;
+- first bounded migration applied `0001_core_schema.sql`;
+- second bounded migration reported `0001_core_schema.sql` already applied;
+- core schema verification passed;
+- IIS ETL/reporting tables were not created;
+- no local data was moved;
+- the temporary firewall rule was removed;
+- an independent Azure CLI check returned an empty firewall-rule list.
+
 ## Delivery Phases
 
 ### Phase 0: Production Readiness

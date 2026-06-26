@@ -24,7 +24,28 @@ type MigrationPermissionRow = {
   CanDeleteSchema: boolean;
 };
 
+type TableNameRow = {
+  TableName: string;
+};
+
+type MigrationIdRow = {
+  MigrationId: string;
+};
+
 const migrationFilePattern = /^\d{4}_[a-z0-9_]+\.sql$/;
+const coreSchemaMigrationId = "0001_core_schema.sql";
+const coreSchemaTables = [
+  "Account",
+  "Advertiser",
+  "AuthChallenge",
+  "AuthSession",
+  "Offer",
+  "Publisher",
+  "PublisherOffer",
+  "SchemaMigration",
+  "WidgetConsumerDemo",
+  "WidgetQueueDemo",
+];
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -32,11 +53,15 @@ async function main(): Promise<void> {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const migrationsDir = resolve(repoRoot, env.DB_MIGRATIONS_DIR);
   const migrationCredentials = resolveMigrationCredentials(env);
-  const migrationFiles = (await readdir(migrationsDir))
+  const allMigrationFiles = (await readdir(migrationsDir))
     .filter((file) => file.endsWith(".sql"))
     .sort();
+  const migrationFiles = limitMigrationFiles(
+    allMigrationFiles,
+    readOption("--through"),
+  );
 
-  for (const file of migrationFiles) {
+  for (const file of allMigrationFiles) {
     if (!migrationFilePattern.test(file)) {
       throw new Error(`Invalid migration filename: ${file}`);
     }
@@ -62,6 +87,11 @@ async function main(): Promise<void> {
 
     if (hasOption("--check-connection")) {
       await checkConnection(pool);
+      return;
+    }
+
+    if (hasOption("--verify-core-schema")) {
+      await verifyCoreSchema(pool);
       return;
     }
 
@@ -92,6 +122,25 @@ async function main(): Promise<void> {
   }
 }
 
+function limitMigrationFiles(
+  migrationFiles: string[],
+  throughMigration: string | undefined,
+): string[] {
+  if (!throughMigration) {
+    return migrationFiles;
+  }
+
+  if (!migrationFilePattern.test(throughMigration)) {
+    throw new Error(`Invalid --through migration filename: ${throughMigration}`);
+  }
+
+  if (!migrationFiles.includes(throughMigration)) {
+    throw new Error(`--through migration was not found: ${throughMigration}`);
+  }
+
+  return migrationFiles.filter((file) => file <= throughMigration);
+}
+
 async function checkMigrationPermissions(pool: sql.ConnectionPool): Promise<void> {
   const result = await pool.request().query<MigrationPermissionRow>(`
     select
@@ -117,6 +166,54 @@ async function checkMigrationPermissions(pool: sql.ConnectionPool): Promise<void
   console.log(
     "Migration permission check passed: CREATE TABLE; ALTER, SELECT, INSERT, UPDATE, DELETE on schema dbo",
   );
+}
+
+async function verifyCoreSchema(pool: sql.ConnectionPool): Promise<void> {
+  const tableResult = await pool.request().query<TableNameRow>(`
+    select t.name as TableName
+    from sys.tables t
+    inner join sys.schemas s
+      on s.schema_id = t.schema_id
+    where s.name = 'dbo'
+    order by t.name;
+  `);
+  const actualTables = tableResult.recordset.map((row) => row.TableName);
+
+  assertEqualSets("dbo table", actualTables, coreSchemaTables);
+
+  const migrationResult = await pool.request().query<MigrationIdRow>(`
+    select MigrationId
+    from dbo.SchemaMigration
+    order by MigrationId;
+  `);
+  const actualMigrations = migrationResult.recordset.map((row) => row.MigrationId);
+
+  assertEqualSets("migration", actualMigrations, [coreSchemaMigrationId]);
+
+  console.log(
+    `Core schema verification passed: ${coreSchemaTables.length} dbo table(s), migration=${coreSchemaMigrationId}`,
+  );
+}
+
+function assertEqualSets(
+  label: string,
+  actualValues: string[],
+  expectedValues: string[],
+): void {
+  const actual = new Set(actualValues);
+  const expected = new Set(expectedValues);
+  const missing = expectedValues.filter((value) => !actual.has(value));
+  const unexpected = actualValues.filter((value) => !expected.has(value));
+
+  if (missing.length || unexpected.length || actual.size !== expected.size) {
+    throw new Error(
+      [
+        `Unexpected ${label} set.`,
+        `Missing: ${missing.length ? missing.join(", ") : "none"}.`,
+        `Unexpected: ${unexpected.length ? unexpected.join(", ") : "none"}.`,
+      ].join(" "),
+    );
+  }
 }
 
 function hasOption(name: string): boolean {

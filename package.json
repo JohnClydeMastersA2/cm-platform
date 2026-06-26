@@ -24,8 +24,10 @@
     "prod-local:verify": "powershell -ExecutionPolicy Bypass -File scripts/docker/verify-prod-local.ps1",
     "db:schema": "npm run db:migrate",
     "db:migrate": "npm --workspace tools/sql-migrate run run",
+    "db:migrate:core": "npm --workspace tools/sql-migrate run run -- --through 0001_core_schema.sql",
     "db:check": "npm --workspace tools/sql-migrate run run -- --check-connection",
     "db:check:migration-permissions": "npm --workspace tools/sql-migrate run run -- --check-migration-permissions",
+    "db:verify:core-schema": "npm --workspace tools/sql-migrate run run -- --verify-core-schema",
     "db:bootstrap:migration-identity": "npm --workspace tools/sql-migrate run bootstrap-identity",
     "db:migrate:build": "npm --workspace tools/sql-migrate run build",
 
