@@ -1284,7 +1284,11 @@ Evidence captured during implementation so far:
 - GitHub `production` secret `SQL_APP_PASSWORD` is present;
 - generated `ADMIN_KEY` and stored it as a GitHub `production` secret;
 - GitHub `production` secret `MONGODB_URI` is present;
-- add a protected MongoDB Atlas connectivity check before moving on to RabbitMQ;
+- initial protected MongoDB Atlas check run `28481629495` failed before Atlas network access allowed the GitHub runner path;
+- Atlas Network Access now includes a temporary broad access rule for the first low-cost deployment slice;
+- successful protected MongoDB Atlas check run `28481922194`;
+- MongoDB ping succeeded against `CMPlatformDocuments`;
+- no MongoDB connection string or password was printed;
 - GitHub `production` secret still needed before `WHATIF`: `RABBITMQ_URL`;
 - protected Container Apps workflow added but not yet run;
 - no application Container Apps were deployed;
