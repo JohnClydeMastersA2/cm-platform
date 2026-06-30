@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "mongodb:check": "tsx src/check-mongo.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "check": "curl http://localhost:3000/health && curl http://localhost:3000/ready"

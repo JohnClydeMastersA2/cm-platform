@@ -1,0 +1,62 @@
+name: MongoDB Atlas Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type CHECK MONGODB to verify the production Atlas connection
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-mongodb-check
+  cancel-in-progress: false
+
+jobs:
+  check-mongodb-atlas:
+    name: Check MongoDB Atlas
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Require explicit MongoDB confirmation
+        env:
+          MONGODB_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [[ "${MONGODB_CONFIRMATION}" != "CHECK MONGODB" ]]; then
+            echo "MongoDB confirmation must be exactly CHECK MONGODB."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify MongoDB Atlas connection
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: CMPlatformDocuments
+        run: npm run mongodb:check
+
+      - name: Record MongoDB summary
+        if: success()
+        run: |
+          {
+            echo "## MongoDB Atlas Check"
+            echo ""
+            echo "- Connected with the GitHub production MONGODB_URI secret"
+            echo "- Ran a MongoDB ping command against CMPlatformDocuments"
+            echo "- Printed no connection string or password"
+            echo "- Deployed no Azure resources"
+          } >> "${GITHUB_STEP_SUMMARY}"

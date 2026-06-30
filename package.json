@@ -37,6 +37,7 @@
     "api:build": "npm --workspace apps/svc-core run build",
     "api:start": "npm --workspace apps/svc-core run start",
     "api:verify": "curl.exe http://localhost:3000/health && curl.exe http://localhost:3000/ready",
+    "mongodb:check": "npm --workspace apps/svc-core run mongodb:check",
     "api:test:internal": "powershell -ExecutionPolicy Bypass -File scripts/api/test-internal-api.ps1",
     "email-webhooks:tunnel": "powershell -ExecutionPolicy Bypass -File scripts/webhooks/start-email-events-tunnel.ps1",
 

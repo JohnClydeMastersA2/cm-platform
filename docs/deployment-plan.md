@@ -1284,6 +1284,7 @@ Evidence captured during implementation so far:
 - GitHub `production` secret `SQL_APP_PASSWORD` is present;
 - generated `ADMIN_KEY` and stored it as a GitHub `production` secret;
 - GitHub `production` secret `MONGODB_URI` is present;
+- add a protected MongoDB Atlas connectivity check before moving on to RabbitMQ;
 - GitHub `production` secret still needed before `WHATIF`: `RABBITMQ_URL`;
 - protected Container Apps workflow added but not yet run;
 - no application Container Apps were deployed;
