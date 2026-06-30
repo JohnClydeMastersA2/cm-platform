@@ -1283,7 +1283,8 @@ Evidence captured during implementation so far:
 - Container Apps Bicep template builds successfully;
 - GitHub `production` secret `SQL_APP_PASSWORD` is present;
 - generated `ADMIN_KEY` and stored it as a GitHub `production` secret;
-- GitHub `production` secrets still needed before `WHATIF`: `RABBITMQ_URL`, `MONGODB_URI`;
+- GitHub `production` secret `MONGODB_URI` is present;
+- GitHub `production` secret still needed before `WHATIF`: `RABBITMQ_URL`;
 - protected Container Apps workflow added but not yet run;
 - no application Container Apps were deployed;
 - no secret values were printed;
