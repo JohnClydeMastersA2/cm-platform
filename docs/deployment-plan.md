@@ -1293,7 +1293,10 @@ Evidence captured during implementation so far:
 - successful protected RabbitMQ check run `28488941784`;
 - RabbitMQ connection succeeded and opened/closed an AMQP channel;
 - no RabbitMQ connection string or password was printed;
-- protected Container Apps workflow added but not yet run;
+- protected Container Apps `WHATIF` workflow run `28489313636` completed successfully;
+- preview image tag was `468e06c88e848efa95ce972dc6ebc1195dcf8f53`;
+- preview showed `4` Container Apps to create: web/API sidecar, email dispatcher, fast widget consumer, and slow widget consumer;
+- preview showed existing Container Apps environment, Log Analytics workspace, and Azure SQL resources ignored;
 - no application Container Apps were deployed;
 - no secret values were printed;
 - no custom domain was configured in this slice.
