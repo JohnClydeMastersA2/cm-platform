@@ -1290,7 +1290,9 @@ Evidence captured during implementation so far:
 - MongoDB ping succeeded against `CMPlatformDocuments`;
 - no MongoDB connection string or password was printed;
 - GitHub `production` secret `RABBITMQ_URL` is present;
-- add a protected RabbitMQ connectivity check before running Container Apps `WHATIF`;
+- successful protected RabbitMQ check run `28488941784`;
+- RabbitMQ connection succeeded and opened/closed an AMQP channel;
+- no RabbitMQ connection string or password was printed;
 - protected Container Apps workflow added but not yet run;
 - no application Container Apps were deployed;
 - no secret values were printed;
