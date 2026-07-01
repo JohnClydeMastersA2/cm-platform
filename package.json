@@ -50,6 +50,7 @@
     "widget-consumers:demo": "powershell -ExecutionPolicy Bypass -File scripts/workers/start-widget-consumers-demo.ps1",
     "widget-consumer:build": "npm --workspace services/widget-consumer run build",
     "widget-consumer:start": "npm --workspace services/widget-consumer run start",
+    "rabbitmq:check": "npm --workspace services/widget-consumer run rabbitmq:check",
 
     "public:dev": "npm --workspace public-web run dev",
     "public:build": "npm --workspace public-web run build",

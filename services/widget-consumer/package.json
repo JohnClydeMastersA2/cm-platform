@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "rabbitmq:check": "tsx src/check-rabbitmq.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js"
   },

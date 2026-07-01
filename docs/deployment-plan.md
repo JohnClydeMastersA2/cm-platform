@@ -1289,7 +1289,8 @@ Evidence captured during implementation so far:
 - successful protected MongoDB Atlas check run `28481922194`;
 - MongoDB ping succeeded against `CMPlatformDocuments`;
 - no MongoDB connection string or password was printed;
-- GitHub `production` secret still needed before `WHATIF`: `RABBITMQ_URL`;
+- GitHub `production` secret `RABBITMQ_URL` is present;
+- add a protected RabbitMQ connectivity check before running Container Apps `WHATIF`;
 - protected Container Apps workflow added but not yet run;
 - no application Container Apps were deployed;
 - no secret values were printed;

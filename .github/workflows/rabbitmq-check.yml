@@ -1,0 +1,61 @@
+name: RabbitMQ Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type CHECK RABBITMQ to verify the production RabbitMQ connection
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-rabbitmq-check
+  cancel-in-progress: false
+
+jobs:
+  check-rabbitmq:
+    name: Check RabbitMQ
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Require explicit RabbitMQ confirmation
+        env:
+          RABBITMQ_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [[ "${RABBITMQ_CONFIRMATION}" != "CHECK RABBITMQ" ]]; then
+            echo "RabbitMQ confirmation must be exactly CHECK RABBITMQ."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify RabbitMQ connection
+        env:
+          RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
+        run: npm run rabbitmq:check
+
+      - name: Record RabbitMQ summary
+        if: success()
+        run: |
+          {
+            echo "## RabbitMQ Check"
+            echo ""
+            echo "- Connected with the GitHub production RABBITMQ_URL secret"
+            echo "- Opened and closed an AMQP channel"
+            echo "- Printed no connection string or password"
+            echo "- Deployed no Azure resources"
+          } >> "${GITHUB_STEP_SUMMARY}"
