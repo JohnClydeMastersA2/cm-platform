@@ -1299,7 +1299,14 @@ Evidence captured during implementation so far:
 - preview showed existing Container Apps environment, Log Analytics workspace, and Azure SQL resources ignored;
 - protected Container Apps `DEPLOY APPS` workflow run `28610393727` reached Azure preflight validation and failed before resource creation because the original Container App names exceeded Azure's `32` character limit;
 - Container App resource names were shortened to `ca-cmp-web-prod`, `ca-cmp-email-prod`, `ca-cmp-widget-fast-prod`, and `ca-cmp-widget-slow-prod`;
-- no application Container Apps were deployed;
+- protected Container Apps `DEPLOY APPS` workflow run `28610859246` reached revision provisioning but failed because Container Apps could not reach Azure SQL through the server firewall;
+- interim Azure SQL firewall rule `AllowAzureServicesForContainerApps` was added with `0.0.0.0` to `0.0.0.0` so Azure-hosted services can reach the database while SQL credentials still control access;
+- protected Container Apps `DEPLOY APPS` workflow run `28612567404` completed successfully;
+- deployed Container Apps: `ca-cmp-web-prod`, `ca-cmp-email-prod`, `ca-cmp-widget-fast-prod`, and `ca-cmp-widget-slow-prod`;
+- Azure-generated public web endpoint: `https://ca-cmp-web-prod.yellowplant-e5774db3.centralus.azurecontainerapps.io`;
+- smoke tests returned `200 OK` for `/`, `/health`, `/ready`, and `/platform/status`;
+- `/platform/status` reported SQL, MongoDB, RabbitMQ email dispatcher, and both widget consumers online;
+- `/platform/status` reported email webhook status as `unknown`, which is expected until the Cloudflare Tunnel/webhook path is exercised;
 - no secret values were printed;
 - no custom domain was configured in this slice.
 
