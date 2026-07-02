@@ -1313,6 +1313,8 @@ Evidence captured during implementation so far:
 - protected Container Apps `DEPLOY APPS` workflow run `28615898104` completed successfully;
 - `ca-cmp-email-prod` now references Container App secrets `email-smtp-user` and `email-smtp-pass`;
 - `/platform/status` still reports the RabbitMQ email dispatcher online after the Resend secret redeploy;
+- first production verification email was received, proving Resend delivery from the production email dispatcher;
+- verification email links initially used `https://cmplatform.dev` before the custom domain was configured, so the interim `publicBaseUrl` was changed to the Azure-generated Container Apps endpoint until DNS/custom-domain launch;
 - no secret values were printed;
 - no custom domain was configured in this slice.
 
