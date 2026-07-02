@@ -1297,6 +1297,8 @@ Evidence captured during implementation so far:
 - preview image tag was `468e06c88e848efa95ce972dc6ebc1195dcf8f53`;
 - preview showed `4` Container Apps to create: web/API sidecar, email dispatcher, fast widget consumer, and slow widget consumer;
 - preview showed existing Container Apps environment, Log Analytics workspace, and Azure SQL resources ignored;
+- protected Container Apps `DEPLOY APPS` workflow run `28610393727` reached Azure preflight validation and failed before resource creation because the original Container App names exceeded Azure's `32` character limit;
+- Container App resource names were shortened to `ca-cmp-web-prod`, `ca-cmp-email-prod`, `ca-cmp-widget-fast-prod`, and `ca-cmp-widget-slow-prod`;
 - no application Container Apps were deployed;
 - no secret values were printed;
 - no custom domain was configured in this slice.

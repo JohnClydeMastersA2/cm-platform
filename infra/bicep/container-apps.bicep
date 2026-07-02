@@ -65,7 +65,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
 }
 
 resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'ca-cm-platform-web-${environmentName}'
+  name: 'ca-cmp-web-${environmentName}'
   location: location
   tags: commonTags
   properties: {
@@ -195,7 +195,7 @@ resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 resource emailDispatcherApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'ca-cm-platform-email-dispatcher-${environmentName}'
+  name: 'ca-cmp-email-${environmentName}'
   location: location
   tags: commonTags
   properties: {
@@ -247,7 +247,7 @@ resource emailDispatcherApp 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 resource widgetConsumerFastApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'ca-cm-platform-widget-fast-${environmentName}'
+  name: 'ca-cmp-widget-fast-${environmentName}'
   location: location
   tags: commonTags
   properties: {
@@ -335,7 +335,7 @@ resource widgetConsumerFastApp 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 resource widgetConsumerSlowApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'ca-cm-platform-widget-slow-${environmentName}'
+  name: 'ca-cmp-widget-slow-${environmentName}'
   location: location
   tags: commonTags
   properties: {
