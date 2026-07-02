@@ -1309,6 +1309,10 @@ Evidence captured during implementation so far:
 - `/platform/status` reported email webhook status as `unknown`, which is expected until the Cloudflare Tunnel/webhook path is exercised;
 - production email delivery gap identified after deployment: the email dispatcher uses `EMAIL_SMTP_USER` and `EMAIL_SMTP_PASS`, but those Resend SMTP credentials were not yet configured as GitHub `production` secrets or injected into the Container App;
 - Container Apps Bicep and deployment workflow were updated to require `EMAIL_SMTP_USER` and `EMAIL_SMTP_PASS`, store them as Container App secrets, and inject them only into `ca-cmp-email-prod`;
+- GitHub `production` secrets `EMAIL_SMTP_USER` and `EMAIL_SMTP_PASS` were added;
+- protected Container Apps `DEPLOY APPS` workflow run `28615898104` completed successfully;
+- `ca-cmp-email-prod` now references Container App secrets `email-smtp-user` and `email-smtp-pass`;
+- `/platform/status` still reports the RabbitMQ email dispatcher online after the Resend secret redeploy;
 - no secret values were printed;
 - no custom domain was configured in this slice.
 
