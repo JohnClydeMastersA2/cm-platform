@@ -70,6 +70,8 @@ jobs:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
+          EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
         run: |
           missing=()
 
@@ -77,6 +79,8 @@ jobs:
           [[ -z "${ADMIN_KEY}" ]] && missing+=("ADMIN_KEY")
           [[ -z "${RABBITMQ_URL}" ]] && missing+=("RABBITMQ_URL")
           [[ -z "${MONGODB_URI}" ]] && missing+=("MONGODB_URI")
+          [[ -z "${EMAIL_SMTP_USER}" ]] && missing+=("EMAIL_SMTP_USER")
+          [[ -z "${EMAIL_SMTP_PASS}" ]] && missing+=("EMAIL_SMTP_PASS")
 
           if (( ${#missing[@]} > 0 )); then
             printf 'Missing required GitHub production secret(s): %s\n' "${missing[*]}"
@@ -94,6 +98,8 @@ jobs:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
+          EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
         run: |
           az deployment group what-if \
             --resource-group "${AZURE_RESOURCE_GROUP}" \
@@ -107,6 +113,8 @@ jobs:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
+          EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
         run: |
           deployment_name="cm-platform-apps-${GITHUB_RUN_NUMBER}"
           az deployment group create \

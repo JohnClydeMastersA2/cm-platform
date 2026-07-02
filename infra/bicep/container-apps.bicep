@@ -40,6 +40,14 @@ param rabbitMqUrl string
 @description('MongoDB connection URI.')
 param mongoDbUri string
 
+@secure()
+@description('SMTP user for Resend email delivery.')
+param emailSmtpUser string
+
+@secure()
+@description('SMTP password/API key for Resend email delivery.')
+param emailSmtpPass string
+
 @description('MongoDB database name.')
 param mongoDbDatabase string = 'CMPlatformDocuments'
 
@@ -207,6 +215,14 @@ resource emailDispatcherApp 'Microsoft.App/containerApps@2024-03-01' = {
           name: 'rabbitmq-url'
           value: rabbitMqUrl
         }
+        {
+          name: 'email-smtp-user'
+          value: emailSmtpUser
+        }
+        {
+          name: 'email-smtp-pass'
+          value: emailSmtpPass
+        }
       ]
     }
     template: {
@@ -230,6 +246,14 @@ resource emailDispatcherApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'RABBITMQ_URL'
               secretRef: 'rabbitmq-url'
+            }
+            {
+              name: 'EMAIL_SMTP_USER'
+              secretRef: 'email-smtp-user'
+            }
+            {
+              name: 'EMAIL_SMTP_PASS'
+              secretRef: 'email-smtp-pass'
             }
             {
               name: 'EMAIL_DISPATCHER_PREFETCH'

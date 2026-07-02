@@ -1307,6 +1307,8 @@ Evidence captured during implementation so far:
 - smoke tests returned `200 OK` for `/`, `/health`, `/ready`, and `/platform/status`;
 - `/platform/status` reported SQL, MongoDB, RabbitMQ email dispatcher, and both widget consumers online;
 - `/platform/status` reported email webhook status as `unknown`, which is expected until the Cloudflare Tunnel/webhook path is exercised;
+- production email delivery gap identified after deployment: the email dispatcher uses `EMAIL_SMTP_USER` and `EMAIL_SMTP_PASS`, but those Resend SMTP credentials were not yet configured as GitHub `production` secrets or injected into the Container App;
+- Container Apps Bicep and deployment workflow were updated to require `EMAIL_SMTP_USER` and `EMAIL_SMTP_PASS`, store them as Container App secrets, and inject them only into `ca-cmp-email-prod`;
 - no secret values were printed;
 - no custom domain was configured in this slice.
 
