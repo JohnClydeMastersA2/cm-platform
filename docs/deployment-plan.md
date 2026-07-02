@@ -1374,6 +1374,23 @@ Exit criterion: merging an approved pull request can deploy the exact tested com
 
 Exit criterion: HTTPS, registration, verification email, login, logout, data demonstrations, webhook ingestion, and worker processing work from the public domain.
 
+Private-preview approach:
+
+- configure `cmplatform.dev` DNS and Azure Container Apps custom domain first;
+- protect `cmplatform.dev` with Cloudflare Access before sharing the URL broadly;
+- allow only the owner's email address or a small explicit allowlist;
+- keep the Azure-generated Container Apps URL unadvertised during the private-preview period;
+- revisit direct Azure endpoint restrictions before a public launch.
+
+DNS records needed for the first custom-domain pass:
+
+```text
+TXT    asuid.cmplatform.dev    C99F5A14C4831200C11E00D6C597E70D6886A40FEFBA0420ABD7C5FEC3E9A99F
+CNAME  cmplatform.dev          ca-cmp-web-prod.yellowplant-e5774db3.centralus.azurecontainerapps.io
+```
+
+Cloudflare should use DNS-only mode until Azure validates and binds the managed certificate. After Azure reports the custom domain healthy, switch the record to proxied mode and place Cloudflare Access in front of the application.
+
 ### Phase 5: Operate and Learn
 
 - Observe costs and free-tier consumption for 30 days.
