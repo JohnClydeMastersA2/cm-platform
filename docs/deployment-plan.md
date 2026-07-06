@@ -1325,6 +1325,11 @@ Evidence captured during implementation so far:
 - `publicBaseUrl` was restored to `https://cmplatform.dev` for production-generated links;
 - the first `publicBaseUrl` redeploy removed the manually added custom-domain binding because `customDomains` was not yet represented in the Container Apps Bicep template;
 - Container Apps Bicep was updated to preserve the `cmplatform.dev` `SniEnabled` binding with the existing Azure managed certificate.
+- Cloudflare proxy was enabled for `cmplatform.dev`;
+- Cloudflare Access was configured for private preview so the human-facing site requires the owner's email/PIN login;
+- a path-specific Cloudflare Access bypass application was added for `POST /webhooks/email-events` so Resend can still deliver webhook events;
+- Azure Container Apps ingress IP restrictions were evaluated for Cloudflare-only origin access, but the approach blocked legitimate Cloudflare-routed origin traffic and was rolled back;
+- the public web Nginx gateway was updated to reject unexpected `Host` headers, closing the unadvertised Azure-generated hostname path while preserving `cmplatform.dev` and local development hosts.
 
 ## Delivery Phases
 
