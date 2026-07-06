@@ -1317,6 +1317,12 @@ Evidence captured during implementation so far:
 - verification email links initially used `https://cmplatform.dev` before the custom domain was configured, so the interim `publicBaseUrl` was changed to the Azure-generated Container Apps endpoint until DNS/custom-domain launch;
 - no secret values were printed;
 - no custom domain was configured in this slice.
+- Azure managed certificate validation for `cmplatform.dev` completed successfully;
+- `cmplatform.dev` was bound to `ca-cmp-web-prod` with `SniEnabled`;
+- first custom-domain smoke tests returned `502 Bad Gateway` because `svc-core` could not start while MongoDB Atlas blocked the Azure Container Apps outbound IP;
+- MongoDB Atlas network access was updated to allow Azure outbound IP `20.9.116.34/32`;
+- after restarting the production web revision, `https://cmplatform.dev/health` and `https://cmplatform.dev/platform/status` returned `200 OK`;
+- `publicBaseUrl` was restored to `https://cmplatform.dev` for production-generated links.
 
 ## Delivery Phases
 

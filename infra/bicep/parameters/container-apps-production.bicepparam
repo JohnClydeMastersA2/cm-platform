@@ -15,7 +15,7 @@ param mongoDbUri = readEnvironmentVariable('MONGODB_URI')
 param emailSmtpUser = readEnvironmentVariable('EMAIL_SMTP_USER')
 param emailSmtpPass = readEnvironmentVariable('EMAIL_SMTP_PASS')
 param mongoDbDatabase = 'CMPlatformDocuments'
-param publicBaseUrl = 'https://ca-cmp-web-prod.yellowplant-e5774db3.centralus.azurecontainerapps.io'
+param publicBaseUrl = 'https://cmplatform.dev'
 param tags = {
   project: 'cm-platform'
   purpose: 'portfolio-production'
