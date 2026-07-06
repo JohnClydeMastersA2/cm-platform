@@ -1322,7 +1322,9 @@ Evidence captured during implementation so far:
 - first custom-domain smoke tests returned `502 Bad Gateway` because `svc-core` could not start while MongoDB Atlas blocked the Azure Container Apps outbound IP;
 - MongoDB Atlas network access was updated to allow Azure outbound IP `20.9.116.34/32`;
 - after restarting the production web revision, `https://cmplatform.dev/health` and `https://cmplatform.dev/platform/status` returned `200 OK`;
-- `publicBaseUrl` was restored to `https://cmplatform.dev` for production-generated links.
+- `publicBaseUrl` was restored to `https://cmplatform.dev` for production-generated links;
+- the first `publicBaseUrl` redeploy removed the manually added custom-domain binding because `customDomains` was not yet represented in the Container Apps Bicep template;
+- Container Apps Bicep was updated to preserve the `cmplatform.dev` `SniEnabled` binding with the existing Azure managed certificate.
 
 ## Delivery Phases
 

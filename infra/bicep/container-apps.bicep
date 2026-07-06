@@ -54,6 +54,12 @@ param mongoDbDatabase string = 'CMPlatformDocuments'
 @description('Public base URL.')
 param publicBaseUrl string = 'https://cmplatform.dev'
 
+@description('Optional custom domain for the public web Container App.')
+param publicCustomDomainName string = ''
+
+@description('Optional managed certificate resource ID for the public web custom domain.')
+param publicCustomDomainCertificateId string = ''
+
 @description('Common tags applied to Azure resources.')
 param tags object = {}
 
@@ -67,6 +73,13 @@ var publicWebImage = '${imagePrefix}/public-web:${imageTag}'
 var svcCoreImage = '${imagePrefix}/svc-core:${imageTag}'
 var emailDispatcherImage = '${imagePrefix}/email-dispatcher:${imageTag}'
 var widgetConsumerImage = '${imagePrefix}/widget-consumer:${imageTag}'
+var publicCustomDomains = !empty(publicCustomDomainName) && !empty(publicCustomDomainCertificateId) ? [
+  {
+    name: publicCustomDomainName
+    bindingType: 'SniEnabled'
+    certificateId: publicCustomDomainCertificateId
+  }
+] : []
 
 resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: containerAppsEnvironmentName
@@ -85,6 +98,7 @@ resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: 'auto'
         allowInsecure: false
+        customDomains: publicCustomDomains
       }
       secrets: [
         {

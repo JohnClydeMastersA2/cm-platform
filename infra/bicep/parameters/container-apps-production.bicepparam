@@ -16,6 +16,8 @@ param emailSmtpUser = readEnvironmentVariable('EMAIL_SMTP_USER')
 param emailSmtpPass = readEnvironmentVariable('EMAIL_SMTP_PASS')
 param mongoDbDatabase = 'CMPlatformDocuments'
 param publicBaseUrl = 'https://cmplatform.dev'
+param publicCustomDomainName = 'cmplatform.dev'
+param publicCustomDomainCertificateId = '/subscriptions/d0b56c36-8b2c-4c25-8c3e-673fc84c0f46/resourceGroups/rg-cm-platform-prod/providers/Microsoft.App/managedEnvironments/cae-cm-platform-prod-cus/managedCertificates/mc-cae-cm-platfor-cmplatform-dev-1202'
 param tags = {
   project: 'cm-platform'
   purpose: 'portfolio-production'
