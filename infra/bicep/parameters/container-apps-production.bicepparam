@@ -14,6 +14,7 @@ param rabbitMqUrl = readEnvironmentVariable('RABBITMQ_URL')
 param mongoDbUri = readEnvironmentVariable('MONGODB_URI')
 param emailSmtpUser = readEnvironmentVariable('EMAIL_SMTP_USER')
 param emailSmtpPass = readEnvironmentVariable('EMAIL_SMTP_PASS')
+param resendWebhookSecret = readEnvironmentVariable('RESEND_WEBHOOK_SECRET')
 param mongoDbDatabase = 'CMPlatformDocuments'
 param publicBaseUrl = 'https://cmplatform.dev'
 param publicCustomDomainName = 'cmplatform.dev'

@@ -1330,6 +1330,8 @@ Evidence captured during implementation so far:
 - a path-specific Cloudflare Access bypass application was added for `POST /webhooks/email-events` so Resend can still deliver webhook events;
 - Azure Container Apps ingress IP restrictions were evaluated for Cloudflare-only origin access, but the approach blocked legitimate Cloudflare-routed origin traffic and was rolled back;
 - the public web Nginx gateway was updated to reject unexpected `Host` headers, closing the unadvertised Azure-generated hostname path while preserving `cmplatform.dev` and local development hosts.
+- Resend webhook signature verification was added to `svc-core` using the raw request body plus `svix-id`, `svix-timestamp`, and `svix-signature` headers before storing events in MongoDB;
+- production deployment now requires the GitHub `production` secret `RESEND_WEBHOOK_SECRET` and injects it only into the web/API Container App.
 
 ## Delivery Phases
 

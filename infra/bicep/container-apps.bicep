@@ -48,6 +48,10 @@ param emailSmtpUser string
 @description('SMTP password/API key for Resend email delivery.')
 param emailSmtpPass string
 
+@secure()
+@description('Resend webhook signing secret used to verify email webhook callbacks.')
+param resendWebhookSecret string
+
 @description('MongoDB database name.')
 param mongoDbDatabase string = 'CMPlatformDocuments'
 
@@ -116,6 +120,10 @@ resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'mongodb-uri'
           value: mongoDbUri
+        }
+        {
+          name: 'resend-webhook-secret'
+          value: resendWebhookSecret
         }
       ]
     }
@@ -204,6 +212,10 @@ resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'MONGODB_DATABASE'
               value: mongoDbDatabase
+            }
+            {
+              name: 'RESEND_WEBHOOK_SECRET'
+              secretRef: 'resend-webhook-secret'
             }
           ]
           resources: {

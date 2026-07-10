@@ -24,6 +24,7 @@ async function start() {
     rabbitMqUrl: env.RABBITMQ_URL,
     mongoDbUri: env.MONGODB_URI,
     mongoDbDatabase: env.MONGODB_DATABASE,
+    resendWebhookSecret: env.RESEND_WEBHOOK_SECRET,
   });
 
   try {

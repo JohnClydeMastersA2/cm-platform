@@ -29,6 +29,7 @@ type BuildAppOptions = {
   rabbitMqUrl: string;
   mongoDbUri: string;
   mongoDbDatabase: string;
+  resendWebhookSecret?: string | undefined;
 };
 
 export function buildApp(opts: BuildAppOptions) {
@@ -93,7 +94,9 @@ export function buildApp(opts: BuildAppOptions) {
     authApiBaseUrl: opts.authApiBaseUrl,
     publicWebBaseUrl: opts.publicWebBaseUrl,
   });
-  app.register(emailEventsWebhookRoutes);
+  app.register(emailEventsWebhookRoutes, {
+    ...(opts.resendWebhookSecret ? { webhookSecret: opts.resendWebhookSecret } : {}),
+  });
   app.register(emailWebhookEventRoutes, { prefix: "/email-webhook-events" });
   app.register(widgetRoutes, { prefix: "/widgets" });
   app.register(widgetConsumerRoutes, { prefix: "/consumer-widgets" });

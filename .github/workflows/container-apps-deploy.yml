@@ -72,6 +72,7 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
           EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
         run: |
           missing=()
 
@@ -81,6 +82,7 @@ jobs:
           [[ -z "${MONGODB_URI}" ]] && missing+=("MONGODB_URI")
           [[ -z "${EMAIL_SMTP_USER}" ]] && missing+=("EMAIL_SMTP_USER")
           [[ -z "${EMAIL_SMTP_PASS}" ]] && missing+=("EMAIL_SMTP_PASS")
+          [[ -z "${RESEND_WEBHOOK_SECRET}" ]] && missing+=("RESEND_WEBHOOK_SECRET")
 
           if (( ${#missing[@]} > 0 )); then
             printf 'Missing required GitHub production secret(s): %s\n' "${missing[*]}"
@@ -100,6 +102,7 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
           EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
         run: |
           az deployment group what-if \
             --resource-group "${AZURE_RESOURCE_GROUP}" \
@@ -115,6 +118,7 @@ jobs:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
           EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
+          RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
         run: |
           deployment_name="cm-platform-apps-${GITHUB_RUN_NUMBER}"
           az deployment group create \

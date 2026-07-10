@@ -81,6 +81,7 @@ services:
       RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
       MONGODB_URI: ${MONGODB_URI_CONTAINER:?Set MONGODB_URI_CONTAINER in packages/secrets/cm-platform.env}
       MONGODB_DATABASE: CMPlatformDocuments
+      RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET:?Set RESEND_WEBHOOK_SECRET in packages/secrets/cm-platform.env}
     restart: unless-stopped
 
   email-dispatcher:

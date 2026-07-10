@@ -1,4 +1,6 @@
 import type { FastifyBaseLogger, FastifyPluginAsync } from "fastify";
+import type { IncomingHttpHeaders } from "node:http";
+import { Webhook } from "svix";
 import { recordEmailWebhookEvent } from "../../modules/email_webhook_event/email_webhook_event.repo.js";
 
 type EmailEventPayload = Record<string, unknown> & {
@@ -16,9 +18,36 @@ type EmailEventLogEntry = {
   to?: string[];
 };
 
-export const emailEventsWebhookRoutes: FastifyPluginAsync = async (app) => {
-  app.post("/webhooks/email-events", async (request) => {
-    const event = request.body as EmailEventPayload;
+type EmailEventsWebhookRouteOptions = {
+  webhookSecret?: string | undefined;
+};
+
+export const emailEventsWebhookRoutes: FastifyPluginAsync<EmailEventsWebhookRouteOptions> = async (
+  app,
+  opts,
+) => {
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_request, body, done) => {
+    done(null, body);
+  });
+
+  app.post("/webhooks/email-events", async (request, reply) => {
+    if (!opts.webhookSecret) {
+      request.log.error("Resend webhook secret is not configured");
+      return reply.code(503).send({ error: "Webhook verification is not configured" });
+    }
+
+    const payload = typeof request.body === "string" ? request.body : "";
+    const event = verifyEmailEventPayload({
+      payload,
+      webhookSecret: opts.webhookSecret,
+      headers: svixHeadersFrom(request.headers),
+    });
+
+    if (!event) {
+      request.log.warn("Rejected email events webhook with invalid signature");
+      return reply.code(400).send({ error: "Invalid webhook signature" });
+    }
+
     const logEntry = createEmailEventLogEntry(event);
 
     request.log.info(
@@ -51,6 +80,53 @@ export const emailEventsWebhookRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true };
   });
 };
+
+function verifyEmailEventPayload(opts: {
+  payload: string;
+  webhookSecret: string;
+  headers: {
+    id?: string;
+    timestamp?: string;
+    signature?: string;
+  };
+}): EmailEventPayload | undefined {
+  if (!opts.headers.id || !opts.headers.timestamp || !opts.headers.signature) {
+    return undefined;
+  }
+
+  try {
+    const webhook = new Webhook(opts.webhookSecret);
+    const verified = webhook.verify(opts.payload, {
+      "svix-id": opts.headers.id,
+      "svix-timestamp": opts.headers.timestamp,
+      "svix-signature": opts.headers.signature,
+    });
+
+    return asRecord(verified) as EmailEventPayload;
+  } catch {
+    return undefined;
+  }
+}
+
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function svixHeadersFrom(headers: IncomingHttpHeaders): {
+  id?: string;
+  timestamp?: string;
+  signature?: string;
+} {
+  const id = headerValue(headers["svix-id"]);
+  const timestamp = headerValue(headers["svix-timestamp"]);
+  const signature = headerValue(headers["svix-signature"]);
+
+  return {
+    ...(id ? { id } : {}),
+    ...(timestamp ? { timestamp } : {}),
+    ...(signature ? { signature } : {}),
+  };
+}
 
 async function handleEmailEvent(
   event: EmailEventPayload,

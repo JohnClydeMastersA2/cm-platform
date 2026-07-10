@@ -21,6 +21,14 @@ const EnvBoolean = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
+const OptionalNonEmptyString = z.preprocess((value) => {
+  if (typeof value === "string" && value.trim() === "") {
+    return undefined;
+  }
+
+  return value;
+}, z.string().min(1).optional());
+
 const EnvSchema = z.object({
   DB_SERVER: z.string().min(1),
   DB_PORT: z.coerce.number().int().positive().default(1433),
@@ -42,6 +50,7 @@ const EnvSchema = z.object({
   RABBITMQ_URL: z.url(),
   MONGODB_URI: z.url(),
   MONGODB_DATABASE: z.string().min(1).default("CMPlatformDocuments"),
+  RESEND_WEBHOOK_SECRET: OptionalNonEmptyString,
 });
 
 export type Env = z.infer<typeof EnvSchema>;
