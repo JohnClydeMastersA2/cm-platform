@@ -1332,6 +1332,7 @@ Evidence captured during implementation so far:
 - the public web Nginx gateway was updated to reject unexpected `Host` headers, closing the unadvertised Azure-generated hostname path while preserving `cmplatform.dev` and local development hosts.
 - Resend webhook signature verification was added to `svc-core` using the raw request body plus `svix-id`, `svix-timestamp`, and `svix-signature` headers before storing events in MongoDB;
 - production deployment now requires the GitHub `production` secret `RESEND_WEBHOOK_SECRET` and injects it only into the web/API Container App.
+- local development keeps `RESEND_WEBHOOK_SECRET` optional because temporary tunnel webhook endpoints can generate short-lived signing secrets; production fails closed when the secret is missing, while non-production logs that verification was skipped.
 
 ## Delivery Phases
 

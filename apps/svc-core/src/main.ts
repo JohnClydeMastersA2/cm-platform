@@ -10,6 +10,7 @@ async function start() {
   const env = loadEnv();
 
   const app = buildApp({
+    nodeEnv: env.NODE_ENV,
     logLevel: env.LOG_LEVEL,
     adminKey: env.ADMIN_KEY,
     dbServer: env.DB_SERVER,

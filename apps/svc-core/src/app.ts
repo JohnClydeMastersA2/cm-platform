@@ -15,6 +15,7 @@ import { widgetConsumerRoutes } from "./modules/widget_consumer/widget_consumer.
 import { emailWebhookEventRoutes } from "./modules/email_webhook_event/email_webhook_event.routes.js";
 
 type BuildAppOptions = {
+  nodeEnv: string;
   logLevel: string;
   adminKey: string;
   dbServer: string;
@@ -95,6 +96,7 @@ export function buildApp(opts: BuildAppOptions) {
     publicWebBaseUrl: opts.publicWebBaseUrl,
   });
   app.register(emailEventsWebhookRoutes, {
+    nodeEnv: opts.nodeEnv,
     ...(opts.resendWebhookSecret ? { webhookSecret: opts.resendWebhookSecret } : {}),
   });
   app.register(emailWebhookEventRoutes, { prefix: "/email-webhook-events" });

@@ -1,4 +1,4 @@
-import type { FastifyBaseLogger, FastifyPluginAsync } from "fastify";
+import type { FastifyBaseLogger, FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { IncomingHttpHeaders } from "node:http";
 import { Webhook } from "svix";
 import { recordEmailWebhookEvent } from "../../modules/email_webhook_event/email_webhook_event.repo.js";
@@ -19,6 +19,7 @@ type EmailEventLogEntry = {
 };
 
 type EmailEventsWebhookRouteOptions = {
+  nodeEnv: string;
   webhookSecret?: string | undefined;
 };
 
@@ -31,12 +32,25 @@ export const emailEventsWebhookRoutes: FastifyPluginAsync<EmailEventsWebhookRout
   });
 
   app.post("/webhooks/email-events", async (request, reply) => {
+    const payload = typeof request.body === "string" ? request.body : "";
+
     if (!opts.webhookSecret) {
-      request.log.error("Resend webhook secret is not configured");
-      return reply.code(503).send({ error: "Webhook verification is not configured" });
+      if (opts.nodeEnv === "production") {
+        request.log.error("Resend webhook secret is not configured");
+        return reply.code(503).send({ error: "Webhook verification is not configured" });
+      }
+
+      const unsignedEvent = parseEmailEventPayload(payload);
+
+      if (!unsignedEvent) {
+        return reply.code(400).send({ error: "Invalid webhook payload" });
+      }
+
+      request.log.warn("Resend webhook signature verification skipped outside production");
+      await processEmailEvent(app, unsignedEvent, request.log);
+      return { ok: true };
     }
 
-    const payload = typeof request.body === "string" ? request.body : "";
     const event = verifyEmailEventPayload({
       payload,
       webhookSecret: opts.webhookSecret,
@@ -48,38 +62,54 @@ export const emailEventsWebhookRoutes: FastifyPluginAsync<EmailEventsWebhookRout
       return reply.code(400).send({ error: "Invalid webhook signature" });
     }
 
-    const logEntry = createEmailEventLogEntry(event);
-
-    request.log.info(
-      {
-        eventType: logEntry.eventType,
-        emailId: logEntry.emailId,
-        to: logEntry.to,
-      },
-      "Received email events webhook",
-    );
-
-    await recordEmailWebhookEvent(app.mongoDb, {
-      provider: "resend",
-      ...(event.id ? { providerEventId: event.id } : {}),
-      eventType: logEntry.eventType ?? "unknown",
-      ...(logEntry.emailId ? { emailId: logEntry.emailId } : {}),
-      recipients: logEntry.to ?? [],
-      ...(logEntry.from ? { sender: logEntry.from } : {}),
-      ...(logEntry.subject ? { subject: logEntry.subject } : {}),
-      receivedAt: new Date(logEntry.receivedAt),
-      source: "webhook",
-      payloadAvailable: true,
-      payload: event,
-      processing: {
-        status: "acknowledged",
-      },
-    });
-    await handleEmailEvent(event, request.log);
+    await processEmailEvent(app, event, request.log);
 
     return { ok: true };
   });
 };
+
+async function processEmailEvent(
+  app: FastifyInstance,
+  event: EmailEventPayload,
+  log: FastifyBaseLogger,
+): Promise<void> {
+  const logEntry = createEmailEventLogEntry(event);
+
+  log.info(
+    {
+      eventType: logEntry.eventType,
+      emailId: logEntry.emailId,
+      to: logEntry.to,
+    },
+    "Received email events webhook",
+  );
+
+  await recordEmailWebhookEvent(app.mongoDb, {
+    provider: "resend",
+    ...(event.id ? { providerEventId: event.id } : {}),
+    eventType: logEntry.eventType ?? "unknown",
+    ...(logEntry.emailId ? { emailId: logEntry.emailId } : {}),
+    recipients: logEntry.to ?? [],
+    ...(logEntry.from ? { sender: logEntry.from } : {}),
+    ...(logEntry.subject ? { subject: logEntry.subject } : {}),
+    receivedAt: new Date(logEntry.receivedAt),
+    source: "webhook",
+    payloadAvailable: true,
+    payload: event,
+    processing: {
+      status: "acknowledged",
+    },
+  });
+  await handleEmailEvent(event, log);
+}
+
+function parseEmailEventPayload(payload: string): EmailEventPayload | undefined {
+  try {
+    return asRecord(JSON.parse(payload)) as EmailEventPayload;
+  } catch {
+    return undefined;
+  }
+}
 
 function verifyEmailEventPayload(opts: {
   payload: string;
