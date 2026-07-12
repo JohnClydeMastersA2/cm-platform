@@ -1,10 +1,11 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import Collapse from "bootstrap/js/dist/collapse";
 import "./style.css";
 
-type Page = "home" | "infrastructure" | "containers" | "secrets" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
+type Page = "home" | "infrastructure" | "cicd" | "containers" | "secrets" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
 type FormStatus = "idle" | "submitting" | "success" | "error";
-type SidebarSection = "platform" | "containers" | "identity" | "account" | "messaging" | "data";
+type SidebarSection = "platform" | "identity" | "account" | "messaging" | "data";
 
 type AuthAccount = {
   accountId: number;
@@ -189,7 +190,6 @@ let authSession: AuthSession | null = null;
 let currentPage: Page | null = null;
 let sidebarSectionsOpen: Record<SidebarSection, boolean> = {
   platform: true,
-  containers: true,
   identity: true,
   account: true,
   messaging: true,
@@ -234,6 +234,7 @@ let mongoWebhookFilters: MongoWebhookFilters = {
   eventType: "",
   source: "",
 };
+let csrfToken: string | null = null;
 
 const loginState: FormState = { status: "idle" };
 const registerState: FormState = { status: "idle" };
@@ -245,11 +246,16 @@ const topicRoutingFormState: FormState = { status: "idle" };
 const priorityQueueFormState: FormState = { status: "idle" };
 const mongoWebhookFormState: FormState = { status: "idle" };
 
+const sharedRabbitMqDemoNote = `
+  These RabbitMQ demos intentionally use shared global queues and disposable shared demo state. If multiple visitors use them at the same time, one visitor may process, purge, or change messages created by another visitor. We know about this behavior and accepted it for this portfolio slice because the goal is to demonstrate real queue behavior without adding the extra complexity of fully isolated per-user demo queues.
+`;
+
 function getCurrentPage(): Page {
   const hash = window.location.hash.replace("#", "");
 
   if (hash === "home") return "home";
   if (hash === "infrastructure") return "infrastructure";
+  if (hash === "cicd") return "cicd";
   if (hash === "containers") return "containers";
   if (hash === "secrets") return "secrets";
   if (hash === "iam") return "iam";
@@ -267,7 +273,6 @@ function getCurrentPage(): Page {
 
 function layout(content: string): string {
   const platformOpen = sidebarSectionsOpen.platform;
-  const containersOpen = sidebarSectionsOpen.containers;
   const identityOpen = sidebarSectionsOpen.identity;
   const accountOpen = sidebarSectionsOpen.account;
   const messagingOpen = sidebarSectionsOpen.messaging;
@@ -307,6 +312,8 @@ function layout(content: string): string {
               <div class="public-nav-group">
                 <a class="public-nav-link" href="#home">Overview</a>
                 <a class="public-nav-link" href="#infrastructure">Infrastructure Status</a>
+                <a class="public-nav-link" href="#cicd">CI/CD and Azure</a>
+                <a class="public-nav-link" href="#secrets">Secrets</a>
               </div>
             </div>
 
@@ -323,23 +330,6 @@ function layout(content: string): string {
             <div class="collapse ${dataOpen ? "show" : ""}" id="dataStoresNav">
               <div class="public-nav-group">
                 <a class="public-nav-link" href="#mongodb">NoSQL with MongoDB</a>
-              </div>
-            </div>
-
-            <button
-              class="public-nav-toggle ${containersOpen ? "" : "collapsed"}"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#containersNav"
-              aria-expanded="${containersOpen ? "true" : "false"}"
-              aria-controls="containersNav"
-            >
-              Containers
-            </button>
-            <div class="collapse ${containersOpen ? "show" : ""}" id="containersNav">
-              <div class="public-nav-group">
-                <a class="public-nav-link" href="#containers">Overview</a>
-                <a class="public-nav-link" href="#secrets">Secrets</a>
               </div>
             </div>
 
@@ -446,6 +436,41 @@ function homePage(): string {
       proof: "queue demo tables and email delivery records",
     },
     {
+      title: "MongoDB document persistence",
+      body: "MongoDB stores Resend email webhook events as documents so the platform can retain provider payloads, inspect delivery history, and demonstrate document-database use alongside SQL workflow state.",
+      proof: "MongoDB Atlas, /email-webhook-events, docs/deployment-plan.md",
+    },
+    {
+      title: "GitHub CI/CD workflows",
+      body: "GitHub Actions builds source, validates production container images, publishes SHA-tagged GHCR images, gates production deployments, and records deployment evidence as part of the platform learning path.",
+      proof: "GitHub Actions, GHCR, protected production environment, docs/deployment-plan.md",
+    },
+    {
+      title: "AI-assisted development",
+      body: "The platform is being built with an AI agent as a development partner: reviewing architecture, making scoped code changes, testing locally, documenting tradeoffs, and preserving decisions for the portfolio story.",
+      proof: "agent-guided implementation notes and docs/deployment-plan.md",
+    },
+    {
+      title: "Cloudflare edge protection",
+      body: "Cloudflare provides DNS, proxied HTTPS, private-preview Access controls, and local webhook tunnel support while the platform moves from protected production testing toward a public portfolio launch.",
+      proof: "Cloudflare DNS, Access, Tunnel, docs/deployment-plan.md",
+    },
+    {
+      title: "Public auth guardrails",
+      body: "Registration and login endpoints include basic rate limiting so a public portfolio can demonstrate account workflows without leaving email delivery and password checks completely open to repeated automated attempts.",
+      proof: "Fastify auth routes with IP and email-aware limits",
+    },
+    {
+      title: "CSRF request protection",
+      body: "CSRF means Cross-Site Request Forgery: a malicious site tries to make a logged-in browser send unwanted requests with its existing session cookie. CM Platform issues a same-origin token and requires it on state-changing requests.",
+      proof: "HTTP-only CSRF cookie plus X-CSRF-Token headers",
+    },
+    {
+      title: "Gateway security headers",
+      body: "The public Nginx gateway adds browser security headers to reduce common web risks such as content sniffing, clickjacking, over-broad referrer leakage, unnecessary browser permissions, and unexpected script or frame sources.",
+      proof: "Content-Security-Policy, frame-ancestors, nosniff, Permissions-Policy",
+    },
+    {
       title: "Developer operations",
       body: "PowerShell and npm scripts provide a repeatable local command surface for infrastructure, schema updates, workers, smoke tests, and webhook tooling.",
       proof: "scripts, tools, docker, README runbooks",
@@ -462,9 +487,6 @@ function homePage(): string {
             CM Platform is a TypeScript platform for demonstrating meaningful understanding of backend application architecture: public and private API surfaces, durable messaging, SQL-backed workflow state, background processing, shared contracts, and operational automation.
           </p>
           <div class="platform-hero-actions">
-            <a class="platform-primary-link" href="${sourceCodeUrl}" target="_blank" rel="noreferrer">
-              View source on GitHub
-            </a>
             <span>cmplatform.dev</span>
           </div>
         </div>
@@ -491,9 +513,14 @@ function homePage(): string {
           <p>
             This site is hosted as a working portfolio of engineering skills. The emphasis is practical proof: running software, inspectable source code, and demos that expose the architecture behind the browser experience.
           </p>
-          <a class="platform-source-link" href="${sourceCodeUrl}" target="_blank" rel="noreferrer">
-            GitHub: JohnClydeMastersA2/cm-platform
-          </a>
+          <div class="platform-card-actions">
+            <a class="platform-small-link" href="${sourceCodeUrl}" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+            <a class="platform-secondary-link" href="/john_clyde_masters_resume.pdf" download>
+              Download Resume
+            </a>
+          </div>
         </div>
         <div class="platform-credential-list" aria-label="Technical credentials demonstrated by this project">
           ${credentials.map((credential) => `<span>${escapeHtml(credential)}</span>`).join("")}
@@ -504,7 +531,7 @@ function homePage(): string {
         <div>
           <h2>Purpose</h2>
           <p>
-            This is not only a public website. Public web is one demonstrable client of a broader platform. The central idea is that features begin at the API boundary, then can be used by browser experiences, internal operations, asynchronous workers, and future HTTP processing engines without each client inventing its own backend behavior.
+            This public website is one demonstrable client of the CM Platform. The central idea is that features begin at the API boundary, then can be used by browser experiences, internal operations, asynchronous workers, and future HTTP processing engines without each client inventing its own backend behavior.
           </p>
         </div>
         <div class="platform-callout">
@@ -606,20 +633,226 @@ function infrastructurePage(): string {
         </div>
       </section>
 
-      ${platformStatus?.notes.length ? `
-        <section class="future-panel">
-          <div>
-            <p class="platform-kicker">Notes</p>
-            <h2>How To Read This Page</h2>
-            <p>
-              The status API is intentionally conservative. It reports direct checks where possible and calls out inferred checks where the current runtime does not expose richer identity.
-            </p>
+    </section>
+  `;
+}
+
+function cicdPage(): string {
+  const cicdCards = [
+    {
+      title: "Build verification",
+      body: "GitHub Actions runs the repository build from a clean Linux runner so the codebase is proven outside the developer workstation before deployment decisions are made.",
+      proof: "Build workflow, CodeQL, npm audit, docs/deployment-plan.md",
+    },
+    {
+      title: "Container image publication",
+      body: "Production Docker images are built for the public web gateway, API, email dispatcher, widget consumers, and maintenance worker, then published with immutable commit SHA tags.",
+      proof: "GHCR SHA-tagged images and Container Build jobs",
+    },
+    {
+      title: "Protected production deployment",
+      body: "Production deployment is gated by the GitHub production environment, manual approval, explicit deploy confirmations, and Azure OIDC rather than long-lived cloud passwords.",
+      proof: "GitHub Environment production, Azure OIDC, Bicep deploy workflows",
+    },
+    {
+      title: "Infrastructure as code",
+      body: "Azure resources are modeled with Bicep so foundation, SQL, and Container Apps changes can be reviewed, previewed with what-if, and deployed through the same protected workflow path.",
+      proof: "infra/bicep and docs/deployment-plan.md",
+    },
+    {
+      title: "Runtime configuration",
+      body: "Production containers receive configuration through environment variables and platform secrets, keeping source code, images, and local env files separate from production values.",
+      proof: "Azure Container Apps secrets and GitHub production secrets",
+    },
+    {
+      title: "Scheduled operations",
+      body: "The demo maintenance worker is being prepared as a scheduled operations job to clean shared demo state and send email summaries, extending CI/CD into operation and hygiene.",
+      proof: "services/demo-maintenance and Phase 5 notes",
+    },
+  ];
+  const containerRuntimeCards = [
+    {
+      title: "Local infrastructure",
+      body: "Docker Compose owns SQL Server, MongoDB, and RabbitMQ locally so the platform can run repeatable dependencies without installing those services directly on the workstation.",
+      proof: "docker/compose.dev.yml",
+    },
+    {
+      title: "Production-style images",
+      body: "The public web gateway, API, email dispatcher, widget consumers, and maintenance worker build into deployable images so CI can prove packaging before deployment.",
+      proof: "docker/Dockerfile.* and GitHub Container Build jobs",
+    },
+    {
+      title: "Same-origin gateway",
+      body: "Nginx serves the compiled Vite site and proxies API routes to svc-core over localhost, preserving browser cookie behavior and matching the Azure Container Apps sidecar model.",
+      proof: "docker/nginx.public-web.conf",
+    },
+    {
+      title: "Production-like local runtime",
+      body: "The production images can run together locally against SQL Server, MongoDB, and RabbitMQ with only the web gateway exposed, giving a final smoke test before cloud deployment.",
+      proof: "npm run prod-local:up and npm run prod-local:verify",
+    },
+  ];
+
+  const azureRows = [
+    {
+      resource: "Resource group",
+      purpose: "Groups the production Azure resources under one management and cost boundary.",
+      value: "rg-cm-platform-prod",
+    },
+    {
+      resource: "Azure Container Apps environment",
+      purpose: "Hosts the public web/API app and worker Container Apps on the consumption plan.",
+      value: "cae-cm-platform-prod-cus",
+    },
+    {
+      resource: "Public web/API Container App",
+      purpose: "Runs Nginx as the public gateway with svc-core as the API sidecar.",
+      value: "ca-cmp-web-prod",
+    },
+    {
+      resource: "Worker Container Apps",
+      purpose: "Run the email dispatcher and widget consumer demos as separate observable workloads.",
+      value: "ca-cmp-email-prod, ca-cmp-widget-fast-prod, ca-cmp-widget-slow-prod",
+    },
+    {
+      resource: "Azure SQL Database",
+      purpose: "Hosts the relational production schema with encrypted transport and separate migration/runtime identities.",
+      value: "CMPlatform on Azure SQL",
+    },
+    {
+      resource: "Log Analytics",
+      purpose: "Receives Azure Container Apps logs with short retention for low-cost operational visibility.",
+      value: "log-cm-platform-prod-cus",
+    },
+  ];
+
+  return `
+    <section class="platform-overview">
+      <div class="platform-hero">
+        <div>
+          <p class="platform-kicker">CI/CD and Azure</p>
+          <h1>Deployment Pipeline and Cloud Runtime</h1>
+          <p class="platform-lede">
+            CM Platform uses Docker, GitHub Actions, GHCR, Azure Bicep, Azure Container Apps, and Azure SQL to turn local TypeScript services into a protected, production-like public portfolio environment.
+          </p>
+          <div class="platform-hero-actions">
+            <span>Reference: docs/deployment-plan.md</span>
           </div>
-          <div class="infrastructure-note-list">
-            ${platformStatus.notes.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}
+        </div>
+        <div class="platform-stack" aria-label="CI/CD deployment summary">
+          <div class="platform-stack-row">
+            <span>Source</span>
+            <strong>GitHub repository, protected production environment, GitHub Actions workflows</strong>
           </div>
-        </section>
-      ` : ""}
+          <div class="platform-stack-row">
+            <span>Artifacts</span>
+            <strong>Docker images tagged by Git SHA and published to GitHub Container Registry</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Runtime</span>
+            <strong>Azure Container Apps, Azure SQL, managed external MongoDB/RabbitMQ/Resend services</strong>
+          </div>
+        </div>
+      </div>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Deployment Flow</h2>
+          <p>
+            The deployment plan intentionally separates build, image publication, infrastructure preview, database migration, runtime deployment, and smoke testing. That keeps each production change reviewable and gives the portfolio concrete evidence of modern CI/CD practice.
+          </p>
+          <p>
+            Docker provides the container image contract. GitHub Actions builds and publishes those images to GHCR, and Azure Container Apps runs them in production.
+          </p>
+        </div>
+        <div class="platform-flow platform-flow-separated" aria-label="CI/CD deployment flow">
+          <div>GitHub commit</div>
+          <div>Build and scan</div>
+          <div>GHCR images</div>
+          <div class="platform-flow-core">Production approval</div>
+          <div>Bicep what-if</div>
+          <div>Azure deploy</div>
+          <div>Smoke tests</div>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>What Azure Runs</h2>
+          <p>
+            Azure is the production host for the container runtime, relational database, deployment identity, logs, budget controls, and custom-domain binding. MongoDB Atlas, CloudAMQP, Cloudflare, Resend, and GHCR remain managed services outside Azure.
+          </p>
+        </div>
+        <div class="infrastructure-table-wrap">
+          <table class="table table-sm infrastructure-table">
+            <thead>
+              <tr>
+                <th>Azure Resource</th>
+                <th>Purpose</th>
+                <th>Current Name / Disposition</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${azureRows.map((row) => `
+                <tr>
+                  <td>${escapeHtml(row.resource)}</td>
+                  <td>${escapeHtml(row.purpose)}</td>
+                  <td>${escapeHtml(row.value)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="platform-section">
+        <div>
+          <h2>Architecture View</h2>
+          <p>
+            Azure can help visualize deployed resources through portal resource views, resource group listings, topology-style blades, and exported diagrams from third-party tools. For this portfolio, the clearest diagram should be maintained in the repository because it can show both Azure and non-Azure services in one intentional picture.
+          </p>
+        </div>
+        <div class="platform-callout">
+          <span>Diagram direction</span>
+          <strong>Use Azure Portal to inspect live Azure resources, then keep the portfolio architecture diagram in source control so Cloudflare, GHCR, Atlas, CloudAMQP, Resend, and Azure all appear together.</strong>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>How Containers Fit</h2>
+          <p>
+            Docker remains part of the deployment story because containers are the artifact that GitHub Actions builds, GHCR stores, and Azure Container Apps runs.
+          </p>
+        </div>
+        <div class="platform-card-grid">
+          ${containerRuntimeCards.map((card) => `
+            <article class="platform-card">
+              <h3>${escapeHtml(card.title)}</h3>
+              <p>${escapeHtml(card.body)}</p>
+              <div class="platform-proof">${escapeHtml(card.proof)}</div>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Technology Evidence</h2>
+          <p>
+            These cards summarize the CI/CD and Azure practices captured in docs/deployment-plan.md.
+          </p>
+        </div>
+        <div class="platform-card-grid">
+          ${cicdCards.map((card) => `
+            <article class="platform-card">
+              <h3>${escapeHtml(card.title)}</h3>
+              <p>${escapeHtml(card.body)}</p>
+              <div class="platform-proof">${escapeHtml(card.proof)}</div>
+            </article>
+          `).join("")}
+        </div>
+      </section>
     </section>
   `;
 }
@@ -754,15 +987,15 @@ function secretsPage(): string {
   const secretConcerns = [
     {
       title: "Where secrets live",
-      body: "Local development can use a machine-local env file. Stage and production should use the deployment platform's secret store instead of committed files.",
+      body: "Local development can use a machine-local env file. Production uses GitHub and Azure-managed secret injection instead of committed files.",
     },
     {
       title: "How each environment gets them",
-      body: "The same variable names should work across environments, but the source changes: dev reads local files, while stage and production receive injected runtime values.",
+      body: "The same variable names should work in development and production, but the source changes: development reads local files, while production receives injected runtime values.",
     },
     {
       title: "How the app proves configuration",
-      body: "Services should validate required settings on startup and report readiness without logging or exposing the actual secret values.",
+      body: "Services should validate required settings on startup and report readiness without logging or exposing the actual secret values. The Infrastructure Status API provides runtime evidence by checking whether configured dependencies are reachable and healthy; the Infrastructure Status page displays those results.",
     },
   ];
 
@@ -773,24 +1006,18 @@ function secretsPage(): string {
       note: "Developer-owned local values used by npm scripts and Docker Compose.",
     },
     {
-      environment: "Stage",
-      source: "Platform secret store",
-      note: "Staging database, RabbitMQ, email, webhook, and signing values injected at runtime.",
-    },
-    {
       environment: "Production",
-      source: "Platform secret store",
-      note: "Production secrets injected by the host or orchestrator, never copied from the repository.",
+      source: "GitHub production secrets and Azure Container Apps secrets",
+      note: "Production database, RabbitMQ, email, webhook, signing, and runtime values injected by the deployment and hosting platforms.",
     },
   ];
 
   const platformExamples = [
-    "Docker host or Compose: server-local env file outside Git",
-    "Kubernetes: Kubernetes Secrets, External Secrets, or sealed secrets",
-    "AWS: Secrets Manager or SSM Parameter Store",
-    "Azure: Key Vault",
-    "GCP: Secret Manager",
-    "Cloudflare: environment secrets for edge workloads",
+    "Local development: ignored env file outside Git",
+    "GitHub Actions: production environment secrets",
+    "Azure Container Apps: runtime secrets injected into containers",
+    "Azure Key Vault: future option for stronger managed secret governance",
+    "Cloudflare: Access and edge configuration separate from application secrets",
   ];
 
   return `
@@ -800,7 +1027,7 @@ function secretsPage(): string {
           <p class="platform-kicker">Containers / Secrets</p>
           <h1>Secret Handling Across Environments</h1>
           <p class="platform-lede">
-            Secrets are part of the runtime contract for cm-platform. The goal is to keep local development convenient while making stage and production depend on injected secrets rather than values committed to the repository or baked into Docker images.
+            Secrets are part of the runtime contract for cm-platform. The goal is to keep local development convenient while making production depend on injected secrets rather than values committed to the repository or baked into Docker images.
           </p>
           <div class="platform-hero-actions">
             <span>Same image, same variable names, different secret sources per environment.</span>
@@ -812,12 +1039,8 @@ function secretsPage(): string {
             <strong>Local env file stays machine-local and out of Git</strong>
           </div>
           <div class="platform-stack-row">
-            <span>Stage</span>
-            <strong>Deployment platform injects staging-only secret values</strong>
-          </div>
-          <div class="platform-stack-row">
             <span>Production</span>
-            <strong>Production values come from a managed secret source</strong>
+            <strong>GitHub and Azure inject production values at deploy and runtime</strong>
           </div>
         </div>
       </div>
@@ -843,7 +1066,7 @@ function secretsPage(): string {
         <div>
           <h2>Environment Model</h2>
           <p>
-            Development can stay simple with packages/secrets/cm-platform.env. Stage and production should use the same variable names, but those values should be supplied by the host or orchestration layer at runtime.
+            Development can stay simple with packages/secrets/cm-platform.env. Production should use the same variable names, but those values should be supplied by GitHub Actions and Azure Container Apps at deploy and runtime.
           </p>
         </div>
         <div class="platform-callout">
@@ -856,7 +1079,7 @@ function secretsPage(): string {
         <div>
           <h2>Disposition By Environment</h2>
           <p>
-            This is the intended direction for cm-platform as it moves from local demonstration toward stage and production hosting.
+            This is the intended direction for cm-platform as it moves between local development and production hosting.
           </p>
         </div>
         <div class="infrastructure-table-wrap">
@@ -885,7 +1108,7 @@ function secretsPage(): string {
         <div>
           <h2>Configuration Versus Secrets</h2>
           <p>
-            Public URLs, ports, feature flags, and log levels are configuration. Database passwords, session signing keys, RabbitMQ credentials, SMTP keys, and webhook signing secrets are secrets.
+            Public URLs, ports, feature flags, and log levels are configuration. Database passwords, session signing keys, RabbitMQ credentials, SMTP keys, and webhook signing values are secrets.
           </p>
           <p>
             Frontend values bundled into the Vite public web app should be treated as public. Anything exposed through a VITE_* variable must be safe for a browser user to see.
@@ -914,7 +1137,10 @@ function secretsPage(): string {
         <div>
           <h2>Provider Options</h2>
           <p>
-            The platform-specific provider can change without changing the app contract. The important part is that stage and production inject the expected environment variables from an appropriate secret source.
+            The platform-specific provider can change without changing the app contract. The important part is that production injects the expected environment variables from an appropriate secret source.
+          </p>
+          <p>
+            For example, Resend could be replaced with another email provider by changing the email adapter and production secret values, while the rest of the platform continues to ask for the same email-sending capability.
           </p>
         </div>
         <div class="future-list">
@@ -922,21 +1148,6 @@ function secretsPage(): string {
         </div>
       </section>
 
-      <section class="future-panel">
-        <div>
-          <p class="platform-kicker">Futures</p>
-          <h2>Secret Management Direction</h2>
-          <p>
-            Future work can formalize required variables by service, add stronger startup validation, and document the exact provider used by the eventual staging and production hosts.
-          </p>
-        </div>
-        <div class="future-list">
-          <span>Required variables by service</span>
-          <span>Secret rotation notes</span>
-          <span>Managed provider selection</span>
-          <span>Readiness checks without value exposure</span>
-        </div>
-      </section>
     </section>
   `;
 }
@@ -978,7 +1189,7 @@ function iamPage(): string {
           <p class="platform-kicker">Identity and access</p>
           <h1>Account Creation Workflow</h1>
           <p class="platform-lede">
-            This area demonstrates the platform's public authentication surface: registration, email verification, login, session inspection, logout, and account deletion. It is designed as a repeatable workflow so the full account lifecycle can be tested more than once without database cleanup.
+            CM Platform includes a simple account workflow with email/password registration, basic password validation, email confirmation, login, session inspection, logout, and account deletion for repeatable demos.
           </p>
         </div>
         <div class="platform-stack" aria-label="Identity workflow summary">
@@ -1001,7 +1212,7 @@ function iamPage(): string {
         <div>
           <h2>Current Workflow</h2>
           <p>
-            The workflow intentionally includes account deletion because this page is part of a technical portfolio and demo environment. A reviewer can create an account, verify email delivery behavior, inspect the resulting session, delete the account, and then repeat the same flow with the same address.
+            The goal is not to present a complete identity product. It is to show a working authentication slice that connects browser forms, API validation, SQL-backed account state, asynchronous email delivery, and HTTP-only browser sessions.
           </p>
         </div>
         <div class="iam-workflow">
@@ -1021,7 +1232,7 @@ function iamPage(): string {
         <div>
           <h2>User Interface Design</h2>
           <p>
-            The UI separates the account lifecycle into simple surfaces: Create Account, Login, and My Account. The My Account page exposes the active session and account verification state, plus explicit logout and delete-account actions. That delete action is deliberate: it lowers friction for repeatedly exercising the registration and verification path.
+            The UI keeps the account lifecycle intentionally plain: Create Account, Login, and My Account. The My Account page shows the active session and verification state, with logout and delete-account actions so the demo can be replayed cleanly.
           </p>
         </div>
         <div class="platform-callout">
@@ -1062,14 +1273,12 @@ function widgetsPage(): string {
             This demonstration uses RabbitMQ as the work queue and SQL Server as the visible state store. Creating widgets inserts rows into dbo.WidgetQueueDemo with a status of queued, then publishes durable widget.processing_requested.v1 messages to the cm.widget exchange, which routes them into the cm.widget.processing queue. The process buttons pull messages from that queue, validate the payload, update the matching SQL row, and ack successful messages so RabbitMQ removes them. Failed messages move first to a delayed retry queue, where RabbitMQ holds them briefly before routing them back to the main processing queue. If a retried message fails again, it is rejected without requeueing and sent to cm.widget.processing.dlq, where it can be replayed or repaired.
           </p>
         </div>
-        <button class="btn btn-outline-secondary" type="button" data-action="refresh-widgets" ${isSubmitting ? "disabled" : ""}>
-          Refresh
-        </button>
       </div>
 
       <div class="messaging-notes mb-4">
         <h2 class="h6 mb-2">Important Notes</h2>
         <ol class="mb-0 text-muted">
+          <li>${sharedRabbitMqDemoNote.trim()}</li>
           <li>Start with an empty queue. Use the Delete All Widgets button if necessary.</li>
           <li>Note the five metrics displayed; they all begin at zero.</li>
           <li>Use the Create 5 button to publish five messages to the queue.</li>
@@ -1118,6 +1327,7 @@ function widgetsPage(): string {
 
       <div class="d-flex flex-wrap gap-2 mb-4">
         <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-outline-secondary" type="button" data-action="refresh-widgets" ${isSubmitting ? "disabled" : ""}>Refresh</button>
           <button class="btn btn-primary" type="button" data-action="create-widget" data-count="1" ${isSubmitting ? "disabled" : ""}>Create 1</button>
           <button class="btn btn-primary" type="button" data-action="create-widget" data-count="5" ${isSubmitting ? "disabled" : ""}>Create 5</button>
           <button class="btn btn-outline-primary" type="button" data-action="process-widgets" data-count="1" ${isSubmitting ? "disabled" : ""}>Process 1</button>
@@ -1186,9 +1396,15 @@ function competingConsumersPage(): string {
             This demonstration uses one RabbitMQ queue and multiple worker instances to show competing consumers. Creating widgets writes rows into dbo.WidgetConsumerDemo with a status of queued, then publishes durable widget.consumer_demo.processing_requested.v1 messages to the cm.widget.consumer-demo exchange. Each worker consumes from the same cm.widget.consumer-demo.processing queue with prefetch set to 1, so RabbitMQ gives each message to only one available worker. A faster worker finishes and acknowledges messages sooner, making it available for more work while slower workers are still processing.
           </p>
         </div>
-        <button class="btn btn-outline-secondary" type="button" data-action="refresh-consumer-widgets" ${isSubmitting ? "disabled" : ""}>
-          Refresh
-        </button>
+      </div>
+
+      <div class="messaging-notes mb-4">
+        <h2 class="h6 mb-2">Important Notes</h2>
+        <ul class="mb-0 text-muted">
+          <li>${sharedRabbitMqDemoNote.trim()}</li>
+          <li>Each message is delivered to only one available worker, so fast and slow consumers compete for work from the same queue.</li>
+          <li>The worker that finishes first becomes available for another message sooner, which is why faster workers usually process more rows.</li>
+        </ul>
       </div>
 
       ${statusMessage(widgetConsumerState)}
@@ -1217,6 +1433,7 @@ function competingConsumersPage(): string {
 
       <div class="d-flex flex-wrap gap-2 mb-4">
         <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-outline-secondary" type="button" data-action="refresh-consumer-widgets" ${isSubmitting ? "disabled" : ""}>Refresh</button>
           <button class="btn btn-primary" type="button" data-action="create-consumer-widget" data-count="10" ${isSubmitting ? "disabled" : ""}>Create 10</button>
           <button class="btn btn-primary" type="button" data-action="create-consumer-widget" data-count="25" ${isSubmitting ? "disabled" : ""}>Create 25</button>
         </div>
@@ -1264,6 +1481,7 @@ function topicRoutingPage(): string {
       <div class="messaging-notes mb-4">
         <h2 class="h6 mb-2">Important Notes</h2>
         <ul class="mb-0 text-muted">
+          <li>${sharedRabbitMqDemoNote.trim()}</li>
           <li>An exchange receives published messages and decides which queues should receive them.</li>
           <li>Producers publish to an exchange with a routing key; they do not need to know every queue.</li>
           <li>Queue bindings connect queues to an exchange and define the matching rules.</li>
@@ -1335,6 +1553,7 @@ function priorityQueuePage(): string {
       <div class="messaging-notes mb-4">
         <h2 class="h6 mb-2">Important Notes</h2>
         <ul class="mb-0 text-muted">
+          <li>${sharedRabbitMqDemoNote.trim()}</li>
           <li>x-max-priority is set on the queue, not the exchange.</li>
           <li>It must be declared when the queue is created.</li>
           <li>RabbitMQ rejects conflicting declarations if the queue already exists without that argument.</li>
@@ -1457,7 +1676,9 @@ function registerPage(): string {
   return `
     <div class="auth-panel">
       <h1 class="h3 mb-2">Create Account</h1>
-      <p class="text-muted">Create an account using email address and password.</p>
+      <p class="text-muted">
+        Creating an account is not required to use the CM Platform demos. If you do create one, you can participate in the account creation workflow, including email confirmation and session inspection. You can delete your account at any time from My Account / Session State.
+      </p>
 
       ${statusMessage(registerState)}
 
@@ -1486,7 +1707,6 @@ function registerPage(): string {
 
 function mongodbPage(): string {
   const isLoading = mongoWebhookFormState.status === "submitting";
-  const importedCount = mongoWebhookExplorerState.sourceCounts.find((item) => item._id === "imported-jsonl")?.count ?? 0;
   const liveCount = mongoWebhookExplorerState.sourceCounts.find((item) => item._id === "webhook")?.count ?? 0;
 
   return `
@@ -1545,16 +1765,9 @@ function mongodbPage(): string {
 
       <section class="row g-3">
         ${metricCard("Matching documents", mongoWebhookExplorerState.total)}
-        ${metricCard("Imported JSONL", importedCount)}
         ${metricCard("Live webhooks", liveCount)}
         ${metricCard("Event types", mongoWebhookExplorerState.eventTypeCounts.length)}
       </section>
-
-      <div class="alert alert-secondary mb-0">
-        <strong>Imported JSONL</strong> counts webhook summaries that were imported when MongoDB was introduced.
-        The original JSONL file and importer have been removed; these retained documents provide realistic historical demo data
-        but do not contain the complete provider payload available on newer live webhook documents.
-      </div>
 
       <section class="card shadow-sm">
         <div class="card-body">
@@ -1581,7 +1794,6 @@ function mongodbPage(): string {
               <select class="form-select" id="mongodb-source" name="source">
                 <option value="">All sources</option>
                 <option value="webhook" ${mongoWebhookFilters.source === "webhook" ? "selected" : ""}>Live webhook</option>
-                <option value="imported-jsonl" ${mongoWebhookFilters.source === "imported-jsonl" ? "selected" : ""}>Imported JSONL</option>
               </select>
             </div>
             <div class="col-md-4 col-lg-2 d-grid">
@@ -1839,6 +2051,38 @@ function getCredentials(form: HTMLFormElement): { emailAddress: string; password
   };
 }
 
+async function csrfFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const token = await getCsrfToken();
+  const headers = new Headers(init.headers);
+  headers.set("x-csrf-token", token);
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
+}
+
+async function getCsrfToken(): Promise<string> {
+  if (csrfToken) {
+    return csrfToken;
+  }
+
+  const response = await fetch("/auth/csrf");
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Unable to initialize request protection"));
+  }
+
+  const body = await response.json() as { csrfToken?: string };
+
+  if (!body.csrfToken) {
+    throw new Error("Unable to initialize request protection.");
+  }
+
+  csrfToken = body.csrfToken;
+  return csrfToken;
+}
+
 async function submitRegister(form: HTMLFormElement): Promise<void> {
   registerState.status = "submitting";
   registerState.message = undefined;
@@ -1917,7 +2161,7 @@ async function loadCurrentAccount(): Promise<void> {
 }
 
 async function logout(): Promise<void> {
-  await fetch("/auth/logout", { method: "POST" });
+  await csrfFetch("/auth/logout", { method: "POST" });
   account = null;
   authSession = null;
   accountState.status = "idle";
@@ -1939,7 +2183,7 @@ async function deleteAccount(): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/auth/me", { method: "DELETE" });
+    const response = await csrfFetch("/auth/me", { method: "DELETE" });
 
     if (!response.ok) {
       throw new Error(await readError(response, "Unable to delete account"));
@@ -1979,7 +2223,7 @@ async function createWidgets(count: number): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/widgets", {
+    const response = await csrfFetch("/widgets", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ count }),
@@ -2006,7 +2250,7 @@ async function processWidgets(count?: number): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/widgets/process", {
+    const response = await csrfFetch("/widgets/process", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(count ? { count } : {}),
@@ -2059,7 +2303,7 @@ async function deleteWidgets(): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/widgets", { method: "DELETE" });
+    const response = await csrfFetch("/widgets", { method: "DELETE" });
 
     if (!response.ok) {
       throw new Error(await readError(response, "Unable to delete widgets"));
@@ -2093,7 +2337,7 @@ async function handleDeadLetterAction(
   render();
 
   try {
-    const response = await fetch(`/widgets/dead-letter/${encodeURIComponent(messageId)}/${action}`, {
+    const response = await csrfFetch(`/widgets/dead-letter/${encodeURIComponent(messageId)}/${action}`, {
       method: "POST",
     });
 
@@ -2135,7 +2379,7 @@ async function createConsumerWidgets(count: number): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/consumer-widgets", {
+    const response = await csrfFetch("/consumer-widgets", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ count }),
@@ -2170,7 +2414,7 @@ async function deleteConsumerWidgets(): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/consumer-widgets", { method: "DELETE" });
+    const response = await csrfFetch("/consumer-widgets", { method: "DELETE" });
 
     if (!response.ok) {
       throw new Error(await readError(response, "Unable to delete competing consumer widgets"));
@@ -2208,7 +2452,7 @@ async function publishTopicRoutingEvent(routingKey: string): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/topic-routing", {
+    const response = await csrfFetch("/topic-routing", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ routingKey }),
@@ -2241,7 +2485,7 @@ async function purgeTopicRoutingQueues(): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/topic-routing", { method: "DELETE" });
+    const response = await csrfFetch("/topic-routing", { method: "DELETE" });
 
     if (!response.ok) {
       throw new Error(await readError(response, "Unable to purge topic routing queues"));
@@ -2367,7 +2611,7 @@ async function publishPriorityQueueJob(priority: number): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/priority-queue", {
+    const response = await csrfFetch("/priority-queue", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ priority }),
@@ -2394,7 +2638,7 @@ async function processPriorityQueue(count: number): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/priority-queue/process", {
+    const response = await csrfFetch("/priority-queue/process", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ count }),
@@ -2428,7 +2672,7 @@ async function purgePriorityQueue(): Promise<void> {
   render();
 
   try {
-    const response = await fetch("/priority-queue", { method: "DELETE" });
+    const response = await csrfFetch("/priority-queue", { method: "DELETE" });
 
     if (!response.ok) {
       throw new Error(await readError(response, "Unable to purge priority queue"));
@@ -2525,6 +2769,17 @@ function bindEvents(): void {
   mongoSearchForm?.addEventListener("submit", (event) => {
     event.preventDefault();
     void submitMongoWebhookSearch(mongoSearchForm);
+  });
+
+  document.querySelectorAll<HTMLAnchorElement>("#publicSidebarNav .public-nav-link").forEach((link) => {
+    link.addEventListener("click", () => {
+      const sidebarNav = document.querySelector<HTMLElement>("#publicSidebarNav");
+      const collapse = sidebarNav ? Collapse.getOrCreateInstance(sidebarNav, { toggle: false }) : null;
+
+      if (collapse && window.matchMedia("(max-width: 991.98px)").matches) {
+        collapse.hide();
+      }
+    });
   });
 
   document.querySelector<HTMLButtonElement>('[data-action="logout"]')?.addEventListener("click", () => {
@@ -2647,27 +2902,29 @@ function render(): void {
       ? homePage()
       : page === "infrastructure"
         ? infrastructurePage()
-        : page === "containers"
-          ? containersPage()
-          : page === "secrets"
-            ? secretsPage()
-            : page === "iam"
-              ? iamPage()
-              : page === "register"
-                ? registerPage()
-                : page === "account"
-                  ? accountPage()
-                  : page === "widgets"
-                    ? widgetsPage()
-                    : page === "competing-consumers"
-                      ? competingConsumersPage()
-                      : page === "topic-routing"
-                        ? topicRoutingPage()
-                        : page === "priority-queue"
-                          ? priorityQueuePage()
-                          : page === "mongodb"
-                            ? mongodbPage()
-                            : loginPage();
+        : page === "cicd"
+          ? cicdPage()
+          : page === "containers"
+            ? containersPage()
+            : page === "secrets"
+              ? secretsPage()
+              : page === "iam"
+                ? iamPage()
+                : page === "register"
+                  ? registerPage()
+                  : page === "account"
+                    ? accountPage()
+                    : page === "widgets"
+                      ? widgetsPage()
+                      : page === "competing-consumers"
+                        ? competingConsumersPage()
+                        : page === "topic-routing"
+                          ? topicRoutingPage()
+                          : page === "priority-queue"
+                            ? priorityQueuePage()
+                            : page === "mongodb"
+                              ? mongodbPage()
+                              : loginPage();
 
   app.innerHTML = layout(content);
   bindEvents();
@@ -2675,7 +2932,6 @@ function render(): void {
 
 function syncSidebarSectionsFromDom(): void {
   const platformPanel = document.querySelector<HTMLElement>("#platformNav");
-  const containersPanel = document.querySelector<HTMLElement>("#containersNav");
   const identityPanel = document.querySelector<HTMLElement>("#identityAccessNav");
   const accountPanel = document.querySelector<HTMLElement>("#myAccountNav");
   const messagingPanel = document.querySelector<HTMLElement>("#queueDemosNav");
@@ -2683,7 +2939,6 @@ function syncSidebarSectionsFromDom(): void {
 
   sidebarSectionsOpen = {
     platform: platformPanel ? platformPanel.classList.contains("show") : sidebarSectionsOpen.platform,
-    containers: containersPanel ? containersPanel.classList.contains("show") : sidebarSectionsOpen.containers,
     identity: identityPanel ? identityPanel.classList.contains("show") : sidebarSectionsOpen.identity,
     account: accountPanel ? accountPanel.classList.contains("show") : sidebarSectionsOpen.account,
     messaging: messagingPanel ? messagingPanel.classList.contains("show") : sidebarSectionsOpen.messaging,

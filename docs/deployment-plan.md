@@ -395,13 +395,13 @@ Complete these items before public launch:
 
 - enable encrypted Azure SQL connections and certificate validation;
 - add graceful `SIGTERM`/`SIGINT` shutdown to `svc-core`;
-- add security response headers at the gateway;
-- add request body limits and rate limits to registration, login, and webhook endpoints;
+- maintain security response headers at the gateway;
+- keep request body limits in place and extend rate limits beyond the initial registration/login protection where needed;
 - verify webhook signatures before storing Resend events;
 - disable or strongly protect `/internal`;
 - review public demo endpoints that create, process, or delete data;
-- add CSRF protection for cookie-authenticated state-changing routes;
-- add login and registration abuse controls;
+- maintain CSRF protection for cookie-authenticated and demo state-changing routes;
+- maintain basic login and registration abuse controls so public account workflows cannot be hammered without backoff;
 - ensure production errors do not expose connection details or stack traces;
 - use a long random `ADMIN_KEY` and preferably replace it later with real authorization;
 - confirm account deletion behavior is appropriate for a public environment;
@@ -1413,6 +1413,10 @@ Cloudflare should use DNS-only mode until Azure validates and binds the managed 
 - Perform one application rollback drill.
 - Perform one database restore drill.
 - Document one incident-style exercise.
+- Add `services/demo-maintenance` as a scheduled operations worker for shared public demo hygiene.
+- Use `CM_PLATFORM_MONITORS` as the comma- or semicolon-separated list of system email recipients.
+- Use `DEMO_MAINTENANCE_RETENTION_HOURS` as the cleanup threshold so testing can use a very small retention window before production settles near 24 hours.
+- The maintenance worker deletes old `WidgetQueueDemo` and `WidgetConsumerDemo` rows by retention cutoff, purges shared RabbitMQ demo queues, resets the priority queue page's in-memory demo history through an internal admin endpoint, and sends a completion email with row, queue, and API cleanup counts.
 - Publish an architecture diagram and deployment write-up in the portfolio.
 
 Exit criterion: the project demonstrates operation and recovery, not only deployment.

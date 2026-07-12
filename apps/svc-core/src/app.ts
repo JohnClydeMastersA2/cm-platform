@@ -4,6 +4,7 @@ import { dbPlugin } from "./plugins/db.js";
 import { messagingPlugin } from "./plugins/messaging.js";
 import { mongoPlugin } from "./plugins/mongo.js";
 import { authAdminPlugin } from "./plugins/auth-admin.js";
+import { csrfPlugin } from "./plugins/csrf.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { platformStatusRoutes } from "./modules/platform_status/platform_status.routes.js";
 import { emailEventsWebhookRoutes } from "./routes/webhooks/email_events.js";
@@ -66,6 +67,8 @@ export function buildApp(opts: BuildAppOptions) {
   app.register(authAdminPlugin, {
     adminKey: opts.adminKey,
   });
+
+  app.register(csrfPlugin);
 
   app.get("/", async () => {
     return {

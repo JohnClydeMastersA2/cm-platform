@@ -2,6 +2,15 @@ body {
   background: #f5f7fb;
 }
 
+img,
+svg {
+  max-width: 100%;
+}
+
+code {
+  overflow-wrap: anywhere;
+}
+
 .public-shell {
   display: flex;
   min-height: 100vh;
@@ -115,6 +124,7 @@ body {
 
 .public-main {
   flex: 1 1 auto;
+  min-width: 0;
   padding: 3rem 1rem;
 }
 
@@ -149,7 +159,7 @@ body {
   color: #e9ecef;
   font-size: 0.78rem;
   max-height: 26rem;
-  max-width: 38rem;
+  max-width: 100%;
   overflow: auto;
   padding: 0.85rem;
   white-space: pre-wrap;
@@ -212,6 +222,8 @@ body {
 }
 
 .platform-primary-link,
+.platform-secondary-link,
+.platform-small-link,
 .platform-source-link {
   border-radius: 0.375rem;
   font-weight: 700;
@@ -225,6 +237,40 @@ body {
 }
 
 .platform-primary-link:hover {
+  background: #0b5ed7;
+  color: #ffffff;
+}
+
+.platform-secondary-link {
+  border: 1px solid #0d6efd;
+  color: #0d6efd;
+  padding: 0.55rem 0.85rem;
+}
+
+.platform-secondary-link:hover {
+  background: #e7f1ff;
+  color: #0a58ca;
+}
+
+.platform-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.platform-card-actions .platform-secondary-link,
+.platform-small-link {
+  font-size: 0.86rem;
+  padding: 0.38rem 0.6rem;
+}
+
+.platform-small-link {
+  background: #0d6efd;
+  color: #ffffff;
+}
+
+.platform-small-link:hover {
   background: #0b5ed7;
   color: #ffffff;
 }
@@ -381,6 +427,10 @@ body {
   margin-bottom: 0;
 }
 
+.platform-section p + p {
+  margin-top: 0.75rem;
+}
+
 .platform-section-block {
   display: block;
 }
@@ -398,6 +448,12 @@ body {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.platform-flow-separated {
+  border-top: 1px solid #dee2e6;
+  margin-top: 1rem;
+  padding-top: 1rem;
 }
 
 .platform-flow div {
@@ -679,7 +735,7 @@ body {
   }
 
   .public-main {
-    padding-top: 2rem;
+    padding: 2rem 1rem;
   }
 
   .platform-hero,
@@ -694,5 +750,103 @@ body {
     justify-content: flex-start;
     min-height: 3rem;
     text-align: left;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .public-sidebar {
+    padding: 0.65rem;
+  }
+
+  .public-brand {
+    font-size: 1rem;
+  }
+
+  .public-main {
+    padding: 1rem 0.75rem;
+  }
+
+  .auth-panel,
+  .platform-hero,
+  .platform-credentials,
+  .platform-section,
+  .future-panel,
+  .platform-card,
+  .messaging-notes,
+  .topic-routing-card {
+    padding: 1rem;
+  }
+
+  .platform-overview {
+    gap: 0.85rem;
+  }
+
+  .platform-hero {
+    gap: 1rem;
+  }
+
+  .platform-hero h1 {
+    font-size: 1.85rem;
+  }
+
+  .platform-lede {
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+
+  .platform-hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .platform-hero-actions .btn,
+  .platform-primary-link,
+  .platform-secondary-link {
+    text-align: center;
+    width: 100%;
+  }
+
+  .platform-stack,
+  .platform-callout,
+  .infrastructure-note-list p {
+    padding: 0.85rem;
+  }
+
+  .platform-credential-list,
+  .future-list {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .iam-workflow-card,
+  .mongodb-credential {
+    grid-template-columns: 1fr;
+  }
+
+  .iam-workflow-step {
+    height: 1.85rem;
+    width: 1.85rem;
+  }
+
+  .card-header {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .card-header .btn,
+  .card-header .btn-group,
+  .card-header form,
+  .card-header select,
+  .card-header input {
+    width: 100%;
+  }
+
+  .btn-group {
+    display: grid;
+    width: 100%;
+  }
+
+  .d-flex.flex-wrap.gap-2 > .btn {
+    flex: 1 1 auto;
   }
 }

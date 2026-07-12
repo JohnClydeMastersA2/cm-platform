@@ -51,6 +51,9 @@
     "widget-consumer:build": "npm --workspace services/widget-consumer run build",
     "widget-consumer:start": "npm --workspace services/widget-consumer run start",
     "rabbitmq:check": "npm --workspace services/widget-consumer run rabbitmq:check",
+    "demo-maintenance:dev": "npm run demo-maintenance:deps:build && npm --workspace services/demo-maintenance run dev",
+    "demo-maintenance:build": "npm --workspace services/demo-maintenance run build",
+    "demo-maintenance:start": "npm --workspace services/demo-maintenance run start",
 
     "public:dev": "npm --workspace public-web run dev",
     "public:build": "npm --workspace public-web run build",
@@ -71,9 +74,10 @@
     "api:deps:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build",
     "email-dispatcher:deps:build": "npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build",
     "widget-consumer:deps:build": "npm run logging:build && npm run messaging:build",
+    "demo-maintenance:deps:build": "npm run logging:build && npm run secrets:build && npm run email:build",
 
-    "core:build": "npm run api:deps:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build",
-    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run public:build && npm run etl:build && npm run email-send-test:build && npm run sql-migrate:build",
+    "core:build": "npm run api:deps:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run demo-maintenance:build",
+    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run demo-maintenance:build && npm run public:build && npm run etl:build && npm run email-send-test:build && npm run sql-migrate:build",
     "build": "npm run all:build",
 
     "api:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/svc-core/dist -ErrorAction SilentlyContinue\"",
@@ -83,13 +87,14 @@
     "email:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/email/dist -ErrorAction SilentlyContinue\"",
     "email-dispatcher:clean": "powershell -Command \"Remove-Item -Recurse -Force services/email-dispatcher/dist -ErrorAction SilentlyContinue\"",
     "widget-consumer:clean": "powershell -Command \"Remove-Item -Recurse -Force services/widget-consumer/dist -ErrorAction SilentlyContinue\"",
+    "demo-maintenance:clean": "powershell -Command \"Remove-Item -Recurse -Force services/demo-maintenance/dist -ErrorAction SilentlyContinue\"",
     "logging:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/logging/dist -ErrorAction SilentlyContinue\"",
     "messaging:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/messaging/dist -ErrorAction SilentlyContinue\"",
     "secrets:clean": "powershell -Command \"Remove-Item -Recurse -Force packages/secrets/dist -ErrorAction SilentlyContinue\"",
     "etl:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/etl-csv-import/dist -ErrorAction SilentlyContinue\"",
     "email-send-test:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/email-send-test/dist -ErrorAction SilentlyContinue\"",
     "sql-migrate:clean": "powershell -Command \"Remove-Item -Recurse -Force tools/sql-migrate/dist -ErrorAction SilentlyContinue\"",
-    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run messaging:clean && npm run secrets:clean && npm run email:clean && npm run email-dispatcher:clean && npm run widget-consumer:clean && npm run api:clean && npm run public:clean && npm run etl:clean && npm run email-send-test:clean && npm run sql-migrate:clean",
+    "clean": "npm run contracts:clean && npm run auth:clean && npm run logging:clean && npm run messaging:clean && npm run secrets:clean && npm run email:clean && npm run email-dispatcher:clean && npm run widget-consumer:clean && npm run demo-maintenance:clean && npm run api:clean && npm run public:clean && npm run etl:clean && npm run email-send-test:clean && npm run sql-migrate:clean",
 
     "core:rebuild": "npm run api:clean && npm run core:build",
     "all:rebuild": "npm run clean && npm run all:build",

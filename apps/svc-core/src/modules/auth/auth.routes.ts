@@ -19,6 +19,14 @@ const secureCookieAttribute = process.env.NODE_ENV === "production" ? "; Secure"
 const sessionCookieOptions = `Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secureCookieAttribute}`;
 const expiredSessionCookie = `Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureCookieAttribute}`;
 const emailVerificationExpirationText = "5 minutes";
+const registerRateLimiter = createRateLimiter({
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000,
+});
+const loginRateLimiter = createRateLimiter({
+  maxAttempts: 10,
+  windowMs: 15 * 60 * 1000,
+});
 
 type AuthRoutesOptions = {
   authApiBaseUrl: string;
@@ -35,6 +43,10 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
   const publicWebBaseUrl = trimTrailingSlash(opts.publicWebBaseUrl);
 
   app.post("/register", async (request, reply) => {
+    if (!allowAuthAttempt(registerRateLimiter, buildIpRateLimitKey("register", request), request, reply, "registration")) {
+      return;
+    }
+
     const parsed = AuthRegisterSchema.safeParse(request.body);
 
     if (!parsed.success) {
@@ -92,6 +104,12 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
       return;
     }
 
+    const loginKey = buildEmailRateLimitKey("login", request, parsed.data.emailAddress);
+
+    if (!allowAuthAttempt(loginRateLimiter, loginKey, request, reply, "login")) {
+      return;
+    }
+
     const result = await loginAccount(app.db, parsed.data);
 
     if (!result) {
@@ -138,6 +156,138 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
     clearSessionCookie(reply);
     return { ok: true };
   });
+}
+
+type RateLimiterOptions = {
+  maxAttempts: number;
+  windowMs: number;
+};
+
+type RateLimiterDecision = {
+  allowed: boolean;
+  retryAfterSeconds: number;
+};
+
+type RateLimitEntry = {
+  count: number;
+  resetAt: number;
+};
+
+type RateLimiter = {
+  check: (key: string) => RateLimiterDecision;
+  maxAttempts: number;
+  windowMs: number;
+};
+
+function createRateLimiter(opts: RateLimiterOptions): RateLimiter {
+  const attempts = new Map<string, RateLimitEntry>();
+
+  return {
+    maxAttempts: opts.maxAttempts,
+    windowMs: opts.windowMs,
+    check(key: string): RateLimiterDecision {
+      const now = Date.now();
+
+      for (const [entryKey, entry] of attempts) {
+        if (entry.resetAt <= now) {
+          attempts.delete(entryKey);
+        }
+      }
+
+      const current = attempts.get(key);
+
+      if (!current || current.resetAt <= now) {
+        attempts.set(key, {
+          count: 1,
+          resetAt: now + opts.windowMs,
+        });
+
+        return {
+          allowed: true,
+          retryAfterSeconds: 0,
+        };
+      }
+
+      if (current.count >= opts.maxAttempts) {
+        return {
+          allowed: false,
+          retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000)),
+        };
+      }
+
+      current.count += 1;
+
+      return {
+        allowed: true,
+        retryAfterSeconds: 0,
+      };
+    },
+  };
+}
+
+function allowAuthAttempt(
+  limiter: RateLimiter,
+  key: string,
+  request: FastifyRequest,
+  reply: FastifyReply,
+  operation: "login" | "registration",
+): boolean {
+  const decision = limiter.check(key);
+
+  if (decision.allowed) {
+    return true;
+  }
+
+  request.log.warn(
+    {
+      operation,
+      retryAfterSeconds: decision.retryAfterSeconds,
+      maxAttempts: limiter.maxAttempts,
+      windowSeconds: Math.ceil(limiter.windowMs / 1000),
+    },
+    "Auth rate limit exceeded",
+  );
+
+  reply
+    .code(429)
+    .header("retry-after", String(decision.retryAfterSeconds))
+    .send({ error: "Too many attempts. Please wait before trying again." });
+
+  return false;
+}
+
+function buildIpRateLimitKey(operation: string, request: FastifyRequest): string {
+  return `${operation}:ip:${getClientAddress(request)}`;
+}
+
+function buildEmailRateLimitKey(operation: string, request: FastifyRequest, emailAddress: string): string {
+  return `${operation}:ip-email:${getClientAddress(request)}:${emailAddress.trim().toLowerCase()}`;
+}
+
+function getClientAddress(request: FastifyRequest): string {
+  const cloudflareIp = getHeaderValue(request, "cf-connecting-ip");
+
+  if (cloudflareIp) {
+    return cloudflareIp;
+  }
+
+  const forwardedFor = getHeaderValue(request, "x-forwarded-for");
+
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0]?.trim() || request.ip;
+  }
+
+  return request.ip;
+}
+
+function getHeaderValue(request: FastifyRequest, name: string): string | undefined {
+  const value = request.headers[name];
+
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
 }
 
 async function requireSession(

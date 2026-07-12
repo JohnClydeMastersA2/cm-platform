@@ -118,12 +118,16 @@ export async function priorityQueueRoutes(app: FastifyInstance): Promise<void> {
 
   app.delete("/", async () => {
     await app.messaging.purgePriorityQueue();
-    publishSequence = 0;
-    processedSequence = 0;
-    publishedMessages.splice(0);
-    processedMessages.splice(0);
+    resetPriorityQueueDemoMemory();
     return buildOverview(app);
   });
+}
+
+export function resetPriorityQueueDemoMemory(): void {
+  publishSequence = 0;
+  processedSequence = 0;
+  publishedMessages.splice(0);
+  processedMessages.splice(0);
 }
 
 async function buildOverview(app: FastifyInstance) {
