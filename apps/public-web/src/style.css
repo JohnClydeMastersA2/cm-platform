@@ -812,6 +812,61 @@ code {
     padding: 0.85rem;
   }
 
+  .infrastructure-table-wrap {
+    overflow-x: visible;
+  }
+
+  .infrastructure-table {
+    min-width: 0;
+  }
+
+  .infrastructure-table thead {
+    display: none;
+  }
+
+  .infrastructure-table,
+  .infrastructure-table tbody,
+  .infrastructure-table tr,
+  .infrastructure-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .infrastructure-table tr {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding: 0.85rem;
+  }
+
+  .infrastructure-table td {
+    border: 0;
+    padding: 0;
+  }
+
+  .infrastructure-table td + td {
+    margin-top: 0.65rem;
+  }
+
+  .infrastructure-table td:nth-child(2)::before,
+  .infrastructure-table td:nth-child(3)::before {
+    color: #6c757d;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .infrastructure-table td:nth-child(2)::before {
+    content: "Disposition";
+  }
+
+  .infrastructure-table td:nth-child(3)::before {
+    content: "Evidence";
+  }
+
   .platform-credential-list,
   .future-list {
     display: grid;
