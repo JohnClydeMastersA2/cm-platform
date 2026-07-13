@@ -3,7 +3,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import Collapse from "bootstrap/js/dist/collapse";
 import "./style.css";
 
-type Page = "home" | "infrastructure" | "cicd" | "containers" | "secrets" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
+type Page = "home" | "infrastructure" | "cicd" | "secrets" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
 type FormStatus = "idle" | "submitting" | "success" | "error";
 type SidebarSection = "platform" | "identity" | "account" | "messaging" | "data";
 
@@ -182,7 +182,6 @@ type MongoWebhookExplorerState = {
 type MongoWebhookFilters = {
   q: string;
   eventType: string;
-  source: string;
 };
 
 let account: AuthAccount | null = null;
@@ -232,7 +231,6 @@ let mongoWebhookExplorerState: MongoWebhookExplorerState = {
 let mongoWebhookFilters: MongoWebhookFilters = {
   q: "",
   eventType: "",
-  source: "",
 };
 let csrfToken: string | null = null;
 
@@ -256,7 +254,6 @@ function getCurrentPage(): Page {
   if (hash === "home") return "home";
   if (hash === "infrastructure") return "infrastructure";
   if (hash === "cicd") return "cicd";
-  if (hash === "containers") return "containers";
   if (hash === "secrets") return "secrets";
   if (hash === "iam") return "iam";
   if (hash === "register") return "register";
@@ -851,132 +848,6 @@ function cicdPage(): string {
               <div class="platform-proof">${escapeHtml(card.proof)}</div>
             </article>
           `).join("")}
-        </div>
-      </section>
-    </section>
-  `;
-}
-
-function containersPage(): string {
-  const containerCards = [
-    {
-      title: "Local infrastructure",
-      body: "Docker Compose owns SQL Server, MongoDB, and RabbitMQ so the platform has repeatable local dependencies without installing those services directly on the workstation.",
-      proof: "docker/compose.dev.yml: db, mongodb, and rabbitmq",
-    },
-    {
-      title: "Production-style images",
-      body: "The public web gateway, API, email dispatcher, and widget consumer each build into deployable images so CI can prove packaging before any cloud deployment exists.",
-      proof: "docker/Dockerfile.public-web, api, email-dispatcher, widget-consumer",
-    },
-    {
-      title: "Same-origin gateway",
-      body: "Nginx serves the compiled Vite site and proxies API routes to svc-core over localhost, preserving browser cookie behavior and matching the planned Azure sidecar shape.",
-      proof: "docker/nginx.public-web.conf",
-    },
-    {
-      title: "Production-like local runtime",
-      body: "The production images can run together locally against SQL Server, MongoDB, and RabbitMQ with only the web gateway exposed on localhost.",
-      proof: "npm run prod-local:up and npm run prod-local:verify",
-    },
-    {
-      title: "Secret handling",
-      body: "Docker Compose injects only the RabbitMQ and SMTP values required by the email dispatcher. The shared secrets file is not mounted into the container or copied into the image.",
-      proof: "explicit runtime environment variables",
-    },
-    {
-      title: "Production portability",
-      body: "Compose is the local orchestration layer, not the application architecture. The same workers can map to another container platform as long as the runtime contract stays environment-based.",
-      proof: "service env vars, commands, logs, restart policy",
-    },
-  ];
-
-  return `
-    <section class="platform-overview">
-      <div class="platform-hero">
-        <div>
-          <p class="platform-kicker">Containers</p>
-          <h1>Docker Runtime Model</h1>
-          <p class="platform-lede">
-            Docker is used to make local infrastructure and production packaging repeatable. SQL Server, MongoDB,
-            and RabbitMQ run as infrastructure containers, while the public web gateway, API, email dispatcher,
-            and widget consumers can run from production-style images for smoke testing.
-          </p>
-          <div class="platform-hero-actions">
-            <span>Production-like local command: npm run prod-local:up</span>
-          </div>
-        </div>
-        <div class="platform-stack" aria-label="Container runtime summary">
-          <div class="platform-stack-row">
-            <span>Infrastructure</span>
-            <strong>SQL Server, MongoDB, and RabbitMQ are managed by Docker Compose</strong>
-          </div>
-          <div class="platform-stack-row">
-            <span>Workers</span>
-            <strong>Public web, API, email dispatcher, and widget consumers use production-style images</strong>
-          </div>
-          <div class="platform-stack-row">
-            <span>Prod-local</span>
-            <strong>Nginx proxies same-origin API calls to svc-core over localhost sidecar routing</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="platform-flow" aria-label="Containerized local runtime flow">
-        <div>Public web</div>
-        <div>API</div>
-        <div class="platform-flow-core">Docker Compose</div>
-        <div>SQL Server</div>
-        <div>MongoDB</div>
-        <div>RabbitMQ</div>
-        <div>Email dispatcher</div>
-        <div>Widget consumers</div>
-      </div>
-
-      <section class="platform-section">
-        <div>
-          <h2>Purpose</h2>
-          <p>
-            The goal is to separate active application development from long-running runtime dependencies. Docker owns the services that should behave like platform infrastructure, while the API and browser experience remain easy to run, inspect, and change from the host machine.
-          </p>
-        </div>
-        <div class="platform-callout">
-          <span>Design lens</span>
-          <strong>Compose is a local implementation detail. The runtime contract is service boundaries plus environment variables.</strong>
-        </div>
-      </section>
-
-      <section class="platform-section platform-section-block">
-        <div>
-          <h2>What Docker Demonstrates</h2>
-          <p>
-            These cards describe the container work currently present in cm-platform and how it supports the broader CI/CD deployment path.
-          </p>
-        </div>
-        <div class="platform-card-grid">
-          ${containerCards.map((card) => `
-            <article class="platform-card">
-              <h3>${escapeHtml(card.title)}</h3>
-              <p>${escapeHtml(card.body)}</p>
-              <div class="platform-proof">${escapeHtml(card.proof)}</div>
-            </article>
-          `).join("")}
-        </div>
-      </section>
-
-      <section class="future-panel">
-        <div>
-          <p class="platform-kicker">Futures</p>
-          <h2>Container Direction</h2>
-          <p>
-            The current Docker setup now proves local infrastructure, production-style image builds, and a production-like Compose runtime. Future work can publish immutable images to GHCR, add deployment-specific manifests, and move production secrets into the hosting platform.
-          </p>
-        </div>
-        <div class="future-list">
-          <span>GHCR image publication</span>
-          <span>Worker health checks</span>
-          <span>Deployment manifests</span>
-          <span>Managed secret provider</span>
         </div>
       </section>
     </section>
@@ -1789,13 +1660,6 @@ function mongodbPage(): string {
                 ${mongoEventTypeOptions()}
               </select>
             </div>
-            <div class="col-md-4 col-lg-2">
-              <label class="form-label" for="mongodb-source">Source</label>
-              <select class="form-select" id="mongodb-source" name="source">
-                <option value="">All sources</option>
-                <option value="webhook" ${mongoWebhookFilters.source === "webhook" ? "selected" : ""}>Live webhook</option>
-              </select>
-            </div>
             <div class="col-md-4 col-lg-2 d-grid">
               <button class="btn btn-primary" type="submit" ${isLoading ? "disabled" : ""}>
                 ${isLoading ? "Searching..." : "Search"}
@@ -1816,21 +1680,20 @@ function mongodbPage(): string {
           </button>
         </div>
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
+          <table class="table table-hover align-middle mb-0 mongodb-webhook-table">
             <thead>
               <tr>
                 <th>Received</th>
                 <th>Event</th>
                 <th>Recipient</th>
                 <th>Subject</th>
-                <th>Source</th>
                 <th>Document</th>
               </tr>
             </thead>
             <tbody>
               ${mongoWebhookExplorerState.events.length
                 ? mongoWebhookRows()
-                : `<tr><td colspan="6" class="text-muted p-4">No MongoDB documents matched these filters.</td></tr>`}
+                : `<tr><td colspan="5" class="text-muted p-4">No MongoDB documents matched these filters.</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -1888,7 +1751,6 @@ function mongoWebhookRows(): string {
       <td><code>${escapeHtml(event.eventType)}</code></td>
       <td>${event.recipients.length ? event.recipients.map(escapeHtml).join("<br>") : "None"}</td>
       <td>${escapeHtml(event.subject ?? "Not supplied")}</td>
-      <td>${mongoSourceBadge(event.source)}</td>
       <td>
         <details>
           <summary class="mongodb-document-summary">View fields</summary>
@@ -1897,12 +1759,6 @@ function mongoWebhookRows(): string {
       </td>
     </tr>
   `).join("");
-}
-
-function mongoSourceBadge(source: MongoWebhookEvent["source"]): string {
-  const badgeClass = source === "webhook" ? "text-bg-success" : "text-bg-secondary";
-  const label = source === "webhook" ? "Live" : "Imported";
-  return `<span class="badge ${badgeClass}">${label}</span>`;
 }
 
 function accountPage(): string {
@@ -2711,10 +2567,6 @@ async function loadMongoWebhookEvents(page = 1): Promise<void> {
     query.set("eventType", mongoWebhookFilters.eventType);
   }
 
-  if (mongoWebhookFilters.source) {
-    query.set("source", mongoWebhookFilters.source);
-  }
-
   try {
     const response = await fetch(`/email-webhook-events?${query}`);
 
@@ -2738,7 +2590,6 @@ async function submitMongoWebhookSearch(form: HTMLFormElement): Promise<void> {
   mongoWebhookFilters = {
     q: String(formData.get("q") ?? "").trim(),
     eventType: String(formData.get("eventType") ?? ""),
-    source: String(formData.get("source") ?? ""),
   };
   await loadMongoWebhookEvents(1);
   render();
@@ -2904,27 +2755,25 @@ function render(): void {
         ? infrastructurePage()
         : page === "cicd"
           ? cicdPage()
-          : page === "containers"
-            ? containersPage()
-            : page === "secrets"
-              ? secretsPage()
-              : page === "iam"
-                ? iamPage()
-                : page === "register"
-                  ? registerPage()
-                  : page === "account"
-                    ? accountPage()
-                    : page === "widgets"
-                      ? widgetsPage()
-                      : page === "competing-consumers"
-                        ? competingConsumersPage()
-                        : page === "topic-routing"
-                          ? topicRoutingPage()
-                          : page === "priority-queue"
-                            ? priorityQueuePage()
-                            : page === "mongodb"
-                              ? mongodbPage()
-                              : loginPage();
+          : page === "secrets"
+            ? secretsPage()
+            : page === "iam"
+              ? iamPage()
+              : page === "register"
+                ? registerPage()
+                : page === "account"
+                  ? accountPage()
+                  : page === "widgets"
+                    ? widgetsPage()
+                    : page === "competing-consumers"
+                      ? competingConsumersPage()
+                      : page === "topic-routing"
+                        ? topicRoutingPage()
+                        : page === "priority-queue"
+                          ? priorityQueuePage()
+                          : page === "mongodb"
+                            ? mongodbPage()
+                            : loginPage();
 
   app.innerHTML = layout(content);
   bindEvents();

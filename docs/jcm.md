@@ -21,3 +21,15 @@ RabbitMQ is the postal service.
 Routing key is the address label.
 EmailSendRequestedMessage is the letter inside the envelope.
 email-dispatcher is the person who opens the letter and knows what to do.
+
+# Local Startup
+
+npm run infra:up
+npm run infra:workers:up
+npm run api:dev
+
+In a second terminal:
+npm run public:dev
+
+You only need the Cloudflare tunnel if you want to test Resend webhooks:
+npm run email-webhooks:tunnel

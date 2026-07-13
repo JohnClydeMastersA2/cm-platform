@@ -867,6 +867,69 @@ code {
     content: "Evidence";
   }
 
+  .mongodb-webhook-table thead {
+    display: none;
+  }
+
+  .mongodb-webhook-table,
+  .mongodb-webhook-table tbody,
+  .mongodb-webhook-table tr,
+  .mongodb-webhook-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .mongodb-webhook-table tr {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding: 0.85rem;
+  }
+
+  .mongodb-webhook-table td {
+    border: 0;
+    padding: 0;
+    white-space: normal !important;
+  }
+
+  .mongodb-webhook-table td + td {
+    margin-top: 0.65rem;
+  }
+
+  .mongodb-webhook-table td::before {
+    color: #6c757d;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .mongodb-webhook-table td:nth-child(1)::before {
+    content: "Received";
+  }
+
+  .mongodb-webhook-table td:nth-child(2)::before {
+    content: "Event";
+  }
+
+  .mongodb-webhook-table td:nth-child(3)::before {
+    content: "Recipient";
+  }
+
+  .mongodb-webhook-table td:nth-child(4)::before {
+    content: "Subject";
+  }
+
+  .mongodb-webhook-table td:nth-child(5)::before {
+    content: "Document";
+  }
+
+  .mongodb-document {
+    max-height: 18rem;
+  }
+
   .platform-credential-list,
   .future-list {
     display: grid;
