@@ -58,6 +58,15 @@ param mongoDbDatabase string = 'CMPlatformDocuments'
 @description('Public base URL.')
 param publicBaseUrl string = 'https://cmplatform.dev'
 
+@description('Comma- or semicolon-separated monitor recipients for system emails.')
+param demoMaintenanceMonitors string
+
+@description('Retention threshold in hours for shared public demo cleanup.')
+param demoMaintenanceRetentionHours int = 24
+
+@description('UTC cron expression for the demo maintenance scheduled job.')
+param demoMaintenanceCronExpression string = '0 5 * * *'
+
 @description('Optional custom domain for the public web Container App.')
 param publicCustomDomainName string = ''
 
@@ -77,6 +86,7 @@ var publicWebImage = '${imagePrefix}/public-web:${imageTag}'
 var svcCoreImage = '${imagePrefix}/svc-core:${imageTag}'
 var emailDispatcherImage = '${imagePrefix}/email-dispatcher:${imageTag}'
 var widgetConsumerImage = '${imagePrefix}/widget-consumer:${imageTag}'
+var demoMaintenanceImage = '${imagePrefix}/demo-maintenance:${imageTag}'
 var publicCustomDomains = !empty(publicCustomDomainName) && !empty(publicCustomDomainCertificateId) ? [
   {
     name: publicCustomDomainName
@@ -472,8 +482,132 @@ resource widgetConsumerSlowApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
+resource demoMaintenanceJob 'Microsoft.App/jobs@2024-03-01' = {
+  name: 'job-cmp-demo-maint-${environmentName}'
+  location: location
+  tags: commonTags
+  properties: {
+    environmentId: containerAppsEnvironment.id
+    configuration: {
+      triggerType: 'Schedule'
+      replicaTimeout: 1800
+      replicaRetryLimit: 1
+      scheduleTriggerConfig: {
+        cronExpression: demoMaintenanceCronExpression
+        parallelism: 1
+        replicaCompletionCount: 1
+      }
+      secrets: [
+        {
+          name: 'sql-app-password'
+          value: sqlApplicationPassword
+        }
+        {
+          name: 'admin-key'
+          value: adminKey
+        }
+        {
+          name: 'rabbitmq-url'
+          value: rabbitMqUrl
+        }
+        {
+          name: 'email-smtp-user'
+          value: emailSmtpUser
+        }
+        {
+          name: 'email-smtp-pass'
+          value: emailSmtpPass
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'demo-maintenance'
+          image: demoMaintenanceImage
+          env: [
+            {
+              name: 'NODE_ENV'
+              value: 'production'
+            }
+            {
+              name: 'LOG_LEVEL'
+              value: 'info'
+            }
+            {
+              name: 'DB_SERVER'
+              value: sqlServerFqdn
+            }
+            {
+              name: 'DB_PORT'
+              value: '1433'
+            }
+            {
+              name: 'DB_USER'
+              value: sqlApplicationUser
+            }
+            {
+              name: 'DB_PASSWORD'
+              secretRef: 'sql-app-password'
+            }
+            {
+              name: 'DB_DATABASE'
+              value: sqlDatabaseName
+            }
+            {
+              name: 'DB_ENCRYPT'
+              value: 'true'
+            }
+            {
+              name: 'DB_TRUST_SERVER_CERTIFICATE'
+              value: 'false'
+            }
+            {
+              name: 'ADMIN_KEY'
+              secretRef: 'admin-key'
+            }
+            {
+              name: 'RABBITMQ_URL'
+              secretRef: 'rabbitmq-url'
+            }
+            {
+              name: 'EMAIL_SMTP_USER'
+              secretRef: 'email-smtp-user'
+            }
+            {
+              name: 'EMAIL_SMTP_PASS'
+              secretRef: 'email-smtp-pass'
+            }
+            {
+              name: 'CM_PLATFORM_MONITORS'
+              value: demoMaintenanceMonitors
+            }
+            {
+              name: 'DEMO_MAINTENANCE_RETENTION_HOURS'
+              value: string(demoMaintenanceRetentionHours)
+            }
+            {
+              name: 'DEMO_MAINTENANCE_API_BASE_URL'
+              value: 'https://${publicApp.properties.configuration.ingress.fqdn}'
+            }
+            {
+              name: 'DEMO_MAINTENANCE_API_HOST_HEADER'
+              value: publicCustomDomainName
+            }
+          ]
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+        }
+      ]
+    }
+  }
+}
+
 output publicAppName string = publicApp.name
 output publicAppFqdn string = publicApp.properties.configuration.ingress.fqdn
 output emailDispatcherAppName string = emailDispatcherApp.name
 output widgetConsumerFastAppName string = widgetConsumerFastApp.name
 output widgetConsumerSlowAppName string = widgetConsumerSlowApp.name
+output demoMaintenanceJobName string = demoMaintenanceJob.name

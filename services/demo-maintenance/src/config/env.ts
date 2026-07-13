@@ -46,6 +46,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.string().default("development"),
   RABBITMQ_URL: z.url(),
   DEMO_MAINTENANCE_API_BASE_URL: z.url().default("http://localhost:3000"),
+  DEMO_MAINTENANCE_API_HOST_HEADER: z.string().min(1).optional(),
   CM_PLATFORM_MONITORS: MonitorList,
   DEMO_MAINTENANCE_RETENTION_HOURS: z.coerce.number().positive().default(24),
 });

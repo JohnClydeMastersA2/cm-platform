@@ -12,6 +12,8 @@ import {
 } from "@cm/messaging";
 import amqp from "amqplib";
 import type { Channel, ChannelModel } from "amqplib";
+import http from "node:http";
+import https from "node:https";
 import sql from "mssql";
 import { loadEnv } from "./config/env.js";
 
@@ -155,21 +157,56 @@ async function cleanupRabbitMqQueues(): Promise<QueueCleanupResult[]> {
 
 async function cleanupApiState(): Promise<ApiCleanupResult[]> {
   const url = new URL("/internal/maintenance/reset-priority-queue-demo", env.DEMO_MAINTENANCE_API_BASE_URL);
-  const response = await fetch(url, {
+
+  const response = await sendApiRequest(url, {
     method: "POST",
     headers: {
       "x-admin-key": env.ADMIN_KEY,
     },
   });
 
-  if (!response.ok) {
-    throw new Error(`Unable to reset priority queue demo API state (${response.status})`);
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error(`Unable to reset priority queue demo API state (${response.statusCode})`);
   }
 
   return [{
     target: "/internal/maintenance/reset-priority-queue-demo",
     ok: true,
   }];
+}
+
+function sendApiRequest(
+  url: URL,
+  options: {
+    method: "POST";
+    headers: Record<string, string>;
+  },
+): Promise<{ statusCode: number }> {
+  const client = url.protocol === "https:" ? https : http;
+  const headers = {
+    ...options.headers,
+    ...(env.DEMO_MAINTENANCE_API_HOST_HEADER ? { Host: env.DEMO_MAINTENANCE_API_HOST_HEADER } : {}),
+  };
+
+  return new Promise((resolve, reject) => {
+    const request = client.request({
+      protocol: url.protocol,
+      hostname: url.hostname,
+      port: url.port || undefined,
+      path: `${url.pathname}${url.search}`,
+      method: options.method,
+      headers,
+      servername: url.hostname,
+    }, (response) => {
+      response.resume();
+      response.on("end", () => {
+        resolve({ statusCode: response.statusCode ?? 0 });
+      });
+    });
+
+    request.on("error", reject);
+    request.end();
+  });
 }
 
 async function sendMaintenanceEmail(summary: MaintenanceSummary): Promise<void> {

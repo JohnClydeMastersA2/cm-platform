@@ -57,6 +57,9 @@ jobs:
       - name: Build widget consumer image
         run: docker build -f docker/Dockerfile.widget-consumer -t cm-platform/widget-consumer:${{ github.sha }} .
 
+      - name: Build demo maintenance image
+        run: docker build -f docker/Dockerfile.demo-maintenance -t cm-platform/demo-maintenance:${{ github.sha }} .
+
   publish-images:
     name: Publish Images
     runs-on: ubuntu-latest
@@ -112,6 +115,13 @@ jobs:
           docker build -f docker/Dockerfile.widget-consumer -t "${image}" .
           docker push "${image}"
 
+      - name: Build and push demo maintenance image
+        shell: bash
+        run: |
+          image="${IMAGE_PREFIX}/demo-maintenance:${GITHUB_SHA}"
+          docker build -f docker/Dockerfile.demo-maintenance -t "${image}" .
+          docker push "${image}"
+
       - name: Record published images
         shell: bash
         run: |
@@ -122,4 +132,5 @@ jobs:
             echo "- ${IMAGE_PREFIX}/public-web:${GITHUB_SHA}"
             echo "- ${IMAGE_PREFIX}/email-dispatcher:${GITHUB_SHA}"
             echo "- ${IMAGE_PREFIX}/widget-consumer:${GITHUB_SHA}"
+            echo "- ${IMAGE_PREFIX}/demo-maintenance:${GITHUB_SHA}"
           } >> "${GITHUB_STEP_SUMMARY}"

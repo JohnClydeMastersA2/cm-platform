@@ -142,5 +142,6 @@ jobs:
             echo "- Image tag: ${IMAGE_TAG}"
             echo "- Public app: ca-cmp-web-prod"
             echo "- Worker apps: ca-cmp-email-prod, ca-cmp-widget-fast-prod, ca-cmp-widget-slow-prod"
+            echo "- Scheduled job: job-cmp-demo-maint-prod"
             echo "- Secret values were supplied through the GitHub production environment"
           } >> "${GITHUB_STEP_SUMMARY}"
