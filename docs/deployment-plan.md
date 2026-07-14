@@ -1415,8 +1415,8 @@ Cloudflare should use DNS-only mode until Azure validates and binds the managed 
 - Document one incident-style exercise.
 - Add `services/demo-maintenance` as a scheduled operations worker for shared public demo hygiene.
 - Use `CM_PLATFORM_MONITORS` as the comma- or semicolon-separated list of system email recipients.
-- Use `DEMO_MAINTENANCE_RETENTION_HOURS` as the cleanup threshold so testing can use a very small retention window before production settles near 24 hours.
-- The maintenance worker deletes old `WidgetQueueDemo` and `WidgetConsumerDemo` rows by retention cutoff, purges shared RabbitMQ demo queues, resets the priority queue page's in-memory demo history through an internal admin endpoint, and sends a completion email with row, queue, and API cleanup counts.
+- Reset SQL-backed RabbitMQ demo rows in the same maintenance pass that purges the shared RabbitMQ demo queues. This prevents visible `queued` rows from surviving after their RabbitMQ messages have been intentionally purged.
+- The maintenance worker clears `WidgetQueueDemo` and `WidgetConsumerDemo`, purges shared RabbitMQ demo queues, resets the priority queue page's in-memory demo history through an internal admin endpoint, and sends a completion email with row, queue, and API cleanup counts.
 - Production runs the worker as an Azure Container Apps scheduled job (`job-cmp-demo-maint-prod`) using the same SHA-tagged image pattern as the rest of the platform.
 - The job calls the Azure Container Apps origin URL with `DEMO_MAINTENANCE_API_HOST_HEADER=cmplatform.dev` so it can reach the protected internal admin endpoint without opening the Azure-generated hostname as a public browser path around Cloudflare Access.
 - Publish an architecture diagram and deployment write-up in the portfolio.

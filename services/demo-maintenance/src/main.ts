@@ -42,8 +42,7 @@ type ApiCleanupResult = {
 type MaintenanceSummary = {
   startedAt: string;
   completedAt: string;
-  cutoffAt: string;
-  retentionHours: number;
+  sqlCleanupMode: "full-reset";
   sql: SqlCleanupResult[];
   rabbitMq: QueueCleanupResult[];
   api: ApiCleanupResult[];
@@ -51,18 +50,16 @@ type MaintenanceSummary = {
 
 async function main(): Promise<void> {
   const startedAt = new Date();
-  const cutoffAt = new Date(startedAt.getTime() - env.DEMO_MAINTENANCE_RETENTION_HOURS * 60 * 60 * 1000);
 
   logger.info(
     {
       monitorCount: env.CM_PLATFORM_MONITORS.length,
-      retentionHours: env.DEMO_MAINTENANCE_RETENTION_HOURS,
-      cutoffAt: cutoffAt.toISOString(),
+      sqlCleanupMode: "full-reset",
     },
     "Demo maintenance started",
   );
 
-  const sqlResults = await cleanupSqlDemoRows(cutoffAt);
+  const sqlResults = await cleanupSqlDemoRows();
   const rabbitMqResults = await cleanupRabbitMqQueues();
   const apiResults = await cleanupApiState();
   const completedAt = new Date();
@@ -70,8 +67,7 @@ async function main(): Promise<void> {
   const summary: MaintenanceSummary = {
     startedAt: startedAt.toISOString(),
     completedAt: completedAt.toISOString(),
-    cutoffAt: cutoffAt.toISOString(),
-    retentionHours: env.DEMO_MAINTENANCE_RETENTION_HOURS,
+    sqlCleanupMode: "full-reset",
     sql: sqlResults,
     rabbitMq: rabbitMqResults,
     api: apiResults,
@@ -81,7 +77,7 @@ async function main(): Promise<void> {
   await sendMaintenanceEmail(summary);
 }
 
-async function cleanupSqlDemoRows(cutoffAt: Date): Promise<SqlCleanupResult[]> {
+async function cleanupSqlDemoRows(): Promise<SqlCleanupResult[]> {
   const pool = await sql.connect({
     server: env.DB_SERVER,
     port: env.DB_PORT,
@@ -96,22 +92,20 @@ async function cleanupSqlDemoRows(cutoffAt: Date): Promise<SqlCleanupResult[]> {
 
   try {
     return [
-      await deleteOldRows(pool, "dbo.WidgetQueueDemo", cutoffAt),
-      await deleteOldRows(pool, "dbo.WidgetConsumerDemo", cutoffAt),
+      await deleteDemoRows(pool, "dbo.WidgetQueueDemo"),
+      await deleteDemoRows(pool, "dbo.WidgetConsumerDemo"),
     ];
   } finally {
     await pool.close();
   }
 }
 
-async function deleteOldRows(
+async function deleteDemoRows(
   pool: sql.ConnectionPool,
   table: "dbo.WidgetQueueDemo" | "dbo.WidgetConsumerDemo",
-  cutoffAt: Date,
 ): Promise<SqlCleanupResult> {
   const result = await pool.request()
-    .input("cutoffAt", sql.DateTime2, cutoffAt)
-    .query(`delete from ${table} where CreatedAt < @cutoffAt;`);
+    .query(`delete from ${table};`);
 
   return {
     table,
@@ -221,8 +215,7 @@ async function sendMaintenanceEmail(summary: MaintenanceSummary): Promise<void> 
       "",
       `Started: ${summary.startedAt}`,
       `Completed: ${summary.completedAt}`,
-      `Retention hours: ${summary.retentionHours}`,
-      `Cutoff: ${summary.cutoffAt}`,
+      `SQL cleanup mode: ${summary.sqlCleanupMode}`,
       "",
       `SQL rows deleted: ${totalDeletedRows}`,
       ...summary.sql.map((item) => `- ${item.table}: ${item.deletedRows}`),
@@ -238,8 +231,7 @@ async function sendMaintenanceEmail(summary: MaintenanceSummary): Promise<void> 
       "<ul>",
       `<li><strong>Started:</strong> ${escapeHtml(summary.startedAt)}</li>`,
       `<li><strong>Completed:</strong> ${escapeHtml(summary.completedAt)}</li>`,
-      `<li><strong>Retention hours:</strong> ${summary.retentionHours}</li>`,
-      `<li><strong>Cutoff:</strong> ${escapeHtml(summary.cutoffAt)}</li>`,
+      `<li><strong>SQL cleanup mode:</strong> ${summary.sqlCleanupMode}</li>`,
       "</ul>",
       "<h2>SQL cleanup</h2>",
       "<ul>",
