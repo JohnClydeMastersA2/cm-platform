@@ -483,9 +483,6 @@ function homePage(): string {
           <p class="platform-lede">
             CM Platform is a TypeScript platform for demonstrating meaningful understanding of backend application architecture: public and private API surfaces, durable messaging, SQL-backed workflow state, background processing, shared contracts, and operational automation.
           </p>
-          <div class="platform-hero-actions">
-            <span>cmplatform.dev</span>
-          </div>
         </div>
         <div class="platform-stack" aria-label="Platform architecture summary">
           <div class="platform-stack-row">
@@ -551,7 +548,7 @@ function homePage(): string {
         <div>
           <h2>Technology Evidence</h2>
           <p>
-            These cards describe what each part of the platform is proving. They are meant to complement the navigation, not repeat it.
+            These cards describe platform objectives and technologies implemented. They are meant to complement the navigation, not repeat it.
           </p>
         </div>
         <div class="platform-card-grid">
@@ -810,9 +807,17 @@ function cicdPage(): string {
             Azure can help visualize deployed resources through portal resource views, resource group listings, topology-style blades, and exported diagrams from third-party tools. For this portfolio, the clearest diagram should be maintained in the repository because it can show both Azure and non-Azure services in one intentional picture.
           </p>
         </div>
-        <div class="platform-callout">
-          <span>Diagram direction</span>
-          <strong>Use Azure Portal to inspect live Azure resources, then keep the portfolio architecture diagram in source control so Cloudflare, GHCR, Atlas, CloudAMQP, Resend, and Azure all appear together.</strong>
+        <div class="architecture-diagram-card">
+          <a href="/cicd-architecture.svg" target="_blank" rel="noreferrer">
+            <img
+              src="/cicd-architecture.svg"
+              alt="CM Platform CI/CD architecture showing GitHub Actions, GHCR, Azure Container Apps, Azure SQL, MongoDB Atlas, CloudAMQP, Resend, and Cloudflare"
+            >
+          </a>
+          <p>
+            Source: <code>docs/cicd-architecture.mmd</code>. Rendered asset: <code>apps/public-web/public/cicd-architecture.svg</code>.
+            <a href="/cicd-architecture.svg" target="_blank" rel="noreferrer">Open full-size diagram</a>.
+          </p>
         </div>
       </section>
 
@@ -884,12 +889,12 @@ function secretsPage(): string {
     },
   ];
 
-  const platformExamples = [
-    "Local development: ignored env file outside Git",
-    "GitHub Actions: production environment secrets",
-    "Azure Container Apps: runtime secrets injected into containers",
-    "Azure Key Vault: future option for stronger managed secret governance",
-    "Cloudflare: Access and edge configuration separate from application secrets",
+  const providerBindingExamples = [
+    "Email capability: currently bound to Resend credentials",
+    "Database capability: bound to local SQL Server or Azure SQL",
+    "Messaging capability: bound to local RabbitMQ or CloudAMQP",
+    "Edge access: bound to Cloudflare DNS and Access policy",
+    "Future governance: Azure Key Vault could become the secret source without changing application variable names",
   ];
 
   return `
@@ -953,6 +958,9 @@ function secretsPage(): string {
           <p>
             This is the intended direction for cm-platform as it moves between local development and production hosting.
           </p>
+          <p>
+            cm-platform does not currently use a staging environment because this is a technical portfolio site with low production risk and direct owner validation. A staging environment could be added later by creating a separate GitHub environment, Azure Container Apps deployment, database, DNS name, and secret set that follow the same variable contract shown here.
+          </p>
         </div>
         <div class="infrastructure-table-wrap">
           <table class="table table-sm infrastructure-table">
@@ -1007,16 +1015,16 @@ function secretsPage(): string {
 
       <section class="platform-section">
         <div>
-          <h2>Provider Options</h2>
+          <h2>Provider Binding</h2>
           <p>
-            The platform-specific provider can change without changing the app contract. The important part is that production injects the expected environment variables from an appropriate secret source.
+            Application code should depend on platform capabilities, while each environment binds those capabilities to concrete providers through configuration and secrets. For example, the platform needs an email-sending capability; production currently binds that capability to Resend by providing the expected credentials.
           </p>
           <p>
-            For example, Resend could be replaced with another email provider by changing the email adapter and production secret values, while the rest of the platform continues to ask for the same email-sending capability.
+            If a provider changes later, the adapter and secret values may change, but the rest of the platform should continue to ask for the same capability rather than spreading provider-specific assumptions across the codebase.
           </p>
         </div>
         <div class="future-list">
-          ${platformExamples.map((example) => `<span>${escapeHtml(example)}</span>`).join("")}
+          ${providerBindingExamples.map((example) => `<span>${escapeHtml(example)}</span>`).join("")}
         </div>
       </section>
 
@@ -1405,6 +1413,7 @@ function topicRoutingPage(): string {
       <div class="topic-routing-grid">
         ${topicRoutingState.queues.length ? topicRoutingQueueCards() : `<div class="text-muted">No topic routing queues loaded.</div>`}
       </div>
+      ${backToTopButton()}
     </div>
   `;
 }
@@ -1507,6 +1516,7 @@ function priorityQueuePage(): string {
           </div>
         </div>
       </div>
+      ${backToTopButton()}
     </div>
   `;
 }

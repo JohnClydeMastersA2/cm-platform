@@ -1,0 +1,32 @@
+flowchart TD
+  dev[Developer workstation] --> repo[GitHub repository]
+  repo --> actions[GitHub Actions]
+
+  actions --> verify[Build, test, CodeQL]
+  verify --> images[Container image build]
+  images --> ghcr[GHCR SHA-tagged images]
+  ghcr --> approval[Production approval]
+  approval --> bicep[Bicep what-if and deploy]
+  bicep --> azure[Azure Container Apps]
+
+  azure --> web[Public web gateway and API sidecar]
+  azure --> email[Email dispatcher]
+  azure --> fast[Fast widget consumer]
+  azure --> slow[Slow widget consumer]
+  azure --> maintenance[Demo maintenance scheduled job]
+
+  web --> sql[Azure SQL Database]
+  web --> mongo[MongoDB Atlas]
+  web --> rabbit[CloudAMQP RabbitMQ]
+  email --> resend[Resend email]
+  web --> cloudflare[Cloudflare DNS and Access]
+
+  classDef source fill:#e7f1ff,stroke:#0d6efd,color:#084298;
+  classDef build fill:#fff3cd,stroke:#ffc107,color:#664d03;
+  classDef runtime fill:#d1e7dd,stroke:#198754,color:#0f5132;
+  classDef managed fill:#f8d7da,stroke:#dc3545,color:#842029;
+
+  class dev,repo source;
+  class actions,verify,images,ghcr,approval,bicep build;
+  class azure,web,email,fast,slow,maintenance runtime;
+  class sql,mongo,rabbit,resend,cloudflare managed;

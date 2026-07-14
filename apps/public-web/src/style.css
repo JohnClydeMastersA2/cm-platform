@@ -301,6 +301,28 @@ code {
   color: #0a58ca;
 }
 
+.architecture-diagram-card {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1.5rem rgb(33 37 41 / 8%);
+  overflow: hidden;
+}
+
+.architecture-diagram-card img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.architecture-diagram-card p {
+  border-top: 1px solid #dee2e6;
+  color: #6c757d;
+  font-size: 0.86rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
 .platform-stack {
   background: #f8f9fa;
   border: 1px solid #dee2e6;
