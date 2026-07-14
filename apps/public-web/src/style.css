@@ -926,6 +926,115 @@ code {
     content: "Document";
   }
 
+  .widget-main-table,
+  .widget-dead-letter-table {
+    min-width: 0;
+  }
+
+  .widget-main-table thead,
+  .widget-dead-letter-table thead {
+    display: none;
+  }
+
+  .widget-main-table,
+  .widget-main-table tbody,
+  .widget-main-table tr,
+  .widget-main-table td,
+  .widget-dead-letter-table,
+  .widget-dead-letter-table tbody,
+  .widget-dead-letter-table tr,
+  .widget-dead-letter-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .widget-main-table tr,
+  .widget-dead-letter-table tr {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding: 0.85rem;
+  }
+
+  .widget-main-table td,
+  .widget-dead-letter-table td {
+    border: 0;
+    padding: 0;
+    white-space: normal !important;
+  }
+
+  .widget-main-table td + td,
+  .widget-dead-letter-table td + td {
+    margin-top: 0.65rem;
+  }
+
+  .widget-main-table td::before,
+  .widget-dead-letter-table td::before {
+    color: #6c757d;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .widget-main-table td[colspan]::before,
+  .widget-dead-letter-table td[colspan]::before {
+    content: none;
+  }
+
+  .widget-main-table td:nth-child(1)::before {
+    content: "ID";
+  }
+
+  .widget-main-table td:nth-child(2)::before,
+  .widget-dead-letter-table td:nth-child(2)::before {
+    content: "Name";
+  }
+
+  .widget-main-table td:nth-child(3)::before,
+  .widget-dead-letter-table td:nth-child(3)::before {
+    content: "Status";
+  }
+
+  .widget-main-table td:nth-child(4)::before {
+    content: "Count";
+  }
+
+  .widget-main-table td:nth-child(5)::before {
+    content: "Created";
+  }
+
+  .widget-main-table td:nth-child(6)::before {
+    content: "Processed";
+  }
+
+  .widget-dead-letter-table td:nth-child(1)::before {
+    content: "Widget ID";
+  }
+
+  .widget-dead-letter-table td:nth-child(5)::before {
+    content: "Requested";
+  }
+
+  .widget-dead-letter-table td:nth-child(6)::before {
+    content: "Actions";
+  }
+
+  .widget-dead-letter-table td:nth-child(4) {
+    display: none;
+  }
+
+  .widget-dead-letter-table .d-flex {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .widget-dead-letter-table .btn {
+    width: 100%;
+  }
+
   .mongodb-document {
     max-height: 18rem;
   }

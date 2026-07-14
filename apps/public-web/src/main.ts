@@ -1209,7 +1209,7 @@ function widgetsPage(): string {
       </div>
 
       <div class="table-responsive">
-        <table class="table table-sm table-striped widget-table">
+        <table class="table table-sm table-striped widget-table widget-main-table">
           <thead>
             <tr>
               <th class="widget-col-id">ID</th>
@@ -1231,7 +1231,7 @@ function widgetsPage(): string {
         Widgets with IDs divisible by 3 fail once into delayed retry. If they fail again, they land here. Replay republishes the same work; repair republishes it with a repair flag so it can succeed.
       </p>
       <div class="table-responsive">
-        <table class="table table-sm table-striped widget-table">
+        <table class="table table-sm table-striped widget-table widget-dead-letter-table">
           <thead>
             <tr>
               <th class="widget-col-id">Widget ID</th>
