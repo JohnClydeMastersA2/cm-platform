@@ -927,12 +927,14 @@ code {
   }
 
   .widget-main-table,
-  .widget-dead-letter-table {
+  .widget-dead-letter-table,
+  .consumer-widget-table {
     min-width: 0;
   }
 
   .widget-main-table thead,
-  .widget-dead-letter-table thead {
+  .widget-dead-letter-table thead,
+  .consumer-widget-table thead {
     display: none;
   }
 
@@ -943,13 +945,18 @@ code {
   .widget-dead-letter-table,
   .widget-dead-letter-table tbody,
   .widget-dead-letter-table tr,
-  .widget-dead-letter-table td {
+  .widget-dead-letter-table td,
+  .consumer-widget-table,
+  .consumer-widget-table tbody,
+  .consumer-widget-table tr,
+  .consumer-widget-table td {
     display: block;
     width: 100%;
   }
 
   .widget-main-table tr,
-  .widget-dead-letter-table tr {
+  .widget-dead-letter-table tr,
+  .consumer-widget-table tr {
     border: 1px solid #dee2e6;
     border-radius: 0.5rem;
     margin-bottom: 0.85rem;
@@ -957,19 +964,22 @@ code {
   }
 
   .widget-main-table td,
-  .widget-dead-letter-table td {
+  .widget-dead-letter-table td,
+  .consumer-widget-table td {
     border: 0;
     padding: 0;
     white-space: normal !important;
   }
 
   .widget-main-table td + td,
-  .widget-dead-letter-table td + td {
+  .widget-dead-letter-table td + td,
+  .consumer-widget-table td + td {
     margin-top: 0.65rem;
   }
 
   .widget-main-table td::before,
-  .widget-dead-letter-table td::before {
+  .widget-dead-letter-table td::before,
+  .consumer-widget-table td::before {
     color: #6c757d;
     display: block;
     font-size: 0.72rem;
@@ -980,21 +990,25 @@ code {
   }
 
   .widget-main-table td[colspan]::before,
-  .widget-dead-letter-table td[colspan]::before {
+  .widget-dead-letter-table td[colspan]::before,
+  .consumer-widget-table td[colspan]::before {
     content: none;
   }
 
-  .widget-main-table td:nth-child(1)::before {
+  .widget-main-table td:nth-child(1)::before,
+  .consumer-widget-table td:nth-child(1)::before {
     content: "ID";
   }
 
   .widget-main-table td:nth-child(2)::before,
-  .widget-dead-letter-table td:nth-child(2)::before {
+  .widget-dead-letter-table td:nth-child(2)::before,
+  .consumer-widget-table td:nth-child(2)::before {
     content: "Name";
   }
 
   .widget-main-table td:nth-child(3)::before,
-  .widget-dead-letter-table td:nth-child(3)::before {
+  .widget-dead-letter-table td:nth-child(3)::before,
+  .consumer-widget-table td:nth-child(3)::before {
     content: "Status";
   }
 
@@ -1033,6 +1047,22 @@ code {
 
   .widget-dead-letter-table .btn {
     width: 100%;
+  }
+
+  .consumer-widget-table td:nth-child(4)::before {
+    content: "Processed By";
+  }
+
+  .consumer-widget-table td:nth-child(5)::before {
+    content: "Seconds";
+  }
+
+  .consumer-widget-table td:nth-child(6)::before {
+    content: "Created";
+  }
+
+  .consumer-widget-table td:nth-child(7)::before {
+    content: "Processed";
   }
 
   .mongodb-document {
