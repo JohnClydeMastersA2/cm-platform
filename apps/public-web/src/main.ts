@@ -630,6 +630,7 @@ function infrastructurePage(): string {
         </div>
       </section>
 
+      ${backToTopButton()}
     </section>
   `;
 }
@@ -1247,6 +1248,7 @@ function widgetsPage(): string {
           </tbody>
         </table>
       </div>
+      ${backToTopButton()}
     </div>
   `;
 }
@@ -1261,10 +1263,10 @@ function competingConsumersPage(): string {
   return `
     <div class="auth-panel auth-panel-wide queue-panel">
       <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
-        <div>
+        <div class="rabbitmq-demo-copy">
           <h1 class="h3 mb-2">Competing Consumers with RabbitMQ</h1>
           <p class="text-muted mb-0">
-            This demonstration uses one RabbitMQ queue and multiple worker instances to show competing consumers. Creating widgets writes rows into dbo.WidgetConsumerDemo with a status of queued, then publishes durable widget.consumer_demo.processing_requested.v1 messages to the cm.widget.consumer-demo exchange. Each worker consumes from the same cm.widget.consumer-demo.processing queue with prefetch set to 1, so RabbitMQ gives each message to only one available worker. A faster worker finishes and acknowledges messages sooner, making it available for more work while slower workers are still processing.
+            This demonstration uses one RabbitMQ queue and multiple worker instances to show competing consumers. Creating widgets writes rows into <code>dbo.WidgetConsumerDemo</code> with a status of queued, then publishes durable <code>widget.consumer_demo.processing_requested.v1</code> messages to the <code>cm.widget.consumer-demo</code> exchange. Each worker consumes from the same <code>cm.widget.consumer-demo.processing</code> queue with prefetch set to 1, so RabbitMQ gives each message to only one available worker. A faster worker finishes and acknowledges messages sooner, making it available for more work while slower workers are still processing.
           </p>
         </div>
       </div>
@@ -1329,6 +1331,7 @@ function competingConsumersPage(): string {
           </tbody>
         </table>
       </div>
+      ${backToTopButton()}
     </div>
   `;
 }
@@ -1719,6 +1722,17 @@ function mongodbPage(): string {
           </div>
         </div>
       </section>
+      ${backToTopButton()}
+    </div>
+  `;
+}
+
+function backToTopButton(): string {
+  return `
+    <div class="mobile-back-to-top">
+      <button class="btn btn-sm btn-outline-secondary" type="button" data-action="back-to-top">
+        Back to top
+      </button>
     </div>
   `;
 }
@@ -2730,6 +2744,15 @@ function bindEvents(): void {
   document.querySelectorAll<HTMLButtonElement>('[data-action="mongodb-page"]').forEach((button) => {
     button.addEventListener("click", () => {
       void loadMongoWebhookEvents(Number(button.dataset.page ?? "1")).then(render);
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-action="back-to-top"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     });
   });
 }

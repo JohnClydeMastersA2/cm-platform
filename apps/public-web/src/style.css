@@ -146,6 +146,22 @@ code {
   max-width: 72rem;
 }
 
+.rabbitmq-demo-copy {
+  min-width: 0;
+}
+
+.rabbitmq-demo-copy p {
+  overflow-wrap: anywhere;
+}
+
+.rabbitmq-demo-copy code {
+  white-space: normal;
+}
+
+.mobile-back-to-top {
+  display: none;
+}
+
 .mongodb-document-summary {
   color: #0d6efd;
   cursor: pointer;
@@ -1105,5 +1121,15 @@ code {
 
   .d-flex.flex-wrap.gap-2 > .btn {
     flex: 1 1 auto;
+  }
+
+  .mobile-back-to-top {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.25rem;
+  }
+
+  .mobile-back-to-top .btn {
+    width: 100%;
   }
 }
