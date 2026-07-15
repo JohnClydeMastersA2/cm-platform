@@ -1056,8 +1056,13 @@ function securityPage(): string {
     },
     {
       title: "HTTPS and redirect",
-      body: "The public HTTP endpoint redirects to HTTPS, and the HTTPS endpoint presents the live site through Cloudflare.",
-      proof: "http://cmplatform.dev returned 301 to https://cmplatform.dev/",
+      body: "The public HTTP endpoint redirects to HTTPS, and the HTTPS endpoint presents the live site through Cloudflare with a 200 OK response.",
+      proof: "http://cmplatform.dev returned 301 to https://cmplatform.dev/; https://cmplatform.dev returned 200 OK",
+    },
+    {
+      title: "HSTS disposition",
+      body: "Strict-Transport-Security is not currently returned. That is acceptable for launch and should be considered after the public custom domain has remained stable.",
+      proof: "No Strict-Transport-Security header observed on https://cmplatform.dev",
     },
     {
       title: "Health endpoint",
@@ -1066,32 +1071,58 @@ function securityPage(): string {
     },
     {
       title: "Security headers",
-      body: "The gateway returns headers intended to reduce content sniffing, clickjacking, unnecessary browser permissions, referrer leakage, and unexpected script or frame sources.",
-      proof: "CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy",
+      body: "The gateway returns the same protective header set on the public HTML page and representative JSON API routes.",
+      proof: "CSP, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy",
+    },
+    {
+      title: "Header disposition",
+      body: "Cross-origin isolation headers such as COOP and COEP are not currently required because the site does not use browser features that need cross-origin isolation. HSTS is tracked separately as a later hardening option.",
+      proof: "No COOP/COEP dependency identified for current public portfolio behavior",
     },
     {
       title: "Public API behavior",
       body: "Read-only demo endpoints can be queried publicly, while state-changing requests use CSRF protection and application-level validation.",
       proof: "GET /topic-routing returned sample keys and queue metadata",
     },
+    {
+      title: "Mutation boundary",
+      body: "Representative state-changing demo routes reject requests that do not include the expected same-origin CSRF token.",
+      proof: "DELETE /topic-routing and DELETE /widgets returned 403 Invalid CSRF token",
+    },
+    {
+      title: "Auth input validation",
+      body: "Authentication endpoints reject malformed or incomplete JSON bodies without creating accounts or sessions.",
+      proof: "POST /auth/register and POST /auth/login with empty bodies returned 400 validation responses",
+    },
+    {
+      title: "CSRF token cookie",
+      body: "The CSRF bootstrap endpoint issues a token and sets a secure, HttpOnly, SameSite=Lax cookie for browser-mediated state changes.",
+      proof: "GET /auth/csrf returned a csrfToken and Set-Cookie: cm_csrf; Secure; HttpOnly; SameSite=Lax",
+    },
+    {
+      title: "Webhook boundary",
+      body: "The Resend email webhook endpoint is not a browser page. Unsigned public POST attempts are rejected, while signed production email events have been accepted and recorded.",
+      proof: "GET /webhooks/email-events returned 404; unsigned POST returned 400 Invalid webhook signature; production email test confirmed webhook processing",
+    },
+    {
+      title: "OWASP ZAP baseline",
+      body: "A non-destructive OWASP ZAP baseline scan was run against production to exercise passive checks without attacking application state.",
+      proof: "ZAP baseline reported FAIL-NEW 0, WARN-NEW 7, PASS 60; report retained locally under security-reports/",
+    },
   ];
 
   const followUpChecks = [
     {
-      title: "OWASP ZAP baseline",
-      body: "Run a non-destructive baseline scan against production and review informational, low, and medium findings before considering more aggressive testing.",
+      title: "Review ZAP warning dispositions",
+      body: "Decide which ZAP warnings should become immediate changes and which should remain documented hardening follow-ups: cache headers, static-file nosniff behavior, CSP style policy, COOP/COEP, and HSTS.",
     },
     {
-      title: "TLS and HSTS review",
-      body: "Confirm Cloudflare TLS posture and consider enabling HSTS after the custom domain has been stable long enough to avoid accidental lockout or redirect mistakes.",
+      title: "Certificate and HSTS review",
+      body: "Confirm the certificate chain and expiration date through browser tools or an external TLS report, then decide when to enable HSTS after the custom domain has remained stable.",
     },
     {
-      title: "Authentication flow smoke test",
-      body: "Create and verify a test account, then delete it through My Account to confirm registration, email delivery, session handling, and account cleanup still work publicly.",
-    },
-    {
-      title: "Webhook boundary check",
-      body: "Confirm the Resend webhook route remains reachable for provider callbacks while normal browser traffic no longer depends on Cloudflare Access.",
+      title: "Authentication flow and rate-limit smoke test",
+      body: "Create and verify a test account, delete it through My Account, and perform a careful low-volume rate-limit check without locking out normal use or sending excessive email.",
     },
   ];
 
@@ -1112,7 +1143,7 @@ function securityPage(): string {
           </div>
           <div class="platform-stack-row">
             <span>Approach</span>
-            <strong>Passive checks first, non-destructive automated baseline next</strong>
+            <strong>Passive checks, public smoke tests, and non-destructive automated baseline scan</strong>
           </div>
           <div class="platform-stack-row">
             <span>Limit</span>
@@ -1143,10 +1174,13 @@ function securityPage(): string {
         <div>
           <h2>Current Disposition</h2>
           <p>
-            The site is public, HTTPS-only from the visitor perspective, fronted by Cloudflare, and returning a restrictive browser security header set. The most useful next step is a non-destructive baseline scanner run, not a paid third-party penetration test.
+            The site is public, HTTPS-only from the visitor perspective, fronted by Cloudflare, and returning a restrictive browser security header set. A non-destructive baseline scanner has been run; the remaining work is to disposition warnings and decide which hardening items belong before the next production release.
           </p>
           <p>
             One optional hardening item is HSTS. That should be enabled only after DNS, HTTPS, and custom-domain behavior have remained stable, because HSTS tells browsers to insist on HTTPS for future visits.
+          </p>
+          <p>
+            The ZAP baseline produced warning categories rather than failures. Current review items include cache-control tuning, HSTS, X-Content-Type-Options on static text files, CSP style-src usage, and cross-origin isolation headers. Several are expected for this portfolio launch and should be handled as conscious hardening choices rather than emergency defects.
           </p>
         </div>
         <div class="platform-callout">

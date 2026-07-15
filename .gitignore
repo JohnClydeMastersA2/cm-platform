@@ -28,6 +28,9 @@ logs/
 *.log
 npm-debug.log*
 
+# local security scan reports
+security-reports/
+
 # generated project snapshots
 structure.txt
 
