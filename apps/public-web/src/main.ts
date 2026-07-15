@@ -3,7 +3,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import Collapse from "bootstrap/js/dist/collapse";
 import "./style.css";
 
-type Page = "home" | "infrastructure" | "cicd" | "secrets" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
+type Page = "home" | "infrastructure" | "cicd" | "secrets" | "security" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
 type FormStatus = "idle" | "submitting" | "success" | "error";
 type SidebarSection = "platform" | "identity" | "account" | "messaging" | "data";
 
@@ -263,6 +263,7 @@ function getCurrentPage(): Page {
   if (hash === "infrastructure") return "infrastructure";
   if (hash === "cicd") return "cicd";
   if (hash === "secrets") return "secrets";
+  if (hash === "security") return "security";
   if (hash === "iam") return "iam";
   if (hash === "register") return "register";
   if (hash === "login") return "login";
@@ -319,6 +320,7 @@ function layout(content: string): string {
                 <a class="public-nav-link" href="#infrastructure">Infrastructure Status</a>
                 <a class="public-nav-link" href="#cicd">CI/CD and Azure</a>
                 <a class="public-nav-link" href="#secrets">Secrets</a>
+                <a class="public-nav-link" href="#security">Security Review</a>
               </div>
             </div>
 
@@ -474,6 +476,11 @@ function homePage(): string {
       title: "Gateway security headers",
       body: "The public Nginx gateway adds browser security headers to reduce common web risks such as content sniffing, clickjacking, over-broad referrer leakage, unnecessary browser permissions, and unexpected script or frame sources.",
       proof: "Content-Security-Policy, frame-ancestors, nosniff, Permissions-Policy",
+    },
+    {
+      title: "Security launch review",
+      body: "Public launch includes lightweight external checks for HTTPS, Cloudflare exposure, health endpoints, security headers, and non-destructive follow-up scanning rather than a formal penetration test.",
+      proof: "Security Review page, curl checks, planned OWASP ZAP baseline",
     },
     {
       title: "Developer operations",
@@ -1036,6 +1043,134 @@ function secretsPage(): string {
         </div>
       </section>
 
+    </section>
+  `;
+}
+
+function securityPage(): string {
+  const completedChecks = [
+    {
+      title: "Public access",
+      body: "The main site is reachable without Cloudflare Access login after removing the private preview Access application.",
+      proof: "https://cmplatform.dev returned 200 OK through Cloudflare",
+    },
+    {
+      title: "HTTPS and redirect",
+      body: "The public HTTP endpoint redirects to HTTPS, and the HTTPS endpoint presents the live site through Cloudflare.",
+      proof: "http://cmplatform.dev returned 301 to https://cmplatform.dev/",
+    },
+    {
+      title: "Health endpoint",
+      body: "The production health endpoint responds with a minimal JSON status payload without exposing internal configuration.",
+      proof: "GET /health returned { ok: true }",
+    },
+    {
+      title: "Security headers",
+      body: "The gateway returns headers intended to reduce content sniffing, clickjacking, unnecessary browser permissions, referrer leakage, and unexpected script or frame sources.",
+      proof: "CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy",
+    },
+    {
+      title: "Public API behavior",
+      body: "Read-only demo endpoints can be queried publicly, while state-changing requests use CSRF protection and application-level validation.",
+      proof: "GET /topic-routing returned sample keys and queue metadata",
+    },
+  ];
+
+  const followUpChecks = [
+    {
+      title: "OWASP ZAP baseline",
+      body: "Run a non-destructive baseline scan against production and review informational, low, and medium findings before considering more aggressive testing.",
+    },
+    {
+      title: "TLS and HSTS review",
+      body: "Confirm Cloudflare TLS posture and consider enabling HSTS after the custom domain has been stable long enough to avoid accidental lockout or redirect mistakes.",
+    },
+    {
+      title: "Authentication flow smoke test",
+      body: "Create and verify a test account, then delete it through My Account to confirm registration, email delivery, session handling, and account cleanup still work publicly.",
+    },
+    {
+      title: "Webhook boundary check",
+      body: "Confirm the Resend webhook route remains reachable for provider callbacks while normal browser traffic no longer depends on Cloudflare Access.",
+    },
+  ];
+
+  return `
+    <section class="platform-overview">
+      <div class="platform-hero">
+        <div>
+          <p class="platform-kicker">Launch readiness</p>
+          <h1>Security Launch Review</h1>
+          <p class="platform-lede">
+            This page records lightweight public-launch security validation for cm-platform. It is not a formal penetration test; it is a practical review of exposure, browser protections, public health checks, and the next safe scanning steps for a technical portfolio site.
+          </p>
+        </div>
+        <div class="platform-stack" aria-label="Security launch review summary">
+          <div class="platform-stack-row">
+            <span>Scope</span>
+            <strong>Public site, public API reads, browser headers, Cloudflare edge behavior</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Approach</span>
+            <strong>Passive checks first, non-destructive automated baseline next</strong>
+          </div>
+          <div class="platform-stack-row">
+            <span>Limit</span>
+            <strong>This is launch validation, not a third-party penetration test</strong>
+          </div>
+        </div>
+      </div>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Completed Public Checks</h2>
+          <p>
+            These checks were performed from outside the Azure origin path after the site was made public through Cloudflare. They are intentionally low-risk and repeatable.
+          </p>
+        </div>
+        <div class="platform-card-grid">
+          ${completedChecks.map((check) => `
+            <article class="platform-card">
+              <h3>${escapeHtml(check.title)}</h3>
+              <p>${escapeHtml(check.body)}</p>
+              <div class="platform-proof">${escapeHtml(check.proof)}</div>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+
+      <section class="platform-section">
+        <div>
+          <h2>Current Disposition</h2>
+          <p>
+            The site is public, HTTPS-only from the visitor perspective, fronted by Cloudflare, and returning a restrictive browser security header set. The most useful next step is a non-destructive baseline scanner run, not a paid third-party penetration test.
+          </p>
+          <p>
+            One optional hardening item is HSTS. That should be enabled only after DNS, HTTPS, and custom-domain behavior have remained stable, because HSTS tells browsers to insist on HTTPS for future visits.
+          </p>
+        </div>
+        <div class="platform-callout">
+          <span>Portfolio framing</span>
+          <strong>Security review is being treated as operational launch hygiene: verify the public boundary, record evidence, fix obvious issues, and avoid destructive testing against production.</strong>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Next Safe Checks</h2>
+          <p>
+            These follow-up checks add learning value without crossing into aggressive production testing.
+          </p>
+        </div>
+        <div class="platform-card-grid">
+          ${followUpChecks.map((check) => `
+            <article class="platform-card">
+              <h3>${escapeHtml(check.title)}</h3>
+              <p>${escapeHtml(check.body)}</p>
+            </article>
+          `).join("")}
+        </div>
+      </section>
     </section>
   `;
 }
@@ -2807,23 +2942,25 @@ function render(): void {
           ? cicdPage()
           : page === "secrets"
             ? secretsPage()
-            : page === "iam"
-              ? iamPage()
-              : page === "register"
-                ? registerPage()
-                : page === "account"
-                  ? accountPage()
-                  : page === "widgets"
-                    ? widgetsPage()
-                    : page === "competing-consumers"
-                      ? competingConsumersPage()
-                      : page === "topic-routing"
-                        ? topicRoutingPage()
-                        : page === "priority-queue"
-                          ? priorityQueuePage()
-                          : page === "mongodb"
-                            ? mongodbPage()
-                            : loginPage();
+            : page === "security"
+              ? securityPage()
+              : page === "iam"
+                ? iamPage()
+                : page === "register"
+                  ? registerPage()
+                  : page === "account"
+                    ? accountPage()
+                    : page === "widgets"
+                      ? widgetsPage()
+                      : page === "competing-consumers"
+                        ? competingConsumersPage()
+                        : page === "topic-routing"
+                          ? topicRoutingPage()
+                          : page === "priority-queue"
+                            ? priorityQueuePage()
+                            : page === "mongodb"
+                              ? mongodbPage()
+                              : loginPage();
 
   app.innerHTML = layout(content);
   bindEvents();

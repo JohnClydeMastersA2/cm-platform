@@ -1,10 +1,10 @@
-# Healthcare Transform Service Plan
+# Healthcare Transform Microservice Plan
 
 ## Purpose
 
-Capture the current plan for adding a Java/Spring Boot healthcare document transformation and archive service to CM Platform.
+Capture the current plan for adding a Java/Spring Boot healthcare document transformation and archive microservice to CM Platform.
 
-The service should start small, but be named and shaped broadly enough to support more than one healthcare document format over time.
+The goal is to build a real microservice: a separately deployable, independently owned runtime with a clear healthcare document transformation and archive boundary. It should start small, but be named and shaped broadly enough to support more than one healthcare document format over time.
 
 Initial focus:
 
@@ -32,6 +32,21 @@ services/x12-archive
 ```
 
 `healthcare-transform` leaves room for NEMSIS because NEMSIS is XML, not X12.
+
+## Microservice Goal
+
+This effort is intentionally about adding a microservice, not just another library or parser utility.
+
+The service should have:
+
+- Its own Spring Boot runtime
+- Its own build and test lifecycle
+- Its own Docker image
+- Its own Azure Container App deployment
+- Its own health and readiness endpoints
+- A narrow domain boundary around healthcare document transformation, archive, search, and retrieval
+
+It should integrate with CM Platform through service boundaries such as HTTP, RabbitMQ, MongoDB, SQL Server, Docker images, and environment variables.
 
 ## Why It Belongs In CM Platform
 
@@ -241,7 +256,7 @@ NEMSIS-specific parsing, validation, and search fields should live in a separate
 Phase 1:
 
 - Add Spring Boot service under `services/healthcare-transform`
-- Integrate existing 835 parser
+- Build 835 parser
 - Provide synchronous 835 parse/archive/search endpoints
 - Store raw and parsed documents in MongoDB
 
