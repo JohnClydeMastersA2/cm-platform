@@ -1109,6 +1109,11 @@ function securityPage(): string {
       body: "A non-destructive OWASP ZAP baseline scan was run against production to exercise passive checks without attacking application state.",
       proof: "ZAP baseline reported FAIL-NEW 0, WARN-NEW 7, PASS 60; report retained locally under security-reports/",
     },
+    {
+      title: "Azure Advisor security review",
+      body: "Azure Advisor was queried for subscription and resource-level security recommendations. Findings were grouped into governance items, paid Defender evaluations, and Azure SQL hardening choices.",
+      proof: "az advisor recommendation list returned 15 security recommendations across subscription governance, Defender plans, and Azure SQL configuration",
+    },
   ];
 
   const followUpChecks = [
@@ -1123,6 +1128,10 @@ function securityPage(): string {
     {
       title: "Authentication flow and rate-limit smoke test",
       body: "Create and verify a test account, delete it through My Account, and perform a careful low-volume rate-limit check without locking out normal use or sending excessive email.",
+    },
+    {
+      title: "Azure posture follow-up",
+      body: "Address low-cost Advisor items first: security contact email, high-severity alert notifications, and SQL auditing. Review SQL private endpoint and paid Defender recommendations separately because they can affect connectivity or cost.",
     },
   ];
 
@@ -1181,6 +1190,9 @@ function securityPage(): string {
           </p>
           <p>
             The ZAP baseline produced warning categories rather than failures. Current review items include cache-control tuning, HSTS, X-Content-Type-Options on static text files, CSP style-src usage, and cross-origin isolation headers. Several are expected for this portfolio launch and should be handled as conscious hardening choices rather than emergency defects.
+          </p>
+          <p>
+            Azure Advisor added an internal cloud posture view. Its most actionable findings are not all equal: contact and alert settings are low-cost governance improvements, SQL auditing is a practical hardening candidate, and recommendations such as paid Defender plans or private SQL networking need a cost and connectivity review before implementation.
           </p>
         </div>
         <div class="platform-callout">
