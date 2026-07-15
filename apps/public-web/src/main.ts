@@ -122,6 +122,14 @@ type TopicRoutingState = {
   queues: TopicRoutingQueueOverview[];
 };
 
+const fallbackTopicRoutingSampleKeys = [
+  "email.verification.requested.v1",
+  "email.password_reset.requested.v1",
+  "widget.created.v1",
+  "widget.important.v1",
+  "billing.invoice.paid.v1",
+];
+
 type PriorityQueueLevel = {
   label: string;
   priority: number;
@@ -2327,6 +2335,15 @@ async function loadTopicRouting(): Promise<void> {
 }
 
 async function publishTopicRoutingEvent(routingKey: string): Promise<void> {
+  const selectedRoutingKey = routingKey.trim();
+
+  if (!selectedRoutingKey) {
+    topicRoutingFormState.status = "error";
+    topicRoutingFormState.message = "Choose a routing key before publishing a topic routing event.";
+    render();
+    return;
+  }
+
   topicRoutingFormState.status = "submitting";
   topicRoutingFormState.message = undefined;
   render();
@@ -2335,7 +2352,7 @@ async function publishTopicRoutingEvent(routingKey: string): Promise<void> {
     const response = await csrfFetch("/topic-routing", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ routingKey }),
+      body: JSON.stringify({ routingKey: selectedRoutingKey }),
     });
 
     if (!response.ok) {
@@ -2344,7 +2361,7 @@ async function publishTopicRoutingEvent(routingKey: string): Promise<void> {
 
     topicRoutingState = await response.json() as TopicRoutingState;
     topicRoutingFormState.status = "success";
-    topicRoutingFormState.message = `Published ${routingKey}. RabbitMQ copied it into each queue with a matching binding pattern.`;
+    topicRoutingFormState.message = `Published ${selectedRoutingKey}. RabbitMQ copied it into each queue with a matching binding pattern.`;
   } catch (err) {
     topicRoutingFormState.status = "error";
     topicRoutingFormState.message = err instanceof Error ? err.message : "Unable to publish topic routing event.";
@@ -2954,7 +2971,11 @@ function consumerWidgetRows(): string {
 }
 
 function topicRoutingOptions(): string {
-  return topicRoutingState.sampleRoutingKeys.map((routingKey) => `
+  const routingKeys = topicRoutingState.sampleRoutingKeys.length
+    ? topicRoutingState.sampleRoutingKeys
+    : fallbackTopicRoutingSampleKeys;
+
+  return routingKeys.map((routingKey) => `
     <option value="${escapeHtml(routingKey)}">${escapeHtml(routingKey)}</option>
   `).join("");
 }
