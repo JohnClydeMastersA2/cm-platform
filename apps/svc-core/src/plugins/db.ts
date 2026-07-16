@@ -19,6 +19,8 @@ async function dbPluginImpl(app: FastifyInstance, opts: DbPluginOptions): Promis
     database: opts.database,
     server: opts.server,
     port: opts.port,
+    connectionTimeout: 60_000,
+    requestTimeout: 30_000,
     pool: {
       max: 10,
       min: 0,

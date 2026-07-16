@@ -1,0 +1,20 @@
+FROM eclipse-temurin:21-jdk AS build
+
+WORKDIR /app/services/healthcare-transform
+
+COPY services/healthcare-transform ./
+
+RUN chmod +x mvnw
+RUN ./mvnw -B -DskipTests package
+
+FROM eclipse-temurin:21-jre AS runtime
+
+ENV SERVER_PORT=8081
+
+WORKDIR /app
+
+COPY --from=build /app/services/healthcare-transform/target/healthcare-transform-0.1.0-SNAPSHOT.jar ./app.jar
+
+EXPOSE 8081
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

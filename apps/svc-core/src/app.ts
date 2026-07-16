@@ -43,6 +43,7 @@ export function buildApp(opts: BuildAppOptions) {
 
   const app = Fastify({
     loggerInstance: logger,
+    pluginTimeout: 60_000,
   });
 
   app.register(dbPlugin, {

@@ -87,6 +87,7 @@ var svcCoreImage = '${imagePrefix}/svc-core:${imageTag}'
 var emailDispatcherImage = '${imagePrefix}/email-dispatcher:${imageTag}'
 var widgetConsumerImage = '${imagePrefix}/widget-consumer:${imageTag}'
 var demoMaintenanceImage = '${imagePrefix}/demo-maintenance:${imageTag}'
+var healthcareTransformImage = '${imagePrefix}/healthcare-transform:${imageTag}'
 var publicCustomDomains = !empty(publicCustomDomainName) && !empty(publicCustomDomainCertificateId) ? [
   {
     name: publicCustomDomainName
@@ -294,6 +295,46 @@ resource emailDispatcherApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'EMAIL_DISPATCHER_PREFETCH'
               value: '5'
+            }
+          ]
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+        }
+      ]
+    }
+  }
+}
+
+resource healthcareTransformApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: 'ca-cmp-healthcare-${environmentName}'
+  location: location
+  tags: commonTags
+  properties: {
+    managedEnvironmentId: containerAppsEnvironment.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: false
+        targetPort: 8081
+        transport: 'auto'
+        allowInsecure: false
+      }
+    }
+    template: {
+      scale: {
+        minReplicas: 0
+        maxReplicas: 1
+      }
+      containers: [
+        {
+          name: 'healthcare-transform'
+          image: healthcareTransformImage
+          env: [
+            {
+              name: 'SERVER_PORT'
+              value: '8081'
             }
           ]
           resources: {
@@ -611,3 +652,4 @@ output emailDispatcherAppName string = emailDispatcherApp.name
 output widgetConsumerFastAppName string = widgetConsumerFastApp.name
 output widgetConsumerSlowAppName string = widgetConsumerSlowApp.name
 output demoMaintenanceJobName string = demoMaintenanceJob.name
+output healthcareTransformAppName string = healthcareTransformApp.name

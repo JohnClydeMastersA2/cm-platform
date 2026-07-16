@@ -8,6 +8,12 @@ apps/*/dist/
 packages/*/dist/
 tools/*/dist/
 
+# Java build output
+target/
+services/*/target/
+.gradle/
+services/*/.gradle/
+
 # vite cache
 .vite/
 apps/*/.vite/
