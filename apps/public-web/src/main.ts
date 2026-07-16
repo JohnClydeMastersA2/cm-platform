@@ -576,6 +576,7 @@ function homePage(): string {
         </div>
       </section>
 
+      ${backToTopButton()}
     </section>
   `;
 }
@@ -706,6 +707,7 @@ function architecturalDecisionsPage(): string {
           </p>
         </div>
       </section>
+      ${backToTopButton()}
     </section>
   `;
 }
