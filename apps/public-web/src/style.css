@@ -655,6 +655,14 @@ code {
   min-width: 5.25rem;
 }
 
+.at-a-glance-table {
+  min-width: 44rem;
+}
+
+.at-a-glance-table td:first-child {
+  width: 35%;
+}
+
 .infrastructure-note-list {
   display: grid;
   gap: 0.65rem;
@@ -903,6 +911,25 @@ code {
 
   .infrastructure-table td:nth-child(3)::before {
     content: "Evidence";
+  }
+
+  .at-a-glance-table td:nth-child(1)::before,
+  .at-a-glance-table td:nth-child(2)::before {
+    color: #6c757d;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .at-a-glance-table td:nth-child(1)::before {
+    content: "Capability";
+  }
+
+  .at-a-glance-table td:nth-child(2)::before {
+    content: "Technologies";
   }
 
   .mongodb-webhook-table thead {

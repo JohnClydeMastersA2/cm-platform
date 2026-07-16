@@ -3,7 +3,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import Collapse from "bootstrap/js/dist/collapse";
 import "./style.css";
 
-type Page = "home" | "infrastructure" | "cicd" | "secrets" | "security" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
+type Page = "home" | "infrastructure" | "cicd" | "secrets" | "security" | "architectural-decisions" | "iam" | "login" | "register" | "account" | "widgets" | "competing-consumers" | "topic-routing" | "priority-queue" | "mongodb";
 type FormStatus = "idle" | "submitting" | "success" | "error";
 type SidebarSection = "platform" | "identity" | "account" | "messaging" | "data";
 
@@ -264,6 +264,7 @@ function getCurrentPage(): Page {
   if (hash === "cicd") return "cicd";
   if (hash === "secrets") return "secrets";
   if (hash === "security") return "security";
+  if (hash === "architectural-decisions") return "architectural-decisions";
   if (hash === "iam") return "iam";
   if (hash === "register") return "register";
   if (hash === "login") return "login";
@@ -317,10 +318,11 @@ function layout(content: string): string {
             <div class="collapse ${platformOpen ? "show" : ""}" id="platformNav">
               <div class="public-nav-group">
                 <a class="public-nav-link" href="#home">Overview</a>
+                <a class="public-nav-link" href="#architectural-decisions">Architectural Decisions</a>
                 <a class="public-nav-link" href="#infrastructure">Infrastructure Status</a>
                 <a class="public-nav-link" href="#cicd">CI/CD and Azure</a>
-                <a class="public-nav-link" href="#secrets">Secrets</a>
                 <a class="public-nav-link" href="#security">Security Review</a>
+                <a class="public-nav-link" href="#secrets">Configuration &amp; Secrets</a>
               </div>
             </div>
 
@@ -418,17 +420,12 @@ function homePage(): string {
   ];
   const platformCards = [
     {
-      title: "API-first core",
+      title: "API-first Core",
       body: "Fastify owns the public and internal route surfaces so web apps, HTTP engines, workers, and tools can all integrate through explicit service boundaries.",
       proof: "svc-core, /auth, /internal, webhook endpoints",
     },
     {
-      title: "Typed contracts",
-      body: "Shared TypeScript packages keep request, response, and domain shapes close to the systems that consume them instead of burying integration rules in prose.",
-      proof: "packages/contracts and packages/messaging",
-    },
-    {
-      title: "Messaging and work orchestration",
+      title: "Messaging",
       body: "RabbitMQ demos show durable publishing, retries, dead-letter handling, topic routing, priority queues, and competing consumers.",
       proof: "widget, topic-routing, priority-queue demos",
     },
@@ -438,54 +435,29 @@ function homePage(): string {
       proof: "services/email-dispatcher and services/widget-consumer",
     },
     {
-      title: "State and observability",
-      body: "SQL Server stores visible workflow state and event history so asynchronous behavior can be inspected, repaired, and reasoned about.",
-      proof: "queue demo tables and email delivery records",
+      title: "Persistence",
+      body: "SQL Server stores visible workflow state and event history, while MongoDB stores document-shaped webhook events for provider payload inspection and delivery history.",
+      proof: "SQL Server workflow tables, MongoDB Atlas, /email-webhook-events",
     },
     {
-      title: "MongoDB document persistence",
-      body: "MongoDB stores Resend email webhook events as documents so the platform can retain provider payloads, inspect delivery history, and demonstrate document-database use alongside SQL workflow state.",
-      proof: "MongoDB Atlas, /email-webhook-events, docs/deployment-plan.md",
-    },
-    {
-      title: "GitHub CI/CD workflows",
+      title: "CI/CD",
       body: "GitHub Actions builds source, validates production container images, publishes SHA-tagged GHCR images, gates production deployments, and records deployment evidence as part of the platform learning path.",
       proof: "GitHub Actions, GHCR, protected production environment, docs/deployment-plan.md",
     },
     {
-      title: "AI-assisted development",
-      body: "The platform is being built with an AI agent as a development partner: reviewing architecture, making scoped code changes, testing locally, documenting tradeoffs, and preserving decisions for the portfolio story.",
-      proof: "agent-guided implementation notes and docs/deployment-plan.md",
-    },
-    {
-      title: "Cloudflare edge protection",
-      body: "Cloudflare provides DNS, proxied HTTPS, private-preview Access controls, and local webhook tunnel support while the platform moves from protected production testing toward a public portfolio launch.",
-      proof: "Cloudflare DNS, Access, Tunnel, docs/deployment-plan.md",
-    },
-    {
-      title: "Public auth guardrails",
-      body: "Registration and login endpoints include basic rate limiting so a public portfolio can demonstrate account workflows without leaving email delivery and password checks completely open to repeated automated attempts.",
-      proof: "Fastify auth routes with IP and email-aware limits",
-    },
-    {
-      title: "CSRF request protection",
-      body: "CSRF means Cross-Site Request Forgery: a malicious site tries to make a logged-in browser send unwanted requests with its existing session cookie. CM Platform issues a same-origin token and requires it on state-changing requests.",
-      proof: "HTTP-only CSRF cookie plus X-CSRF-Token headers",
-    },
-    {
-      title: "Gateway security headers",
-      body: "The public Nginx gateway adds browser security headers to reduce common web risks such as content sniffing, clickjacking, over-broad referrer leakage, unnecessary browser permissions, and unexpected script or frame sources.",
-      proof: "Content-Security-Policy, frame-ancestors, nosniff, Permissions-Policy",
-    },
-    {
-      title: "Security launch review",
-      body: "Public launch includes lightweight external checks for HTTPS, Cloudflare exposure, health endpoints, security headers, and non-destructive follow-up scanning rather than a formal penetration test.",
-      proof: "Security Review page, curl checks, planned OWASP ZAP baseline",
+      title: "Secure by Design",
+      body: "The platform applies Content Security Policy, CSRF request protection, rate limiting, Cloudflare edge controls, and gateway security headers as part of the application design.",
+      proof: "CSP, CSRF token headers, auth rate limits, Cloudflare, Nginx security headers",
     },
     {
       title: "Developer operations",
       body: "PowerShell and npm scripts provide a repeatable local command surface for infrastructure, schema updates, workers, smoke tests, and webhook tooling.",
       proof: "scripts, tools, docker, README runbooks",
+    },
+    {
+      title: "AI-assisted Development",
+      body: "CM Platform is developed using AI as an engineering partner. AI assists with design exploration, implementation alternatives, code generation, documentation, testing, and architectural review, while engineering decisions, integration, validation, and overall platform direction remain intentionally owned by the project.",
+      proof: "agent-guided implementation notes and docs/deployment-plan.md",
     },
   ];
 
@@ -496,7 +468,7 @@ function homePage(): string {
           <p class="platform-kicker">API-first application platform</p>
           <h1>CM Platform</h1>
           <p class="platform-lede">
-            CM Platform is a TypeScript platform for demonstrating meaningful understanding of backend application architecture: public and private API surfaces, durable messaging, SQL-backed workflow state, background processing, shared contracts, and operational automation.
+            CM Platform is a modern software engineering platform built to demonstrate the design, development, deployment and operation of production-oriented applications using contemporary backend, cloud, and DevOps technologies. It serves as the foundation for demonstrating platform architecture, REST APIs, asynchronous messaging, durable workflow state, SQL and NoSQL persistence, background processing, Infrastructure as Code, CI/CD automation, and operational engineering practices. Rather than focusing on individual technologies, CM Platform demonstrates how these capabilities work together to build maintainable, scalable, and production-ready software systems.
           </p>
         </div>
         <div class="platform-stack" aria-label="Platform architecture summary">
@@ -517,10 +489,10 @@ function homePage(): string {
 
       <section class="platform-credentials">
         <div>
-          <p class="platform-kicker">Technical portfolio</p>
+          <p class="platform-kicker">Engineering Portfolio</p>
           <h2>Built by John Clyde Masters</h2>
           <p>
-            This site is hosted as a working portfolio of engineering skills. The emphasis is practical proof: running software, inspectable source code, and demos that expose the architecture behind the browser experience.
+            CM Platform is my long-term software engineering portfolio. Rather than presenting isolated code samples or proof-of-concept applications, it demonstrates complete engineering solutions, from architecture and implementation through testing, deployment, monitoring, and continuous delivery. Every feature represents technology that I have intentionally studied, implemented, and integrated into a cohesive platform, providing practical evidence of my approach to software engineering and my commitment to continuously expanding my technical capabilities.
           </p>
           <div class="platform-card-actions">
             <a class="platform-small-link" href="${sourceCodeUrl}" target="_blank" rel="noreferrer">
@@ -536,28 +508,55 @@ function homePage(): string {
         </div>
       </section>
 
-      <div class="platform-section">
+      <section class="platform-section platform-section-block">
         <div>
-          <h2>Purpose</h2>
-          <p>
-            This public website is one demonstrable client of the CM Platform. The central idea is that features begin at the API boundary, then can be used by browser experiences, internal operations, asynchronous workers, and future HTTP processing engines without each client inventing its own backend behavior.
-          </p>
+          <h2>At a Glance</h2>
+          <div class="infrastructure-table-wrap">
+            <table class="table table-sm infrastructure-table at-a-glance-table">
+              <thead>
+                <tr>
+                  <th>Capability</th>
+                  <th>Technologies</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Backend Services &amp; APIs</strong></td>
+                  <td>Node.js, Fastify, TypeScript, REST APIs</td>
+                </tr>
+                <tr>
+                  <td><strong>Data &amp; Persistence</strong></td>
+                  <td>SQL Server, MongoDB, ETL Pipelines</td>
+                </tr>
+                <tr>
+                  <td><strong>Messaging &amp; Background Processing</strong></td>
+                  <td>RabbitMQ, Durable Messaging, Worker Services</td>
+                </tr>
+                <tr>
+                  <td><strong>Frontend</strong></td>
+                  <td>TypeScript, Vite, Bootstrap <em>(React planned)</em></td>
+                </tr>
+                <tr>
+                  <td><strong>Cloud &amp; DevOps</strong></td>
+                  <td>Azure, Docker, GitHub Actions, Bicep, CI/CD</td>
+                </tr>
+                <tr>
+                  <td><strong>Architecture &amp; Operations</strong></td>
+                  <td>Health Checks, Structured Logging, Configuration Management, Operational Automation</td>
+                </tr>
+                <tr>
+                  <td><strong>Engineering Practices</strong></td>
+                  <td>Git, Documentation, Testing, Security, CI/CD, Infrastructure as Code</td>
+                </tr>
+                <tr>
+                  <td><strong>Current Expansion</strong></td>
+                  <td>Java, Spring Boot Microservices, React</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="platform-callout">
-          <span>Design lens</span>
-          <strong>Every demo should prove a platform capability, not just render a page.</strong>
-        </div>
-      </div>
-
-      <div class="platform-flow" aria-label="API-first platform flow">
-        <div>Public website</div>
-        <div>HTTP engines</div>
-        <div>Tools</div>
-        <div class="platform-flow-core">API surfaces</div>
-        <div>SQL Server</div>
-        <div>RabbitMQ</div>
-        <div>Workers</div>
-      </div>
+      </section>
 
       <section class="platform-section platform-section-block">
         <div>
@@ -577,6 +576,136 @@ function homePage(): string {
         </div>
       </section>
 
+    </section>
+  `;
+}
+
+function architecturalDecisionsPage(): string {
+  return `
+    <section class="platform-overview">
+      <section class="platform-section platform-section-block">
+        <div>
+          <p class="platform-kicker">Platform architecture</p>
+          <h1>Architectural Decisions</h1>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why Simplicity?</h2>
+          <p>
+            A recurring objective throughout CM Platform is to favor simple, understandable solutions over unnecessary complexity. Modern software engineering often rewards sophisticated frameworks and abstractions, but long-term maintainability depends on systems that developers can quickly understand, modify, and support. Throughout the platform, architectural decisions intentionally prioritize clarity, explicitness, and operational simplicity. New technologies are introduced only when they provide meaningful value to the platform rather than simply expanding the technology stack.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why Fastify?</h2>
+          <p>
+            Fastify was selected as the primary backend framework after evaluating several alternatives, including Java/Spring Boot. The decision was based on its lightweight architecture, excellent TypeScript support, plugin-based extensibility, and high-performance request handling. More importantly, Fastify encourages clean separation of concerns through plugins, decorators, and route registration, making it well suited for a modular platform intended to evolve over time. The choice also provided an opportunity to gain practical experience with the modern Node.js ecosystem while preserving a strong focus on software architecture rather than framework-specific conventions.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why TypeScript?</h2>
+          <p>
+            TypeScript was chosen to improve maintainability and correctness as the platform grew. Strong typing provides better documentation, improved tooling, safer refactoring, and earlier detection of integration errors. Because contracts are shared between services, workers, and client applications, TypeScript allows those contracts to be defined once and validated throughout the platform. The goal was not simply to write JavaScript with types, but to establish a consistent development experience across backend services, frontend applications, and shared packages.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why SQL Server?</h2>
+          <p>
+            SQL Server remains the primary transactional database because it is a mature, highly capable relational platform with which I have extensive professional experience. The platform stores durable workflow state, configuration, and operational data where relational integrity, transactional consistency, and structured querying are important. Choosing SQL Server also demonstrates that modern application architecture can successfully combine established enterprise technologies with newer cloud-native components.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why MongoDB?</h2>
+          <p>
+            MongoDB was introduced to demonstrate document-oriented persistence where preserving the original structure of externally supplied data is more valuable than forcing it into a relational model. Email webhook payloads provide a good example; storing them as documents allows the platform to retain complete provider responses for troubleshooting, auditing, and future analysis without requiring frequent schema changes. Using both SQL Server and MongoDB illustrates that different persistence technologies are appropriate for different workloads.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why RabbitMQ?</h2>
+          <p>
+            RabbitMQ demonstrates asynchronous communication and loose coupling between services. Rather than performing every operation synchronously within an HTTP request, the platform can publish work for independent background processing, improving responsiveness and resilience. The project intentionally explores concepts such as durable messaging, retries, dead-letter queues, priority queues, topic routing, and competing consumers because these patterns are common in modern distributed systems.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why Docker?</h2>
+          <p>
+            Docker provides a consistent development environment and significantly reduces the effort required to bring new developers onto the project. Containers allow databases, messaging infrastructure, and supporting services to be provisioned predictably while keeping host system configuration to a minimum. Containerization also provides a natural path toward cloud deployment and automated CI/CD pipelines.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why GitHub Actions?</h2>
+          <p>
+            Continuous Integration and Continuous Deployment are treated as first-class engineering concerns rather than afterthoughts. GitHub Actions automates builds, validation, container publishing, infrastructure deployment, and production promotion, ensuring that deployments are repeatable and reducing manual operational effort. The objective is to demonstrate that modern software engineering includes delivery automation in addition to writing application code.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why Azure?</h2>
+          <p>
+            Azure was selected as the deployment platform because it provides a broad collection of managed services that integrate well with containerized applications and Infrastructure as Code. The project uses Azure not simply as a hosting provider, but as an opportunity to learn cloud networking, identity, deployment automation, secret management, monitoring, and production operations.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why Infrastructure as Code?</h2>
+          <p>
+            Infrastructure should be versioned, reviewed, and deployed using the same engineering discipline as application code. Using Bicep allows cloud resources to be recreated consistently across environments while reducing configuration drift and improving repeatability. Treating infrastructure as source code also supports automated deployments and simplifies disaster recovery.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why PowerShell?</h2>
+          <p>
+            PowerShell serves as the operational automation language for the platform. It provides a consistent command surface for developers working in Windows environments and simplifies repetitive operational tasks such as environment setup, database management, infrastructure control, backup procedures, and deployment support. The objective is to automate routine operations so that documented procedures become executable rather than manual.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why AI-Assisted Development?</h2>
+          <p>
+            CM Platform is intentionally developed using AI as an engineering partner rather than as a replacement for engineering judgment. AI has been invaluable for exploring unfamiliar technologies, generating implementation alternatives, accelerating routine coding tasks, reviewing architectural ideas, and improving documentation. However, architectural direction, technology selection, system integration, validation, and final engineering decisions remain deliberate human responsibilities. The project reflects my belief that effective software engineers will increasingly combine their experience with AI-assisted workflows to deliver higher-quality software more efficiently.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
+          <h2>Why Build CM Platform?</h2>
+          <p>
+            CM Platform began as an exploration of modern backend technologies but has evolved into a comprehensive software engineering portfolio. Rather than building isolated demonstrations of individual frameworks, the project is intended to show how modern software systems are conceived, organized, implemented, deployed, secured, monitored, and maintained. It serves as both a learning platform and a long-term record of my continued growth as a software engineer.
+          </p>
+        </div>
+      </section>
     </section>
   `;
 }
@@ -2990,23 +3119,25 @@ function render(): void {
             ? secretsPage()
             : page === "security"
               ? securityPage()
-              : page === "iam"
-                ? iamPage()
-                : page === "register"
-                  ? registerPage()
-                  : page === "account"
-                    ? accountPage()
-                    : page === "widgets"
-                      ? widgetsPage()
-                      : page === "competing-consumers"
-                        ? competingConsumersPage()
-                        : page === "topic-routing"
-                          ? topicRoutingPage()
-                          : page === "priority-queue"
-                            ? priorityQueuePage()
-                            : page === "mongodb"
-                              ? mongodbPage()
-                              : loginPage();
+              : page === "architectural-decisions"
+                ? architecturalDecisionsPage()
+                : page === "iam"
+                  ? iamPage()
+                  : page === "register"
+                    ? registerPage()
+                    : page === "account"
+                      ? accountPage()
+                      : page === "widgets"
+                        ? widgetsPage()
+                        : page === "competing-consumers"
+                          ? competingConsumersPage()
+                          : page === "topic-routing"
+                            ? topicRoutingPage()
+                            : page === "priority-queue"
+                              ? priorityQueuePage()
+                              : page === "mongodb"
+                                ? mongodbPage()
+                                : loginPage();
 
   app.innerHTML = layout(content);
   bindEvents();
