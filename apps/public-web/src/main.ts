@@ -593,6 +593,15 @@ function architecturalDecisionsPage(): string {
 
       <section class="platform-section platform-section-block">
         <div>
+          <h2>Why Build CM Platform?</h2>
+          <p>
+            CM Platform began as an exploration of modern backend technologies but has evolved into a comprehensive software engineering portfolio. Rather than building isolated demonstrations of individual frameworks, the project is intended to show how modern software systems are conceived, organized, implemented, deployed, secured, monitored, and maintained. It serves as both a learning platform and a long-term record of my continued growth as a software engineer.
+          </p>
+        </div>
+      </section>
+
+      <section class="platform-section platform-section-block">
+        <div>
           <h2>Why Simplicity?</h2>
           <p>
             A recurring objective throughout CM Platform is to favor simple, understandable solutions over unnecessary complexity. Modern software engineering often rewards sophisticated frameworks and abstractions, but long-term maintainability depends on systems that developers can quickly understand, modify, and support. Throughout the platform, architectural decisions intentionally prioritize clarity, explicitness, and operational simplicity. New technologies are introduced only when they provide meaningful value to the platform rather than simply expanding the technology stack.
@@ -676,7 +685,7 @@ function architecturalDecisionsPage(): string {
         <div>
           <h2>Why Infrastructure as Code?</h2>
           <p>
-            Infrastructure should be versioned, reviewed, and deployed using the same engineering discipline as application code. Using Bicep allows cloud resources to be recreated consistently across environments while reducing configuration drift and improving repeatability. Treating infrastructure as source code also supports automated deployments and simplifies disaster recovery.
+            I am considering the idea that infrastructure should be versioned, reviewed, and deployed using the same engineering discipline as application code (which is admittedly, new to me). Using Bicep allows cloud resources to be recreated consistently across environments while reducing configuration drift and improving repeatability. Treating infrastructure as source code also supports automated deployments and simplifies disaster recovery.
           </p>
         </div>
       </section>
@@ -699,14 +708,6 @@ function architecturalDecisionsPage(): string {
         </div>
       </section>
 
-      <section class="platform-section platform-section-block">
-        <div>
-          <h2>Why Build CM Platform?</h2>
-          <p>
-            CM Platform began as an exploration of modern backend technologies but has evolved into a comprehensive software engineering portfolio. Rather than building isolated demonstrations of individual frameworks, the project is intended to show how modern software systems are conceived, organized, implemented, deployed, secured, monitored, and maintained. It serves as both a learning platform and a long-term record of my continued growth as a software engineer.
-          </p>
-        </div>
-      </section>
       ${backToTopButton()}
     </section>
   `;
@@ -714,7 +715,14 @@ function architecturalDecisionsPage(): string {
 
 function infrastructurePage(): string {
   const isRefreshing = platformStatusState.status === "submitting";
-  const checkedAt = platformStatus?.checkedAt ? formatDate(platformStatus.checkedAt) : "Not checked yet";
+  const checkedAt = platformStatus?.checkedAt ? formatDateWithSeconds(platformStatus.checkedAt) : "Not checked yet";
+  const refreshNotice = isRefreshing
+    ? `
+      <div class="alert alert-info" role="status">
+        Refreshing live infrastructure status. Existing rows remain visible until the new check completes.
+      </div>
+    `
+    : "";
 
   return `
     <section class="platform-overview">
@@ -727,7 +735,7 @@ function infrastructurePage(): string {
           </p>
           <div class="platform-hero-actions">
             <button class="btn btn-primary" type="button" data-action="refresh-platform-status" ${isRefreshing ? "disabled" : ""}>
-              Refresh Status
+              ${isRefreshing ? "Checking..." : "Refresh Status"}
             </button>
             <span>Last checked: ${escapeHtml(checkedAt)}</span>
           </div>
@@ -749,6 +757,7 @@ function infrastructurePage(): string {
       </div>
 
       ${platformStatusState.status === "error" ? statusMessage(platformStatusState) : ""}
+      ${refreshNotice}
 
       <section class="platform-section platform-section-block">
         <div>
@@ -2736,7 +2745,9 @@ async function loadPriorityQueue(): Promise<void> {
 
 async function loadPlatformStatus(): Promise<void> {
   try {
-    const response = await fetch("/platform/status");
+    const response = await fetch(`/platform/status?ts=${Date.now()}`, {
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       throw new Error(await readError(response, "Unable to load platform infrastructure status"));
@@ -2814,6 +2825,10 @@ function buildUnavailablePlatformStatus(err: unknown): PlatformStatus {
 }
 
 async function refreshPlatformStatus(): Promise<void> {
+  if (platformStatusState.status === "submitting") {
+    return;
+  }
+
   platformStatusState.status = "submitting";
   platformStatusState.message = undefined;
   render();
@@ -3114,6 +3129,7 @@ function render(): void {
   syncSidebarSectionsFromDom();
 
   const page = getCurrentPage();
+  const previousPage = currentPage;
   resetStateForPageChange(page);
   currentPage = page;
   applyRouteMessage();
@@ -3151,6 +3167,10 @@ function render(): void {
 
   app.innerHTML = layout(content);
   bindEvents();
+
+  if (page === "infrastructure" && previousPage !== "infrastructure") {
+    void refreshPlatformStatus();
+  }
 }
 
 function syncSidebarSectionsFromDom(): void {
@@ -3194,6 +3214,13 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function formatDateWithSeconds(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "medium",
   }).format(new Date(value));
 }
 
@@ -3393,7 +3420,7 @@ function infrastructureRows(requirements: InfrastructureRequirement[]): string {
       <td>${infrastructureBadge(requirement.disposition)}</td>
       <td>
         <div>${escapeHtml(requirement.evidence)}</div>
-        <div class="text-muted small">Checked ${formatDate(requirement.checkedAt)}</div>
+        <div class="text-muted small">Checked ${formatDateWithSeconds(requirement.checkedAt)}</div>
       </td>
     </tr>
   `).join("");
@@ -3447,5 +3474,4 @@ await loadConsumerWidgets();
 await loadTopicRouting();
 await loadPriorityQueue();
 await loadMongoWebhookEvents();
-await loadPlatformStatus();
 render();
