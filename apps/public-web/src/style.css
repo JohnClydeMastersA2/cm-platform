@@ -465,6 +465,10 @@ code {
   margin-bottom: 0;
 }
 
+.platform-section .platform-kicker {
+  color: #0f766e;
+}
+
 .platform-section p + p {
   margin-top: 0.75rem;
 }

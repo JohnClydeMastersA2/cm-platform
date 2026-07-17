@@ -1002,6 +1002,7 @@ function cicdPage(): string {
           `).join("")}
         </div>
       </section>
+      ${backToTopButton()}
     </section>
   `;
 }
@@ -1174,6 +1175,7 @@ function secretsPage(): string {
         </div>
       </section>
 
+      ${backToTopButton()}
     </section>
   `;
 }
@@ -1348,6 +1350,7 @@ function securityPage(): string {
           `).join("")}
         </div>
       </section>
+      ${backToTopButton()}
     </section>
   `;
 }
@@ -1453,6 +1456,7 @@ function iamPage(): string {
           ${futureItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
         </div>
       </section>
+      ${backToTopButton()}
     </section>
   `;
 }
@@ -1468,6 +1472,7 @@ function widgetsPage(): string {
     <div class="auth-panel auth-panel-wide queue-panel">
       <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
+          <p class="platform-kicker">Reliable messaging</p>
           <h1 class="h3 mb-2">Messaging with RabbitMQ + Retries & Dead Letter Queue</h1>
           <p class="text-muted mb-0">
             This demonstration uses RabbitMQ as the work queue and SQL Server as the visible state store. Creating widgets inserts rows into dbo.WidgetQueueDemo with a status of queued, then publishes durable widget.processing_requested.v1 messages to the cm.widget exchange, which routes them into the cm.widget.processing queue. The process buttons pull messages from that queue, validate the payload, update the matching SQL row, and ack successful messages so RabbitMQ removes them. Failed messages move first to a delayed retry queue, where RabbitMQ holds them briefly before routing them back to the main processing queue. If a retried message fails again, it is rejected without requeueing and sent to cm.widget.processing.dlq, where it can be replayed or repaired.
@@ -1592,6 +1597,7 @@ function competingConsumersPage(): string {
     <div class="auth-panel auth-panel-wide queue-panel">
       <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div class="rabbitmq-demo-copy">
+          <p class="platform-kicker">Worker scaling pattern</p>
           <h1 class="h3 mb-2">Competing Consumers with RabbitMQ</h1>
           <p class="text-muted mb-0">
             This demonstration uses one RabbitMQ queue and multiple worker instances to show competing consumers. Creating widgets writes rows into <code>dbo.WidgetConsumerDemo</code> with a status of queued, then publishes durable <code>widget.consumer_demo.processing_requested.v1</code> messages to the <code>cm.widget.consumer-demo</code> exchange. Each worker consumes from the same <code>cm.widget.consumer-demo.processing</code> queue with prefetch set to 1, so RabbitMQ gives each message to only one available worker. A faster worker finishes and acknowledges messages sooner, making it available for more work while slower workers are still processing.
@@ -1673,6 +1679,7 @@ function topicRoutingPage(): string {
     <div class="auth-panel auth-panel-wide queue-panel">
       <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
+          <p class="platform-kicker">Exchange routing pattern</p>
           <h1 class="h3 mb-2">Topic Routing with RabbitMQ</h1>
           <p class="text-muted mb-0">
             This demonstration publishes one durable event to the cm.topic-demo topic exchange with a routing key such as widget.important.v1. RabbitMQ compares that routing key to each queue binding pattern, then copies the message into every matching queue. The producer only describes the event; the queue bindings decide which consumers would receive it.
@@ -1744,6 +1751,7 @@ function priorityQueuePage(): string {
   return `
     <div class="auth-panel auth-panel-wide queue-panel">
       <div class="mb-4">
+        <p class="platform-kicker">Priority messaging</p>
         <h1 class="h3 mb-2">Priority Queue with RabbitMQ</h1>
         <p class="text-muted mb-0">
           This demonstration uses one RabbitMQ queue declared with x-max-priority. Publishing assigns each job a priority number, and RabbitMQ prefers higher-priority waiting messages when the process buttons pull work from the queue. Priority only affects messages still waiting in the queue; work already delivered to a consumer is not taken back.
