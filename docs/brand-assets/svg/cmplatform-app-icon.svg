@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+<title>CM Platform app icon</title>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#1E1B4B"/>
+    <stop offset="0.55" stop-color="#4F46E5"/>
+    <stop offset="1" stop-color="#818CF8"/>
+  </linearGradient>
+</defs>
+<rect width="512" height="512" rx="96" fill="url(#bg)"/>
+<g transform="translate(96,128) scale(1.0)">
+  <g stroke="#FFFFFF" stroke-width="10" fill="none" stroke-linecap="round">
+    <line x1="52" y1="88" x2="102" y2="88"/><circle cx="38" cy="88" r="10"/>
+    <line x1="52" y1="128" x2="102" y2="128"/><circle cx="38" cy="128" r="10"/>
+    <line x1="52" y1="168" x2="102" y2="168"/><circle cx="38" cy="168" r="10"/>
+    <line x1="218" y1="88" x2="268" y2="88"/><circle cx="282" cy="88" r="10"/>
+    <line x1="218" y1="128" x2="268" y2="128"/><circle cx="282" cy="128" r="10"/>
+    <line x1="218" y1="168" x2="268" y2="168"/><circle cx="282" cy="168" r="10"/>
+  </g>
+  <polygon points="110,52 160,24 210,52 160,80" fill="#FFFFFF"/>
+  <polygon points="110,90 160,62 210,90 160,118" fill="#E0E7FF"/>
+  <polygon points="110,128 160,100 210,128 160,156" fill="#C7D2FE"/>
+  <polygon points="110,166 160,138 210,166 160,194" fill="#A5B4FC"/>
+</g>
+</svg>
