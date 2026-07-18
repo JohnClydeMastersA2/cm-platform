@@ -58,6 +58,9 @@
     "public:dev": "npm --workspace public-web run dev",
     "public:build": "npm --workspace public-web run build",
     "public:preview": "npm --workspace public-web run preview",
+    "public-v2:dev": "npm --workspace public-web-v2 run dev",
+    "public-v2:build": "npm --workspace public-web-v2 run build",
+    "public-v2:preview": "npm --workspace public-web-v2 run preview",
 
     "etl:build": "npm --workspace tools/etl-csv-import run build",
     "etl:run": "npm --workspace tools/etl-csv-import run run",
