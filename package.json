@@ -80,7 +80,7 @@
     "demo-maintenance:deps:build": "npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build",
 
     "core:build": "npm run api:deps:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run demo-maintenance:build",
-    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run demo-maintenance:build && npm run public:build && npm run etl:build && npm run email-send-test:build && npm run sql-migrate:build",
+    "all:build": "npm run contracts:build && npm run auth:build && npm run logging:build && npm run messaging:build && npm run secrets:build && npm run email:build && npm run api:build && npm run email-dispatcher:build && npm run widget-consumer:build && npm run demo-maintenance:build && npm run public-v2:build && npm run etl:build && npm run email-send-test:build && npm run sql-migrate:build",
     "build": "npm run all:build",
 
     "api:clean": "powershell -Command \"Remove-Item -Recurse -Force apps/svc-core/dist -ErrorAction SilentlyContinue\"",

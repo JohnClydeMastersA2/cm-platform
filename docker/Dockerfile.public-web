@@ -9,12 +9,11 @@ COPY services ./services
 COPY tools ./tools
 
 RUN npm ci
-RUN npm run public:build
+RUN npm run public-v2:build
 
 FROM nginx:1.27-alpine AS runtime
 
 COPY docker/nginx.public-web.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/apps/public-web/dist /usr/share/nginx/html
+COPY --from=build /app/apps/public-web-v2/dist /usr/share/nginx/html
 
 EXPOSE 8080
-

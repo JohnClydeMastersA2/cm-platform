@@ -222,7 +222,7 @@ export function Cicd() {
           </a>
           <p>
             Source: <code>docs/cicd-architecture.mmd</code>. Rendered asset:{" "}
-            <code>apps/public-web/public/cicd-architecture.svg</code>.{" "}
+            <code>apps/public-web-v2/public/cicd-architecture.svg</code>.{" "}
             <a href="/cicd-architecture.svg" target="_blank" rel="noreferrer">
               Open full-size diagram
             </a>
