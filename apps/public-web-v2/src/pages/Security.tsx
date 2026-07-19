@@ -77,8 +77,8 @@ const completedChecks: CompletedCheck[] = [
   {
     title: "OWASP ZAP baseline",
     body:
-      "A non-destructive OWASP ZAP baseline scan was run against production to exercise passive checks without attacking application state.",
-    proof: "ZAP baseline reported FAIL-NEW 0, WARN-NEW 7, PASS 60; report retained locally under security-reports/"
+      "A non-destructive OWASP ZAP baseline scan was rerun against production after the React frontend cutover to exercise passive checks without attacking application state.",
+    proof: "Post-cutover ZAP baseline reported FAIL-NEW 0, WARN-NEW 7, PASS 54; report retained locally under security-reports/"
   },
   {
     title: "Azure Advisor security review",
@@ -157,8 +157,8 @@ export function Security() {
           <p>
             The site is public, HTTPS-only from the visitor perspective, fronted by Cloudflare, and
             returning a restrictive browser security header set. A non-destructive baseline scanner has
-            been run; the remaining work is to disposition warnings and decide which hardening items
-            belong before the next production release.
+            been rerun after the React production cutover; the remaining work is to disposition warnings
+            and decide which hardening items belong before the next production release.
           </p>
           <p>
             One optional hardening item is HSTS. That should be enabled only after DNS, HTTPS, and
