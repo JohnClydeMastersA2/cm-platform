@@ -1,3 +1,5 @@
+import { BackToTop } from "../components/BackToTop";
+
 type CompletedCheck = {
   title: string;
   body: string;
@@ -199,6 +201,7 @@ export function Security() {
           ))}
         </div>
       </section>
+      <BackToTop />
     </section>
   );
 }

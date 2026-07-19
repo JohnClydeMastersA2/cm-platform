@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BackToTop } from "../components/BackToTop";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
@@ -234,7 +235,7 @@ export function PriorityQueue() {
         <div className="col-12 col-xl-6">
           <h2 className="h5 mb-2">Published Order</h2>
           <div className="table-responsive">
-            <table className="table table-sm table-striped priority-queue-table">
+            <table className="table table-sm table-striped priority-queue-table mobile-card-table">
               <thead>
                 <tr>
                   <th>Published #</th>
@@ -247,12 +248,12 @@ export function PriorityQueue() {
                 {priorityQueueState.publishedMessages.length ? (
                   priorityQueueState.publishedMessages.map((message) => (
                     <tr key={message.messageId}>
-                      <td>{message.publishSequence}</td>
-                      <td>
+                      <td data-label="Published #">{message.publishSequence}</td>
+                      <td data-label="Priority">
                         <PriorityBadge priority={message.priority} />
                       </td>
-                      <td>{message.jobName}</td>
-                      <td>{formatDate(message.requestedAt)}</td>
+                      <td data-label="Job">{message.jobName}</td>
+                      <td data-label="Published">{formatDate(message.requestedAt)}</td>
                     </tr>
                   ))
                 ) : (
@@ -270,7 +271,7 @@ export function PriorityQueue() {
         <div className="col-12 col-xl-6">
           <h2 className="h5 mb-2">Processed Order</h2>
           <div className="table-responsive">
-            <table className="table table-sm table-striped priority-queue-table">
+            <table className="table table-sm table-striped priority-queue-table mobile-card-table">
               <thead>
                 <tr>
                   <th>Processed #</th>
@@ -284,13 +285,13 @@ export function PriorityQueue() {
                 {priorityQueueState.processedMessages.length ? (
                   priorityQueueState.processedMessages.map((message) => (
                     <tr key={message.messageId}>
-                      <td>{message.processedSequence}</td>
-                      <td>{message.publishSequence}</td>
-                      <td>
+                      <td data-label="Processed #">{message.processedSequence}</td>
+                      <td data-label="Published #">{message.publishSequence}</td>
+                      <td data-label="Priority">
                         <PriorityBadge priority={message.priority} />
                       </td>
-                      <td>{message.jobName}</td>
-                      <td>{formatDate(message.processedAt)}</td>
+                      <td data-label="Job">{message.jobName}</td>
+                      <td data-label="Processed">{formatDate(message.processedAt)}</td>
                     </tr>
                   ))
                 ) : (
@@ -338,16 +339,6 @@ function PriorityBadge({ priority }: { priority: number }) {
   const badgeClass = priority >= 9 ? "text-bg-danger" : priority >= 5 ? "text-bg-warning" : "text-bg-secondary";
 
   return <span className={`badge ${badgeClass}`}>{priority}</span>;
-}
-
-function BackToTop() {
-  return (
-    <div className="mobile-back-to-top">
-      <button className="btn btn-sm btn-outline-secondary" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-        Back to top
-      </button>
-    </div>
-  );
 }
 
 function priorityButtonClass(priority: number): string {

@@ -1,3 +1,5 @@
+import { BackToTop } from "../components/BackToTop";
+
 type SecretConcern = {
   title: string;
   body: string;
@@ -208,6 +210,7 @@ export function Secrets() {
           ))}
         </div>
       </section>
+      <BackToTop />
     </section>
   );
 }

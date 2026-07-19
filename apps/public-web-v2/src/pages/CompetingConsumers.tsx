@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BackToTop } from "../components/BackToTop";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
@@ -226,6 +227,7 @@ export function CompetingConsumers() {
           </tbody>
         </table>
       </div>
+      <BackToTop />
     </div>
   );
 }

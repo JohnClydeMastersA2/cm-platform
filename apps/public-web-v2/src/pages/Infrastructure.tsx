@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BackToTop } from "../components/BackToTop";
 
 type InfrastructureDisposition = "online" | "degraded" | "offline" | "unknown";
 
@@ -147,6 +148,7 @@ export function Infrastructure() {
           </table>
         </div>
       </section>
+      <BackToTop />
     </section>
   );
 }

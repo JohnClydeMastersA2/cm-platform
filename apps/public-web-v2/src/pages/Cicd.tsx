@@ -1,3 +1,5 @@
+import { BackToTop } from "../components/BackToTop";
+
 type EvidenceCard = {
   title: string;
   body: string;
@@ -242,6 +244,7 @@ export function Cicd() {
         </div>
         <EvidenceGrid cards={cicdCards} />
       </section>
+      <BackToTop />
     </section>
   );
 }

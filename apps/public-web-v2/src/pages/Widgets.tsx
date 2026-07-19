@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BackToTop } from "../components/BackToTop";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
@@ -370,6 +371,7 @@ export function Widgets() {
           </tbody>
         </table>
       </div>
+      <BackToTop />
     </div>
   );
 }

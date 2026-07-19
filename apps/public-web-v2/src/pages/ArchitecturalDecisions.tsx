@@ -1,3 +1,5 @@
+import { BackToTop } from "../components/BackToTop";
+
 const decisions = [
   {
     title: "Why Build CM Platform?",
@@ -84,6 +86,7 @@ export function ArchitecturalDecisions() {
           </div>
         </section>
       ))}
+      <BackToTop />
     </section>
   );
 }

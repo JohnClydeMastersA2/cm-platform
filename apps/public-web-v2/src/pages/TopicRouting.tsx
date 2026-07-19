@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { BackToTop } from "../components/BackToTop";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
@@ -303,16 +304,6 @@ function StatusMessage({ state }: { state: FormState }) {
   }
 
   return null;
-}
-
-function BackToTop() {
-  return (
-    <div className="mobile-back-to-top">
-      <button className="btn btn-sm btn-outline-secondary" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-        Back to top
-      </button>
-    </div>
-  );
 }
 
 async function csrfFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {

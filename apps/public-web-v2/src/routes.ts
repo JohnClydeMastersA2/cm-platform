@@ -20,6 +20,15 @@ export type AppRoute = {
   Component: () => React.ReactElement;
 };
 
+export type AppRouteGroup = {
+  id: string;
+  label: string;
+  items: Array<{
+    path: AppRoute["path"];
+    label: string;
+  }>;
+};
+
 export const routes: AppRoute[] = [
   {
     path: "/",
@@ -95,5 +104,49 @@ export const routes: AppRoute[] = [
     path: "/priority-queue",
     label: "Priority Queue",
     Component: PriorityQueue
+  }
+];
+
+export const routeGroups: AppRouteGroup[] = [
+  {
+    id: "platform",
+    label: "Platform",
+    items: [
+      { path: "/", label: "Overview" },
+      { path: "/architectural-decisions", label: "Architectural Decisions" },
+      { path: "/infrastructure", label: "Infrastructure Status" },
+      { path: "/cicd", label: "CI/CD and Azure" },
+      { path: "/security", label: "Security Review" },
+      { path: "/secrets", label: "Configuration & Secrets" }
+    ]
+  },
+  {
+    id: "data-stores",
+    label: "Data Stores",
+    items: [{ path: "/mongodb", label: "NoSQL with MongoDB" }]
+  },
+  {
+    id: "identity-access",
+    label: "Identity and Access",
+    items: [
+      { path: "/iam", label: "Overview" },
+      { path: "/register", label: "Create Account" },
+      { path: "/login", label: "Login" }
+    ]
+  },
+  {
+    id: "messaging",
+    label: "Messaging with RabbitMQ",
+    items: [
+      { path: "/widgets", label: "Queue Basics, Retry and DLQs" },
+      { path: "/competing-consumers", label: "Competing Consumers" },
+      { path: "/topic-routing", label: "Topic Routing" },
+      { path: "/priority-queue", label: "Priority Queue" }
+    ]
+  },
+  {
+    id: "my-account",
+    label: "My Account",
+    items: [{ path: "/account", label: "Session State" }]
   }
 ];

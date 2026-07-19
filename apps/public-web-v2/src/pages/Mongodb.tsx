@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { BackToTop } from "../components/BackToTop";
 
 type MongoWebhookEvent = {
   id: string;
@@ -278,6 +279,7 @@ export function Mongodb() {
           </div>
         </div>
       </section>
+      <BackToTop />
     </div>
   );
 }

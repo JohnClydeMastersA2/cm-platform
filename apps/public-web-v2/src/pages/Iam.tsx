@@ -1,3 +1,5 @@
+import { BackToTop } from "../components/BackToTop";
+
 const workflowSteps = [
   {
     title: "Create account",
@@ -98,6 +100,7 @@ export function Iam() {
           ))}
         </div>
       </section>
+      <BackToTop />
     </section>
   );
 }

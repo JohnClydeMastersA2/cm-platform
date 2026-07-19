@@ -1,3 +1,5 @@
+import { BackToTop } from "../components/BackToTop";
+
 const sourceCodeUrl = "https://github.com/JohnClydeMastersA2/cm-platform";
 
 const credentials = [
@@ -172,6 +174,7 @@ export function Home() {
           ))}
         </div>
       </section>
+      <BackToTop />
     </section>
   );
 }

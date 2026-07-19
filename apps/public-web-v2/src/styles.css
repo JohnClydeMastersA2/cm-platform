@@ -5,10 +5,15 @@
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   background: #f8fafc;
+  scrollbar-gutter: stable;
 }
 
 .app-shell {
@@ -27,6 +32,13 @@ body {
   color: #f8fafc;
 }
 
+.sidebar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .brand {
   display: flex;
   gap: 0.75rem;
@@ -34,6 +46,14 @@ body {
   color: inherit;
   text-decoration: none;
   margin-bottom: 2rem;
+}
+
+.sidebar-menu-toggle {
+  display: none;
+}
+
+.sidebar-current-page {
+  display: none;
 }
 
 .brand-mark {
@@ -126,7 +146,12 @@ body {
 }
 
 .sidebar .nav-link {
+  border-radius: 0.45rem;
   color: #dbe4ff;
+  display: block;
+  font-size: 0.92rem;
+  padding: 0.45rem 0.65rem;
+  text-decoration: none;
 }
 
 .sidebar .nav-link:hover,
@@ -137,6 +162,62 @@ body {
 
 .sidebar .nav-link.active {
   background: #4f46e5;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.sidebar-nav-section {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sidebar-nav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: #f8fafc;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+}
+
+.sidebar-nav-toggle:hover,
+.sidebar-nav-toggle:focus {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.sidebar-nav-toggle::after {
+  content: "▾";
+  color: #b7c0d8;
+  font-size: 0.8rem;
+  transition: transform 0.15s ease-in-out;
+}
+
+.sidebar-nav-toggle.collapsed::after {
+  transform: rotate(-90deg);
+}
+
+.sidebar-nav-toggle.active-group {
+  color: #ffffff;
+}
+
+.sidebar-nav-group {
+  display: none;
+  gap: 0.2rem;
+  padding-left: 0.35rem;
+}
+
+.sidebar-nav-group.show {
+  display: grid;
 }
 
 .content {
@@ -154,6 +235,7 @@ body {
 .platform-hero,
 .platform-credentials,
 .platform-section-block {
+  min-width: 0;
   border: 1px solid #dee2e6;
   border-radius: 0.5rem;
   background: #ffffff;
@@ -369,6 +451,7 @@ body {
   grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.42fr);
   gap: 1.5rem;
   align-items: start;
+  min-width: 0;
   padding: 1.5rem;
   border: 1px solid #dee2e6;
   border-radius: 0.5rem;
@@ -726,22 +809,90 @@ body {
   font-size: 1.1rem;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 991.98px) {
   .app-shell {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
   }
 
   .sidebar {
     position: static;
     height: auto;
+    overflow: visible;
+    padding: 0.75rem 1rem;
+  }
+
+  .sidebar-header {
+    align-items: center;
+  }
+
+  .brand {
+    gap: 0.55rem;
+    margin-bottom: 0;
+  }
+
+  .brand-mark {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.55rem;
+  }
+
+  .brand-mark img {
+    width: 1.6rem;
+  }
+
+  .brand strong {
+    font-size: 1rem;
+  }
+
+  .brand small {
+    font-size: 0.78rem;
+  }
+
+  .sidebar-menu-toggle {
+    display: inline-block;
+  }
+
+  .sidebar-nav {
+    display: none;
+    padding-top: 1rem;
+  }
+
+  .sidebar-nav.mobile-open {
+    display: grid;
+  }
+
+  .mobile-back-to-top {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.25rem;
+  }
+
+  .mobile-back-to-top .btn {
+    width: 100%;
+  }
+
+  .sidebar-current-page {
+    display: block;
+    margin-top: 0.55rem;
+    color: #b7c0d8;
+    font-size: 0.86rem;
+    font-weight: 600;
   }
 
   .platform-hero,
   .platform-credentials,
   .platform-section,
+  .platform-flow,
   .future-panel,
   .platform-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .platform-flow div {
+    justify-content: flex-start;
+    min-height: 3rem;
+    text-align: left;
   }
 
   .platform-credential-list {
@@ -755,15 +906,17 @@ body {
   .mongodb-credential-grid {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 767.98px) {
   .content {
     padding: 2rem 1rem;
   }
 }
 
 @media (max-width: 575.98px) {
+  .sidebar {
+    padding: 0.65rem;
+  }
+
   .content {
     padding: 1rem 0.75rem;
   }
@@ -780,17 +933,144 @@ body {
     font-size: 1.85rem;
   }
 
+  .infrastructure-table-wrap {
+    overflow-x: visible;
+  }
+
+  .infrastructure-table {
+    min-width: 0;
+  }
+
+  .infrastructure-table thead {
+    display: none;
+  }
+
+  .infrastructure-table,
+  .infrastructure-table tbody,
+  .infrastructure-table tr,
+  .infrastructure-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .infrastructure-table tr {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding: 0.85rem;
+  }
+
+  .infrastructure-table td {
+    border: 0;
+    padding: 0;
+    white-space: normal !important;
+  }
+
+  .infrastructure-table td + td {
+    margin-top: 0.65rem;
+  }
+
+  .infrastructure-table td:nth-child(2)::before,
+  .infrastructure-table td:nth-child(3)::before,
+  .at-a-glance-table td:nth-child(1)::before,
+  .at-a-glance-table td:nth-child(2)::before {
+    color: #6c757d;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .infrastructure-table td:nth-child(2)::before {
+    content: "Disposition";
+  }
+
+  .infrastructure-table td:nth-child(3)::before {
+    content: "Evidence";
+  }
+
+  .at-a-glance-table td:nth-child(1)::before {
+    content: "Capability";
+  }
+
+  .at-a-glance-table td:nth-child(2)::before {
+    content: "Technologies";
+  }
+
+  .mongodb-webhook-table thead {
+    display: none;
+  }
+
+  .mongodb-webhook-table,
+  .mongodb-webhook-table tbody,
+  .mongodb-webhook-table tr,
+  .mongodb-webhook-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .mongodb-webhook-table tr {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 0.85rem;
+    padding: 0.85rem;
+  }
+
+  .mongodb-webhook-table td {
+    border: 0;
+    padding: 0;
+    white-space: normal !important;
+  }
+
+  .mongodb-webhook-table td + td {
+    margin-top: 0.65rem;
+  }
+
+  .mongodb-webhook-table td::before {
+    color: #6c757d;
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+  }
+
+  .mongodb-webhook-table td:nth-child(1)::before {
+    content: "Received";
+  }
+
+  .mongodb-webhook-table td:nth-child(2)::before {
+    content: "Event";
+  }
+
+  .mongodb-webhook-table td:nth-child(3)::before {
+    content: "Recipient";
+  }
+
+  .mongodb-webhook-table td:nth-child(4)::before {
+    content: "Subject";
+  }
+
+  .mongodb-webhook-table td:nth-child(5)::before {
+    content: "Document";
+  }
+
   .widget-main-table,
   .widget-dead-letter-table,
   .consumer-widget-table,
-  .topic-routing-table {
+  .topic-routing-table,
+  .mobile-card-table {
     min-width: 0;
   }
 
   .widget-main-table thead,
   .widget-dead-letter-table thead,
   .consumer-widget-table thead,
-  .topic-routing-table thead {
+  .topic-routing-table thead,
+  .mobile-card-table thead {
     display: none;
   }
 
@@ -809,7 +1089,11 @@ body {
   .topic-routing-table,
   .topic-routing-table tbody,
   .topic-routing-table tr,
-  .topic-routing-table td {
+  .topic-routing-table td,
+  .mobile-card-table,
+  .mobile-card-table tbody,
+  .mobile-card-table tr,
+  .mobile-card-table td {
     display: block;
     width: 100%;
   }
@@ -817,7 +1101,8 @@ body {
   .widget-main-table tr,
   .widget-dead-letter-table tr,
   .consumer-widget-table tr,
-  .topic-routing-table tr {
+  .topic-routing-table tr,
+  .mobile-card-table tr {
     border: 1px solid #dee2e6;
     border-radius: 0.5rem;
     margin-bottom: 0.85rem;
@@ -827,7 +1112,8 @@ body {
   .widget-main-table td,
   .widget-dead-letter-table td,
   .consumer-widget-table td,
-  .topic-routing-table td {
+  .topic-routing-table td,
+  .mobile-card-table td {
     border: 0;
     padding: 0;
     white-space: normal !important;
@@ -836,14 +1122,16 @@ body {
   .widget-main-table td + td,
   .widget-dead-letter-table td + td,
   .consumer-widget-table td + td,
-  .topic-routing-table td + td {
+  .topic-routing-table td + td,
+  .mobile-card-table td + td {
     margin-top: 0.65rem;
   }
 
   .widget-main-table td::before,
   .widget-dead-letter-table td::before,
   .consumer-widget-table td::before,
-  .topic-routing-table td::before {
+  .topic-routing-table td::before,
+  .mobile-card-table td::before {
     color: #6c757d;
     display: block;
     font-size: 0.72rem;
@@ -938,13 +1226,12 @@ body {
     content: "Published";
   }
 
-  .mobile-back-to-top {
-    display: flex;
-    justify-content: center;
-    margin-top: 1.25rem;
+  .mobile-card-table td::before {
+    content: attr(data-label);
   }
 
-  .mobile-back-to-top .btn {
-    width: 100%;
+  .mobile-card-table td[colspan]::before {
+    content: none;
   }
+
 }
