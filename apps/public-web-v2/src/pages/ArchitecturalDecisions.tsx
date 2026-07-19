@@ -22,6 +22,11 @@ const decisions = [
       "TypeScript was chosen to improve maintainability and correctness as the platform grew. Strong typing provides better documentation, improved tooling, safer refactoring, and earlier detection of integration errors. Because contracts are shared between services, workers, and client applications, TypeScript allows those contracts to be defined once and validated throughout the platform. The goal was not simply to write JavaScript with types, but to establish a consistent development experience across backend services, frontend applications, and shared packages."
   },
   {
+    title: "Why React?",
+    body:
+      "React was introduced to give the public website a more maintainable structure as the portfolio grew from static content into a collection of routed pages, account workflows, infrastructure status views, and interactive RabbitMQ and MongoDB demos. React keeps page behavior close to the page that owns it, supports reusable layout and UI components, and provides a market-relevant frontend model without replacing the existing Bootstrap visual foundation."
+  },
+  {
     title: "Why SQL Server?",
     body:
       "SQL Server remains the primary transactional database because it is a mature, highly capable relational platform with which I have extensive professional experience. The platform stores durable workflow state, configuration, and operational data where relational integrity, transactional consistency, and structured querying are important. Choosing SQL Server also demonstrates that modern application architecture can successfully combine established enterprise technologies with newer cloud-native components."

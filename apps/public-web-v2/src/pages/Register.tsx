@@ -1,13 +1,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-type FormStatus = "idle" | "submitting" | "success" | "error";
-
-type FormState = {
-  status: FormStatus;
-  message?: string;
-};
+import { StatusMessage } from "../components/StatusMessage";
+import { readError } from "../lib/http";
+import type { FormState } from "../types/forms";
 
 export function Register() {
   const navigate = useNavigate();
@@ -104,25 +100,4 @@ export function Register() {
       </div>
     </div>
   );
-}
-
-function StatusMessage({ state }: { state: FormState }) {
-  if (state.status === "success") {
-    return <div className="alert alert-success">{state.message ?? "Success."}</div>;
-  }
-
-  if (state.status === "error") {
-    return <div className="alert alert-danger">{state.message ?? "Request failed."}</div>;
-  }
-
-  return null;
-}
-
-async function readError(response: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message ?? body.error ?? fallback;
-  } catch {
-    return fallback;
-  }
 }

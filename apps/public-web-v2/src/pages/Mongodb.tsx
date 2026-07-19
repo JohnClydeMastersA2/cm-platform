@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { BackToTop } from "../components/BackToTop";
+import { MetricCard } from "../components/MetricCard";
+import { formatDate } from "../lib/date";
+import { readError } from "../lib/http";
 
 type MongoWebhookEvent = {
   id: string;
@@ -148,9 +151,9 @@ export function Mongodb() {
       ) : null}
 
       <section className="row g-3">
-        <MetricCard label="Matching documents" value={explorerState.total} />
-        <MetricCard label="Live webhooks" value={liveCount} />
-        <MetricCard label="Event types" value={explorerState.eventTypeCounts.length} />
+        <MetricCard label="Matching documents" value={explorerState.total} variant="card" />
+        <MetricCard label="Live webhooks" value={liveCount} variant="card" />
+        <MetricCard label="Event types" value={explorerState.eventTypeCounts.length} variant="card" />
       </section>
 
       <section className="card shadow-sm">
@@ -300,33 +303,4 @@ function MongoCredential({ src, alt, label }: { src: string; alt: string; label:
       <strong>{label}</strong>
     </div>
   );
-}
-
-function MetricCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="col-sm-6 col-xl-3">
-      <div className="card h-100 shadow-sm">
-        <div className="card-body">
-          <div className="text-muted small">{label}</div>
-          <div className="fs-3 fw-semibold">{value}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-async function readError(response: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message ?? body.error ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date(value));
 }

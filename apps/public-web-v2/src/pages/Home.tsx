@@ -40,6 +40,12 @@ const platformCards = [
     proof: "SQL Server workflow tables, MongoDB Atlas, /email-webhook-events"
   },
   {
+    title: "React Frontend",
+    body:
+      "React organizes the public website into reusable pages, shared layout, route-aware navigation, and interactive demo views while Bootstrap provides the visual foundation.",
+    proof: "React, React Router, Vite, Bootstrap, apps/public-web-v2"
+  },
+  {
     title: "CI/CD",
     body:
       "GitHub Actions builds source, validates production container images, publishes SHA-tagged GHCR images, gates production deployments, and records deployment evidence as part of the platform learning path.",

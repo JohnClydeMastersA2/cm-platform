@@ -79,18 +79,18 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
     const parsed = AuthVerifyEmailSchema.safeParse(request.query);
 
     if (!parsed.success) {
-      reply.redirect(`${publicWebBaseUrl}/#login-email-verification-failed`);
+      reply.redirect(`${publicWebBaseUrl}/login?verified=0`);
       return;
     }
 
     const account = await verifyEmailChallenge(app.db, parsed.data.token);
 
     if (!account) {
-      reply.redirect(`${publicWebBaseUrl}/#login-email-verification-failed`);
+      reply.redirect(`${publicWebBaseUrl}/login?verified=0`);
       return;
     }
 
-    reply.redirect(`${publicWebBaseUrl}/#login-email-verified`);
+    reply.redirect(`${publicWebBaseUrl}/login?verified=1`);
   });
 
   app.post("/login", async (request, reply) => {

@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { StatusMessage } from "../components/StatusMessage";
+import { formatDate } from "../lib/date";
+import { csrfFetch, readError } from "../lib/http";
+import type { FormState } from "../types/forms";
 
 type AuthAccount = {
   accountId: number;
@@ -16,15 +20,6 @@ type AuthSession = {
   expiresAt: string;
   revokedAt: string | null;
 };
-
-type FormStatus = "idle" | "submitting" | "success" | "error";
-
-type FormState = {
-  status: FormStatus;
-  message?: string;
-};
-
-let csrfToken: string | null = null;
 
 export function Account() {
   const navigate = useNavigate();
@@ -180,72 +175,12 @@ export function Account() {
   );
 }
 
-function StatusMessage({ state }: { state: FormState }) {
-  if (state.status === "success") {
-    return <div className="alert alert-success">{state.message ?? "Success."}</div>;
-  }
-
-  if (state.status === "error") {
-    return <div className="alert alert-danger">{state.message ?? "Request failed."}</div>;
-  }
-
-  return null;
-}
-
 function EmailVerificationNotice({ account }: { account: AuthAccount }) {
   if (account.emailVerifiedAt) {
     return null;
   }
 
   return <div className="alert alert-warning">Your email address has not been verified yet. Check your email for the verification link.</div>;
-}
-
-async function csrfFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-  const token = await getCsrfToken();
-  const headers = new Headers(init.headers);
-  headers.set("x-csrf-token", token);
-
-  return fetch(input, {
-    ...init,
-    headers
-  });
-}
-
-async function getCsrfToken(): Promise<string> {
-  if (csrfToken) {
-    return csrfToken;
-  }
-
-  const response = await fetch("/auth/csrf");
-
-  if (!response.ok) {
-    throw new Error(await readError(response, "Unable to initialize request protection"));
-  }
-
-  const body = (await response.json()) as { csrfToken?: string };
-
-  if (!body.csrfToken) {
-    throw new Error("Unable to initialize request protection.");
-  }
-
-  csrfToken = body.csrfToken;
-  return csrfToken;
-}
-
-async function readError(response: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message ?? body.error ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date(value));
 }
 
 function formatRelativeExpiration(value: string): string {

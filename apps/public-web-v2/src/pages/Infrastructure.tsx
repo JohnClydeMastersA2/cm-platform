@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { BackToTop } from "../components/BackToTop";
+import { formatDateWithSeconds } from "../lib/date";
+import { readError } from "../lib/http";
 
 type InfrastructureDisposition = "online" | "degraded" | "offline" | "unknown";
 
@@ -234,20 +236,4 @@ function buildUnavailablePlatformStatus(err: unknown): PlatformStatus {
       "Start the API and supporting infrastructure to replace these fallback dispositions with live checks. Use npm run infra:workers:up to start the Docker-managed background workers."
     ]
   };
-}
-
-async function readError(response: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message ?? body.error ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function formatDateWithSeconds(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "medium"
-  }).format(new Date(value));
 }

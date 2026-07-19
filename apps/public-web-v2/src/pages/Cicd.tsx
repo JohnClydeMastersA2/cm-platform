@@ -157,6 +157,11 @@ export function Cicd() {
             Docker provides the container image contract. GitHub Actions builds and publishes those
             images to GHCR, and Azure Container Apps runs them in production.
           </p>
+          <p>
+            The public web client is built as a React and Vite application before it is copied into
+            the production web image, so the deployed site is a compiled frontend artifact rather
+            than source files served directly from the repository.
+          </p>
         </div>
         <div className="platform-flow platform-flow-separated" aria-label="CI/CD deployment flow">
           {deploymentFlow.map((step) => (

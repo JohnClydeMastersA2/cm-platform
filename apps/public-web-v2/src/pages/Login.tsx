@@ -1,13 +1,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-
-type FormStatus = "idle" | "submitting" | "success" | "error";
-
-type FormState = {
-  status: FormStatus;
-  message?: string;
-};
+import { StatusMessage } from "../components/StatusMessage";
+import { readError } from "../lib/http";
+import type { FormState } from "../types/forms";
 
 type LoginLocationState = {
   message?: string;
@@ -17,8 +13,9 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as LoginLocationState | null;
+  const verified = new URLSearchParams(location.search).get("verified");
   const [formState, setFormState] = useState<FormState>(
-    locationState?.message ? { status: "success", message: locationState.message } : { status: "idle" }
+    getInitialFormState(locationState?.message, verified)
   );
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
@@ -104,23 +101,18 @@ export function Login() {
   );
 }
 
-function StatusMessage({ state }: { state: FormState }) {
-  if (state.status === "success") {
-    return <div className="alert alert-success">{state.message ?? "Success."}</div>;
+function getInitialFormState(message: string | undefined, verified: string | null): FormState {
+  if (message) {
+    return { status: "success", message };
   }
 
-  if (state.status === "error") {
-    return <div className="alert alert-danger">{state.message ?? "Request failed."}</div>;
+  if (verified === "1") {
+    return { status: "success", message: "Email verified. You can now log in." };
   }
 
-  return null;
-}
-
-async function readError(response: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message ?? body.error ?? fallback;
-  } catch {
-    return fallback;
+  if (verified === "0") {
+    return { status: "error", message: "Email verification failed or the link has expired." };
   }
+
+  return { status: "idle" };
 }
