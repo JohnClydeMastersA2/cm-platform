@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="790" viewBox="0 0 1180 790" role="img" aria-labelledby="title desc">
+  <title id="title">Competing Consumers SQL and RabbitMQ Flow</title>
+  <desc id="desc">A diagram showing the browser calling the API, SQL Server storing queued and processed widget state, RabbitMQ routing durable messages to one processing queue, and fast and slow workers consuming with prefetch one before acknowledging messages.</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0d6efd"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6c757d"/>
+    </marker>
+    <style>
+      .box{rx:14;ry:14;stroke-width:2}
+      .client{fill:#e7f1ff;stroke:#0d6efd}
+      .api{fill:#fff3cd;stroke:#ffc107}
+      .sql{fill:#d1e7dd;stroke:#198754}
+      .rabbit{fill:#f8d7da;stroke:#dc3545}
+      .worker{fill:#e2e3e5;stroke:#6c757d}
+      .title{font:700 16px Arial,Helvetica,sans-serif;fill:#10233f}
+      .small{font:400 13px Arial,Helvetica,sans-serif;fill:#3b4a5f}
+      .label{font:700 12px Arial,Helvetica,sans-serif;letter-spacing:.04em;text-transform:uppercase;fill:#6c757d}
+      .line{fill:none;stroke:#6c757d;stroke-width:2.2;marker-end:url(#arrow-gray)}
+      .ack-line{fill:none;stroke:#6c757d;stroke-width:2;stroke-dasharray:7 6}
+      .primary-line{fill:none;stroke:#0d6efd;stroke-width:2.4;marker-end:url(#arrow-blue)}
+    </style>
+  </defs>
+
+  <rect width="1180" height="790" fill="#ffffff"/>
+  <text x="48" y="48" class="title" style="font-size:24px">Competing Consumers: SQL State and RabbitMQ Work Queue</text>
+  <text x="48" y="74" class="small">The API stores visible demo state in SQL Server, while RabbitMQ distributes durable work messages to whichever worker is ready.</text>
+
+  <text x="55" y="126" class="label">Request path</text>
+  <rect class="box client" x="48" y="145" width="190" height="76"/>
+  <text x="70" y="176" class="title">Browser demo page</text>
+  <text x="70" y="199" class="small">Create 10 / Create 25</text>
+
+  <rect class="box api" x="300" y="145" width="190" height="76"/>
+  <text x="332" y="174" class="title">svc-core API</text>
+  <text x="326" y="198" class="small">POST /consumer-widgets</text>
+
+  <rect class="box sql" x="552" y="114" width="230" height="98"/>
+  <text x="583" y="148" class="title">SQL Server</text>
+  <text x="580" y="172" class="small">Insert widget row</text>
+  <text x="580" y="194" class="small">Status: queued</text>
+
+  <rect class="box rabbit" x="552" y="254" width="230" height="98"/>
+  <text x="590" y="288" class="title">RabbitMQ Exchange</text>
+  <text x="591" y="312" class="small">Routes work message</text>
+  <text x="592" y="334" class="small">to processing queue</text>
+
+  <rect class="box rabbit" x="862" y="254" width="230" height="98"/>
+  <text x="902" y="288" class="title">Processing Queue</text>
+  <text x="903" y="312" class="small">One shared queue</text>
+  <text x="905" y="334" class="small">Competing consumers</text>
+
+  <path class="primary-line" d="M238 183 H290"/>
+  <path class="line" d="M490 168 H542"/>
+  <path class="line" d="M490 195 C520 195 520 303 542 303"/>
+  <path class="line" d="M782 303 H852"/>
+
+  <text x="55" y="410" class="label">Worker path</text>
+  <rect class="box worker" x="242" y="430" width="230" height="90"/>
+  <text x="294" y="461" class="title">fast-consumer</text>
+  <text x="291" y="485" class="small">prefetch = 1</text>
+  <text x="277" y="507" class="small">Short processing delay</text>
+
+  <rect class="box worker" x="552" y="430" width="230" height="90"/>
+  <text x="603" y="461" class="title">slow-consumer</text>
+  <text x="600" y="485" class="small">prefetch = 1</text>
+  <text x="586" y="507" class="small">Longer processing delay</text>
+
+  <text x="55" y="560" class="label">State update path</text>
+  <rect class="box sql" x="475" y="580" width="230" height="90"/>
+  <text x="522" y="613" class="title">SQL Updates</text>
+  <text x="522" y="638" class="small">Status: processed</text>
+  <text x="518" y="660" class="small">processedBy + seconds</text>
+
+  <path class="line" d="M357 520 C375 552 455 552 500 580"/>
+  <path class="line" d="M667 520 C650 552 620 552 604 580"/>
+  <path class="ack-line" d="M357 430 C357 382 915 382 945 354"/>
+  <path class="ack-line" d="M667 430 C667 397 925 387 960 354"/>
+  <text x="424" y="395" class="small">RabbitMQ delivers messages to consumers</text>
+  <text x="424" y="415" class="small">that have subscribed to the queue.</text>
+  <text x="704" y="395" class="small">Ack (from consumers) confirms completion</text>
+  <text x="704" y="415" class="small">and removes the delivered message</text>
+
+  <text x="55" y="720" class="label">Refresh path</text>
+  <rect class="box client" x="172" y="740" width="150" height="44"/>
+  <text x="205" y="767" class="title">Refresh</text>
+  <rect class="box api" x="382" y="740" width="190" height="44"/>
+  <text x="413" y="767" class="title">GET overview</text>
+  <rect class="box sql" x="632" y="740" width="170" height="44"/>
+  <text x="666" y="767" class="title">Read SQL</text>
+  <rect class="box rabbit" x="862" y="740" width="190" height="44"/>
+  <text x="886" y="767" class="title">Read Queue Count</text>
+  <path class="primary-line" d="M322 762 H372"/>
+  <path class="line" d="M572 762 H622"/>
+  <path class="line" d="M802 762 H852"/>
+</svg>

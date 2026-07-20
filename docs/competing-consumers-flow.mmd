@@ -1,0 +1,32 @@
+flowchart LR
+  browser[Browser demo page] --> api[svc-core POST /consumer-widgets]
+
+  api --> sqlQueued[SQL Server row created with status queued]
+  api --> exchange[RabbitMQ exchange routes work message]
+  exchange --> queue[One durable processing queue]
+
+  fast[fast-consumer prefetch 1]
+  slow[slow-consumer prefetch 1]
+
+  fast --> sqlFast[SQL status processing then processed]
+  slow --> sqlSlow[SQL status processing then processed]
+
+  fast -. ack .-> queue
+  slow -. ack .-> queue
+
+  browser --> refresh[Refresh page]
+  refresh --> overview[GET /consumer-widgets]
+  overview --> sqlRead[Read SQL rows]
+  overview --> queueCount[Read RabbitMQ queue count]
+
+  classDef client fill:#e7f1ff,stroke:#0d6efd,color:#084298;
+  classDef api fill:#fff3cd,stroke:#ffc107,color:#664d03;
+  classDef sql fill:#d1e7dd,stroke:#198754,color:#0f5132;
+  classDef rabbit fill:#f8d7da,stroke:#dc3545,color:#842029;
+  classDef worker fill:#e2e3e5,stroke:#6c757d,color:#343a40;
+
+  class browser,refresh client;
+  class api,overview api;
+  class sqlQueued,sqlFast,sqlSlow,sqlRead sql;
+  class exchange,queue,queueCount rabbit;
+  class fast,slow worker;
