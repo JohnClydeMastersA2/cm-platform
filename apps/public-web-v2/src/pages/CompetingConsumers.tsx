@@ -129,13 +129,11 @@ export function CompetingConsumers() {
           <h1 className="h3 mb-2">Competing Consumers with RabbitMQ</h1>
           <p className="text-muted mb-0">
             This demonstration uses one RabbitMQ queue and multiple worker instances to show competing
-            consumers. Creating widgets writes rows into <code>dbo.WidgetConsumerDemo</code> with a
-            status of queued, then publishes durable{" "}
-            <code>widget.consumer_demo.processing_requested.v1</code> messages to the{" "}
-            <code>cm.widget.consumer-demo</code> exchange. Each worker consumes from the same{" "}
-            <code>cm.widget.consumer-demo.processing</code> queue with prefetch set to 1, so RabbitMQ
-            gives each message to only one available worker. A faster worker finishes and acknowledges
-            messages sooner, making it available for more work while slower workers are still processing.
+            consumers. Creating widgets writes rows into a queue with a status of queued, then publishes
+            durable messages to consumer queues. Each worker consumes from the same primary message queue
+            with prefetch set to 1, so RabbitMQ gives each message to only one available worker. A faster
+            worker finishes and acknowledges messages sooner, making it available for more work while
+            slower workers are still processing.
           </p>
         </div>
       </div>
