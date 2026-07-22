@@ -1,550 +1,235 @@
 # CM Platform
 
-CM Platform is a TypeScript-based application platform that brings together a Fastify API, SQL Server-backed data workflows, a public-facing site, shared validation contracts, email delivery support, and PowerShell-driven development automation. The project focuses on building a practical, maintainable foundation for account registration, authentication, internal service operations, and local infrastructure workflows.
+CM Platform is a polyglot application and infrastructure project used to build and demonstrate practical platform capabilities. It combines a Fastify API, a React web application, background workers, a Spring Boot healthcare transformation service, shared TypeScript packages, data stores, messaging, email delivery, container workflows, and Azure infrastructure as code.
 
-## Command Environment
+The repository is under active development. Some features are production-oriented foundations, while others are intentionally visible demonstrations of messaging, identity, data, and operational patterns.
 
-This project standardizes on **PowerShell** as the primary command environment for development automation.
+## Technology Overview
 
-Project scripts, runbooks, smoke tests, cleanup commands, and future operational helpers should assume they are being run from PowerShell unless a different shell is called out explicitly. npm remains the command entry point for common workflows, but the underlying scripts may use PowerShell-native commands and `.ps1` files.
+- Node.js 24, TypeScript, Fastify, React, and Vite
+- Java 21 and Spring Boot
+- SQL Server, MongoDB, and RabbitMQ
+- Docker Compose for local infrastructure and production-like verification
+- Azure Bicep and GitHub Actions for cloud infrastructure and deployment
+- PowerShell as the primary local automation environment
 
-Run project tasks through the root `package.json` scripts when possible. Those scripts are the documented command surface for setup, build, cleanup, infrastructure, and verification work.
-
-Run commands from the repository root:
-
-```powershell
-cd C:\cm-platform
-```
-
-Long-running processes, such as the API service, the public-facing site, tunnels, and log watchers, should run in separate PowerShell windows so each process can keep its own console output visible.
-
-## Script Naming
-
-Targeted npm scripts use a `thing:action` convention:
+## Repository Structure
 
 ```text
-api:dev
-api:build
-api:start
-api:verify
-
-public:dev
-public:build
-public:preview
-
-contracts:build
-logging:build
-etl:build
-etl:run
-
-infra:up
-infra:down
-infra:workers:build
-infra:workers:up
-infra:workers:logs
-db:schema
+apps/svc-core                 Fastify API service
+apps/public-web-v2            canonical React web application
+apps/public-web               legacy Vite web application
+packages/auth                 password and token primitives
+packages/contracts            shared API validation contracts
+packages/email                SMTP email delivery
+packages/logging              shared structured logging
+packages/messaging            RabbitMQ contracts and topology
+packages/secrets              local secret-loading support
+services/email-dispatcher     queued email delivery worker
+services/widget-consumer      competing-consumer demonstration workers
+services/demo-maintenance     scheduled demo-data maintenance worker
+services/healthcare-transform Java/Spring healthcare document service
+tools/etl-csv-import          IIS log ETL utility
+tools/email-send-test         email integration test client
+tools/sql-migrate             SQL migration and identity utility
+docker                        images and local Compose environments
+infra/bicep                   Azure infrastructure as code
+scripts                       PowerShell automation and smoke tests
+.github/workflows             CI, security analysis, and deployment workflows
+docs                          architecture, strategy, and operational notes
 ```
 
-This means `api:dev` is the API service running in development mode. It is not the internal API surface. The API service can expose multiple route surfaces, such as `/internal`, `/public`, and `/publisher`.
+`apps/public-web-v2` is the current frontend and is what the production-style Docker image serves. The `public-v2:*` scripts operate on this application. The older `public:*` scripts still target `apps/public-web` and are retained during the migration.
 
-Short aliases like `build`, `clean`, and `dev` remain for common workflows.
+## Prerequisites
 
-## Project Shape
+For the primary local development workflow:
 
-```text
-apps/svc-core        API service
-apps/public-web      public-facing web app
-services/*           deployable background services and workers
-packages/contracts   shared API contracts
-packages/logging     shared logging package
-tools/*              operational utilities
-docker/*             local SQL Server, MongoDB, and RabbitMQ infrastructure configuration
-scripts/*            PowerShell automation and smoke tests
-docs/*               project notes, architecture, and durable ops memory
-```
+- Windows with PowerShell
+- Node.js 24 and npm
+- Docker Desktop with the Docker engine running
+
+For healthcare service development, also install Java 21. The checked-in Maven wrapper supplies Maven. Azure CLI and Bicep are only needed for infrastructure work.
+
+Commands in this document assume the current directory is the cloned repository root.
 
 ## First-Time Setup
 
-Install local dependencies:
+Install the JavaScript workspace dependencies:
 
 ```powershell
 npm install
 ```
 
-Start Docker Desktop manually before running infrastructure commands. Wait until Docker Desktop reports that the engine is running, then use the npm scripts below.
-
-Local development uses `packages/secrets/cm-platform.env` for sensitive runtime values. Start from the committed example file and keep the real file local:
+Create the ignored local secrets file from the committed template:
 
 ```powershell
 Copy-Item packages/secrets/cm-platform.env.example packages/secrets/cm-platform.env
 ```
 
-Expected local secret values:
+Replace every required placeholder in that file. It defines local SQL Server, RabbitMQ, MongoDB, API administration, SMTP, webhook, and maintenance settings. Development-only defaults such as unencrypted local database connections and trusted development certificates must not be copied into production configuration.
 
-```powershell
-MSSQL_SA_PASSWORD=<local-sql-sa-password>
-DB_USER=cm_platform_app
-DB_PASSWORD=<local-sql-app-password>
-ADMIN_KEY=<local-admin-key>
-RABBITMQ_DEFAULT_USER=cm_platform
-RABBITMQ_DEFAULT_PASS=<local-rabbitmq-password>
-RABBITMQ_URL=amqp://cm_platform:<local-rabbitmq-password>@localhost:5672
-RABBITMQ_URL_CONTAINER=amqp://cm_platform:<local-rabbitmq-password>@rabbitmq:5672
-MONGODB_ROOT_USERNAME=cm_platform_root
-MONGODB_ROOT_PASSWORD=<local-mongodb-password>
-MONGODB_APP_USERNAME=cm_platform_app
-MONGODB_APP_PASSWORD=<local-mongodb-app-password>
-MONGODB_URI=mongodb://cm_platform_app:<local-mongodb-app-password>@localhost:27017/CMPlatformDocuments?authSource=CMPlatformDocuments
-MONGODB_URI_CONTAINER=mongodb://cm_platform_app:<local-mongodb-app-password>@mongodb:27017/CMPlatformDocuments?authSource=CMPlatformDocuments
-EMAIL_SMTP_USER=resend
-EMAIL_SMTP_PASS=<resend-api-key>
-```
+Real `.env` files, credentials, recipient lists, and tokens must never be committed. See [SECURITY.md](SECURITY.md) for the project security policy.
 
-The API loads `apps/svc-core/.env` and then fills missing sensitive values from `packages/secrets/cm-platform.env`. Keep non-secret host configuration in `apps/svc-core/.env` or set it in the PowerShell session that starts the API:
+## Quick Start
 
-```powershell
-DB_SERVER=localhost
-DB_PORT=1433
-DB_DATABASE=CMPlatform
-LOG_LEVEL=info
-PORT=3000
-HOST=0.0.0.0
-AUTH_API_BASE_URL=http://localhost:3000
-PUBLIC_WEB_BASE_URL=http://localhost:5173
-MONGODB_DATABASE=CMPlatformDocuments
-```
-
-The default local database is `CMPlatform` on SQL Server port `1433`. If that port is already in use, adjust `docker/compose.dev.yml` and the API `.env` together.
-
-Local infrastructure also starts RabbitMQ for asynchronous workflow experiments and MongoDB for document-oriented webhook event storage:
-
-```text
-AMQP:       uses RABBITMQ_URL from packages/secrets/cm-platform.env
-Management: http://localhost:15672
-MongoDB:    mongodb://localhost:27017
-```
-
-For durable local-development context, especially database and Docker volume facts, see [docs/ops-memory.md](docs/ops-memory.md).
-
-## Documentation
-
-Supporting project documentation lives in `docs/`:
-
-```text
-docs/ops-memory.md      durable local-development facts
-docs/notes.md           design and implementation notes
-docs/publisher-login-strategy.md publisher account lifecycle and login strategy
-docs/iam-strategy.md    identity and access management strategy
-docs/architecture.drawio development architecture diagram
-```
-
-## Messaging
-
-Shared RabbitMQ message contracts and topology helpers live in `packages/messaging`.
-Domain imports should use explicit subpaths:
-
-```ts
-import { emailQueues } from "@cm/messaging/email";
-import { widgetQueues } from "@cm/messaging/widget";
-import { widgetConsumerQueues } from "@cm/messaging/widget-consumer";
-import { topicRoutingQueues } from "@cm/messaging/topic-routing";
-import { priorityQueueQueues } from "@cm/messaging/priority-queue";
-```
-
-`packages/messaging/src/index.ts` remains as a package entrypoint that re-exports public domains, but application and service code should prefer the qualified imports above.
-
-## Database Safety
-
-The local SQL Server data files are stored in Docker Desktop, not in the repository.
-Compose mounts this Docker-managed volume into the SQL Server container at `/var/opt/mssql`.
-
-The persistent Docker volume is:
-
-```text
-docker_mssql_data
-```
-
-In `docker/compose.dev.yml`, the service uses the local Compose volume alias `mssql_data`, but that alias points to the external Docker volume named `docker_mssql_data`.
-
-This volume contains the local `CMPlatform` SQL Server database and is intentionally treated as developer data, not disposable build output.
-
-The normal infrastructure commands do **not** remove this volume:
-
-```powershell
-npm run infra:up
-npm run infra:down
-npm run infra:restart
-```
-
-`infra:down` stops and removes containers only. It does not pass `-v` to Docker Compose, and it does not remove Docker volumes.
-
-Do not run destructive Docker volume commands against this project unless you have made an intentional backup and truly mean to destroy the local database:
-
-```powershell
-docker compose down -v
-docker volume rm docker_mssql_data
-docker volume prune
-docker system prune --volumes
-```
-
-The Compose file marks the volume as external so Compose does not delete it during normal Compose cleanup. The PowerShell startup script creates `docker_mssql_data` if it does not already exist.
-
-## Starting The Environment
-
-For normal development, start infrastructure first:
+Start Docker Desktop and wait for its engine to become ready. Then start SQL Server, MongoDB, and RabbitMQ:
 
 ```powershell
 npm run infra:up
 ```
 
-This starts the local SQL Server, MongoDB, and RabbitMQ containers. The API and public web app run locally through npm scripts.
+Apply pending database migrations:
 
-Then start the API locally in watch mode:
+```powershell
+npm run db:migrate
+```
+
+Start the API in a separate PowerShell window:
 
 ```powershell
 npm run api:dev
 ```
 
-Or use the shortcut:
+Start the current React web application in another window:
 
 ```powershell
-npm run dev
+npm run public-v2:dev
 ```
 
-When you want background services running in the local Docker environment, build and start them separately:
-
-```powershell
-npm run infra:workers:build
-npm run infra:workers:up
-```
-
-This starts the email dispatcher plus the fast and slow widget consumers:
+The normal local endpoints are:
 
 ```text
-cm-platform-email-dispatcher
-cm-platform-widget-consumer-fast
-cm-platform-widget-consumer-slow
+Web:                 http://localhost:5173
+API:                 http://localhost:3000
+RabbitMQ management: http://localhost:15672
+MongoDB:             mongodb://localhost:27017
+SQL Server:          localhost:1433
 ```
 
-Watch their logs:
+The root `npm run dev` command starts infrastructure and the API, but not the web application.
+
+## Common Commands
+
+### Build and verification
 
 ```powershell
-npm run infra:workers:logs
+npm run build                 # build all Node/TypeScript workspace targets
+npm run core:build            # build API dependencies, API, and background services
+npm run api:verify            # check GET /health and GET /ready
+npm run api:test:internal     # exercise protected internal API endpoints
+npm run clean                 # run the configured workspace cleanup scripts
+npm run all:rebuild           # clean and rebuild Node/TypeScript targets
 ```
 
-The worker containers connect to SQL Server through the Compose service name `db` and to RabbitMQ through `rabbitmq`. The API and public web app continue to use localhost-facing ports.
-
-Start the public web app separately:
+The root build covers the shared packages, API, Node background services, current React frontend, ETL tool, email test client, and SQL migration tool. The Java healthcare service has a separate Maven build and is tested separately in CI:
 
 ```powershell
-npm run public:dev
+Set-Location services/healthcare-transform
+.\mvnw.cmd test
 ```
 
-Useful infrastructure commands:
+### Infrastructure and workers
 
 ```powershell
 npm run infra:status
 npm run infra:logs
+npm run infra:workers:build
+npm run infra:workers:up
 npm run infra:workers:logs
 npm run infra:workers:down
 npm run infra:down
-npm run db:schema
 ```
 
-## Building Source Code
+`infra:workers:up` starts the email dispatcher and fast and slow widget consumers. For active worker development, use the service-specific `*:dev` scripts instead.
 
-Build everything:
+### Database migrations
+
+Migration files live in `scripts/db/migrations` and are applied by `tools/sql-migrate`.
 
 ```powershell
-npm run build
+npm run db:check
+npm run db:migrate
+npm run db:check:migration-permissions
+npm run db:check:app-permissions
+npm run db:verify:core-schema
 ```
 
-That runs:
+`npm run db:schema` remains as an alias for `npm run db:migrate`.
 
-```text
-packages/contracts
-packages/logging
-apps/svc-core
-apps/public-web
-tools/etl-csv-import
-```
+### Production-like local environment
 
-Build only the core backend pieces:
+The production-like Compose environment builds and runs the React frontend, API, email dispatcher, and widget consumers as containers:
+
+This environment is a final local confidence check before deployment. During normal development, Vite and the API run directly on the host with development tooling, live reload, and host-based network addresses. Production runs compiled applications inside separate containers, where startup commands, image contents, environment variables, service names, ports, reverse-proxy routing, and container-to-container networking are different. The production-like commands exercise those deployment conditions together and `prod-local:verify` confirms that the assembled system is reachable and healthy. You do not need to run this environment for every code change; use it after changing Dockerfiles, runtime configuration, networking, or multiple services, and before treating a release candidate as deployable.
+
+Despite the name, this environment does **not** connect to MongoDB Atlas, Azure SQL, a managed RabbitMQ service, or other cloud data services by default. It starts local Docker containers for MongoDB, SQL Server, and RabbitMQ, and the application containers address them by their Compose service names. The smoke test checks this entirely local system through `http://localhost:8080`. Building the environment may download base images and npm packages, and a deliberately exercised email workflow can contact the configured SMTP provider, but the normal startup and `prod-local:verify` checks do not send email or test managed cloud services. Pointing a container URL in the secrets file at an external service would change this behavior and should be treated as an explicit integration test, not the standard production-like local workflow.
 
 ```powershell
-npm run core:build
+npm run prod-local:build
+npm run prod-local:up
+npm run prod-local:verify
+npm run prod-local:logs
+npm run prod-local:down
 ```
 
-Build individual targets:
+## Application Components
 
-```powershell
-npm run api:build
-npm run email-dispatcher:build
-npm run widget-consumer:build
-npm run public:build
-npm run contracts:build
-npm run secrets:build
-npm run email:build
-npm run logging:build
-npm run etl:build
-npm run email-send-test:build
-```
+### API and identity
 
-Clean generated output:
+`apps/svc-core` exposes health and readiness endpoints, account registration and login, internal administration routes, messaging demonstrations, platform status, and email webhook ingestion. The identity slice includes email verification, password authentication, server-side sessions, logout, and demo-account deletion.
 
-```powershell
-npm run clean
-```
+Authentication uses HTTP-only, same-site session cookies. State-changing browser requests use CSRF protection, and registration and login have application-level rate limits. These controls do not replace production edge protections or distributed rate limiting.
 
-Rebuild from a clean state:
+### Messaging and background services
 
-```powershell
-npm run all:rebuild
-```
+RabbitMQ supports queued email delivery and the competing-consumer, topic-routing, and priority-queue demonstrations. Shared message definitions live in `packages/messaging`; applications should use its qualified domain imports.
 
-## Preliminary Verification
+`services/demo-maintenance` handles maintenance of demonstration data. `services/email-dispatcher` sends queued mail through `packages/email`, and `services/widget-consumer` processes widget work against shared SQL state.
 
-After the API is running, confirm the basic service endpoints:
+### Healthcare transformation
 
-```powershell
-npm run api:verify
-```
+`services/healthcare-transform` is an internal Java 21/Spring Boot service. Its current slice provides health, readiness, capability discovery, and initial ASC X12 835 parsing. It is not yet wired into `svc-core` or the public web application. See [its service README](services/healthcare-transform/README.md).
 
-This checks:
+### Email webhooks
 
-```text
-GET /health
-GET /ready
-```
+The API receives Resend events at `POST /webhooks/email-events` and stores authoritative event documents in MongoDB. Production refuses webhook processing when `RESEND_WEBHOOK_SECRET` is absent; unsigned webhook processing is available only outside production for local development.
 
-For a deeper smoke test of the internal API:
-
-```powershell
-npm run api:test:internal
-```
-
-That script loads `ADMIN_KEY` from the ignored local secrets file and calls the internal advertiser, offer, and publisher endpoints. It assumes the database is reachable and contains seed or development data for those resources.
-
-Publisher registration currently creates pending accounts without passwords. After a publisher is approved, the public web app can set a password and then log in with email and password. See [docs/publisher-login-strategy.md](docs/publisher-login-strategy.md).
-
-The public web app is being migrated toward platform IAM fundamentals. The current auth slice supports email/password registration, email verification, login, session lookup, logout, and account deletion through:
-
-```text
-POST /auth/register
-GET /auth/verify-email?token=<token>
-POST /auth/login
-GET /auth/me
-POST /auth/logout
-DELETE /auth/me
-```
-
-See [docs/iam-strategy.md](docs/iam-strategy.md).
-
-Registration queues a verification email request through RabbitMQ. `services/email-dispatcher` consumes that request and sends the message through `@cm/email`. The verification link expires after five minutes. `svc-core` builds that link from `AUTH_API_BASE_URL` and redirects back to `PUBLIC_WEB_BASE_URL`, so local development and production can use different public URLs without changing code.
-
-## Background Services
-
-Deployable non-user-facing runtimes live under `services/`.
-
-`services/email-dispatcher` consumes RabbitMQ email send requests and dispatches them through `@cm/email`. It currently handles publisher account verification emails queued by `svc-core`.
-
-`services/widget-consumer` consumes RabbitMQ widget processing requests for the competing consumers demo. Multiple instances can run against the same queue by using different `WIDGET_CONSUMER_NAME` and `WIDGET_CONSUMER_PROCESSING_SECONDS` values.
-
-For local demo/runtime use, prefer the Docker-managed background services:
-
-```powershell
-npm run infra:workers:up
-```
-
-For active service development, the workers can still be run directly from PowerShell:
-
-```powershell
-npm run email-dispatcher:dev
-npm run widget-consumer:fast
-npm run widget-consumer:slow
-```
-
-## Widget Queue Demo
-
-The public web app includes a Widget Queue page at:
-
-```text
-#widgets
-```
-
-It also includes a competing consumers page at:
-
-```text
-#competing-consumers
-```
-
-And a topic routing page at:
-
-```text
-#topic-routing
-```
-
-The topic routing demo publishes one event to the `cm.topic-demo` topic exchange and shows which queues receive copies based on their binding patterns.
-
-The priority queue page is available at:
-
-```text
-#priority-queue
-```
-
-The priority queue demo publishes normal, high, and urgent jobs into one queue declared with `x-max-priority`, then processes messages manually to show that higher-priority waiting messages are delivered first.
-
-The demo uses SQL Server for visible widget state and RabbitMQ for queued work messages:
-
-```text
-Create widgets -> dbo.WidgetQueueDemo rows + cm.widget.processing messages
-Process widgets -> pull messages from RabbitMQ + mark SQL rows processed
-```
-
-After pulling the latest code or changing schema, apply the local table update:
-
-```powershell
-npm run db:schema
-```
-
-## Email Sending
-
-Shared SMTP email support lives in `packages/email` and is exposed as the `@cm/email` workspace package. It is provider-neutral and currently intended for Resend SMTP using the verified sending domain:
-
-```text
-mail.cmplatform.dev
-```
-
-Secret access lives in `packages/secrets` and is exposed as the `@cm/secrets` workspace package. `@cm/email` owns that dependency so client applications and tools only provide email content:
-
-```text
-client/tool/service -> @cm/email -> @cm/secrets -> SMTP provider
-```
-
-`@cm/email` owns the SMTP transport configuration. `@cm/secrets` only returns the SMTP credentials from `packages/secrets/cm-platform.env`:
-
-```text
-EMAIL_SMTP_USER=resend
-EMAIL_SMTP_PASS=<resend-api-key>
-```
-
-`tools/email-send-test` is a small real client of `@cm/email`. It sends a simple HTML message to locally configured test recipients and can be used as both a sanity check and an implementation example:
-
-Email test recipients are local secrets. Copy `tools/email-send-test/.env.example` to `tools/email-send-test/.env`, then set `EMAIL_SEND_TEST_TO` to a comma-separated list of recipient addresses. The real `.env` file is ignored by Git.
-
-```powershell
-npm run email-send-test:run
-```
-
-### Local Email Webhook Testing
-
-Resend webhook events are received by `svc-core` at:
-
-```text
-POST /webhooks/email-events
-```
-
-For local development, expose the local API with a temporary Cloudflare Tunnel. Start these in separate PowerShell windows from the repository root.
-
-Start the API:
-
-```powershell
-npm run api:dev
-```
-
-Start the tunnel:
+For a local temporary tunnel, run the API and then:
 
 ```powershell
 npm run email-webhooks:tunnel
 ```
 
-The tunnel command prints a full temporary `trycloudflare.com` base URL. In Resend, configure the webhook endpoint by appending `/webhooks/email-events` to that base URL:
+Append `/webhooks/email-events` to the generated tunnel URL when configuring the development webhook endpoint.
+
+## Data Safety
+
+Local SQL Server files are stored in the external Docker volume `docker_mssql_data`. Normal `infra:down` and `infra:restart` operations do not delete it.
+
+Commands such as `docker compose down -v`, `docker volume rm`, `docker volume prune`, and `docker system prune --volumes` can destroy local developer data. Back up intentional data before performing destructive Docker maintenance.
+
+RabbitMQ and MongoDB also use persistent Docker volumes, named `cm_platform_rabbitmq_data` and `cm_platform_mongodb_data` by the development Compose project.
+
+## CI/CD and Cloud Infrastructure
+
+GitHub Actions build the Node and Java components, test the healthcare service, build deployable container images, publish images to GitHub Container Registry on supported events, run CodeQL analysis, and validate or deploy Azure infrastructure.
+
+Azure resources are defined under `infra/bicep`. Infrastructure and deployment workflows require repository environments, identities, permissions, and secrets that are not part of the basic local setup.
+
+## Documentation
+
+Supporting design, architecture, and operational material lives under `docs/`. Some documents capture current strategy while others are historical working notes; review their status before treating them as authoritative. A broader documentation audit is planned separately.
+
+## Command Conventions
+
+PowerShell is the primary local command environment. Prefer root npm scripts as the stable command surface:
 
 ```text
-<cloudflare-base-url>/webhooks/email-events
+thing:action
 ```
 
-For example, if Cloudflare prints:
-
-```text
-https://kings-cents-dakota-win.trycloudflare.com
-```
-
-then the Resend webhook endpoint is:
-
-```text
-https://kings-cents-dakota-win.trycloudflare.com/webhooks/email-events
-```
-
-Then send a test email:
-
-```powershell
-npm run email-send-test:run
-```
-
-Webhook events are stored as documents in MongoDB:
-
-```text
-CMPlatformDocuments.emailWebhookEvents
-```
-
-The MongoDB document is the authoritative event record. It contains normalized searchable fields and the complete original provider payload. Inspect the sanitized public view at:
-
-```text
-http://localhost:5173/#mongodb
-```
-
-The explorer includes historical webhook summary documents imported when MongoDB was introduced. Their original source file and one-time importer have been removed.
-
-Browser code must not receive SMTP credentials. Publisher-facing workflows should call a server-side API or service that imports `@cm/email`.
-
-## Developer Workflow
-
-A typical local loop is:
-
-```powershell
-cd C:\cm-platform
-npm install
-npm run infra:up
-npm run api:dev
-```
-
-In another PowerShell window:
-
-```powershell
-npm run public:dev
-```
-
-Before handing off work:
-
-```powershell
-npm run build
-npm run api:verify
-```
-
-When API data is available:
-
-```powershell
-npm run api:test:internal
-```
-
-## Notes On PowerShell Buy-In
-
-Choosing PowerShell as the project command surface is intentional. It gives the project one documented way to run local automation on Windows, keeps scripts close to the team's operating environment, and lets us grow repeatable `.ps1` workflows for setup, smoke testing, backups, ETL operations, and future deployment helpers.
-
-When adding new scripts, prefer one of these patterns:
-
-```powershell
-npm run thing:action
-```
-
-or:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/some/task.ps1
-```
-
-Avoid adding parallel Bash-only workflows unless there is a specific cross-platform requirement.
+Examples include `api:dev`, `db:migrate`, `public-v2:build`, and `infra:up`. Run long-lived applications, workers, tunnels, and log watchers in separate PowerShell windows so each retains visible output.
 
 ## Dedication
 
