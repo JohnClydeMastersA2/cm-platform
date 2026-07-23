@@ -90,14 +90,19 @@ export function Home() {
           <p className="platform-kicker">API-first application platform</p>
           <h1>CM Platform</h1>
           <p className="platform-lede">
-            CM Platform is a modern software engineering platform built to demonstrate the design,
-            development, deployment and operation of production-oriented applications using contemporary
-            backend, cloud, and DevOps technologies. It serves as the foundation for demonstrating
-            platform architecture, REST APIs, asynchronous messaging, durable workflow state, SQL and
-            NoSQL persistence, background processing, Infrastructure as Code, CI/CD automation, and
-            operational engineering practices. Rather than focusing on individual technologies, CM
-            Platform demonstrates how these capabilities work together to build maintainable, scalable,
-            and production-ready software systems.
+            CM Platform is a modern software engineering platform built to demonstrate how
+            production-oriented applications can be designed, developed, deployed, and operated using
+            contemporary backend, cloud, and DevOps technologies.
+          </p>
+          <p className="platform-lede mt-3">
+            The project demonstrates an API-first architecture, REST services, asynchronous messaging,
+            durable workflow state, relational and document persistence, background processing,
+            Infrastructure as Code, CI/CD automation, and cloud deployments.
+          </p>
+          <p className="platform-lede mt-3">
+            Rather than showcasing individual technologies in isolation, CM Platform demonstrates how
+            these capabilities work together to build maintainable, scalable, and production-ready
+            software systems.
           </p>
         </div>
         <div className="platform-stack" aria-label="Platform architecture summary">
@@ -112,12 +117,9 @@ export function Home() {
           <p className="platform-kicker">Engineering Portfolio</p>
           <h2>Built by John Clyde Masters</h2>
           <p>
-            CM Platform is my long-term software engineering portfolio. Rather than presenting isolated
-            code samples or proof-of-concept applications, it demonstrates complete engineering
-            solutions, from architecture and implementation through testing, deployment, monitoring, and
-            continuous delivery. Every feature represents technology that I have intentionally studied,
-            implemented, and integrated into a cohesive platform, providing practical evidence of my
-            approach to software engineering and my commitment to continuously expanding my technical
+            CM Platform is a software engineering portfolio. Every feature represents technology that I
+            have studied, implemented, and integrated into the project, providing practical evidence of
+            my approach to software engineering and my commitment to continuously expanding my technical
             capabilities.
           </p>
           <div className="platform-card-actions">

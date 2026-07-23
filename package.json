@@ -55,7 +55,6 @@
     "demo-maintenance:build": "npm --workspace services/demo-maintenance run build",
     "demo-maintenance:start": "npm --workspace services/demo-maintenance run start",
 
-    "public:dev": "npm --workspace public-web run dev",
     "public:build": "npm --workspace public-web run build",
     "public:preview": "npm --workspace public-web run preview",
     "public-v2:dev": "npm --workspace public-web-v2 run dev",

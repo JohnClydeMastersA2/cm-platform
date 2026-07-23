@@ -217,6 +217,16 @@ GitHub Actions build the Node and Java components, test the healthcare service, 
 
 Azure resources are defined under `infra/bicep`. Infrastructure and deployment workflows require repository environments, identities, permissions, and secrets that are not part of the basic local setup.
 
+## Security Testing
+
+The versioned ZAP automation plan at `security/zap.yaml` performs a short spider and passive baseline scan of the public site. It does not run active attack rules, but it does send requests to `https://cmplatform.dev`; run it only when you are authorized to test that deployment:
+
+```powershell
+.\scripts\security\run-zap-baseline.ps1 -ConfirmProductionScan
+```
+
+The script runs `ghcr.io/zaproxy/zaproxy:stable` in a temporary Docker container and removes the container afterward. Add `-PullLatestImage` when you intentionally want to refresh the local stable image before scanning. Generated HTML and JSON reports are written to the ignored `security-reports/` directory. The reusable plan and runner are versioned; scan results are local, point-in-time artifacts and may contain deployment details, so review and share them deliberately.
+
 ## Documentation
 
 Supporting design, architecture, and operational material lives under `docs/`. Some documents capture current strategy while others are historical working notes; review their status before treating them as authoritative. A broader documentation audit is planned separately.

@@ -46,3 +46,4 @@ structure.txt
 
 # local scratch/backups
 *.bkp
+security-reports/

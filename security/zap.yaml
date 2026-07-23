@@ -1,0 +1,33 @@
+env:
+  contexts:
+    - name: production-baseline
+      urls:
+        - https://cmplatform.dev
+      excludePaths: []
+  parameters:
+    failOnError: true
+    progressToStdout: true
+jobs:
+  - type: passiveScan-config
+    parameters:
+      enableTags: false
+      maxAlertsPerRule: 10
+  - type: spider
+    parameters:
+      url: https://cmplatform.dev
+      maxDuration: 1
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 0
+  - type: outputSummary
+    parameters:
+      format: Long
+      summaryFile: /zap/wrk/reports/zap-baseline-summary.json
+    rules: []
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: /zap/wrk/reports/
+      reportFile: zap-baseline-report.html
+      reportTitle: CM Platform ZAP Baseline Report
+      reportDescription: Non-destructive passive baseline scan of https://cmplatform.dev
