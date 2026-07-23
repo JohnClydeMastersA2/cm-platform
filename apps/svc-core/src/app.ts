@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import rateLimit from "@fastify/rate-limit";
 import { createLogger } from "@cm/logging";
 import { dbPlugin } from "./plugins/db.js";
 import { messagingPlugin } from "./plugins/messaging.js";
@@ -14,6 +15,9 @@ import { internalSurface } from "./surfaces/internal.surface.js";
 import { widgetRoutes } from "./modules/widget/widget.routes.js";
 import { widgetConsumerRoutes } from "./modules/widget_consumer/widget_consumer.routes.js";
 import { emailWebhookEventRoutes } from "./modules/email_webhook_event/email_webhook_event.routes.js";
+
+const instanceRateLimitMax = 300;
+const instanceRateLimitWindow = "1 minute";
 
 type BuildAppOptions = {
   nodeEnv: string;
@@ -44,6 +48,13 @@ export function buildApp(opts: BuildAppOptions) {
   const app = Fastify({
     loggerInstance: logger,
     pluginTimeout: 60_000,
+  });
+
+  app.register(rateLimit, {
+    global: true,
+    max: instanceRateLimitMax,
+    timeWindow: instanceRateLimitWindow,
+    keyGenerator: () => "svc-core-instance",
   });
 
   app.register(dbPlugin, {
@@ -84,15 +95,31 @@ export function buildApp(opts: BuildAppOptions) {
     };
   });
 
-  app.get("/health", async () => {
-    return { ok: true };
-  });
+  app.get(
+    "/health",
+    {
+      config: {
+        rateLimit: false,
+      },
+    },
+    async () => {
+      return { ok: true };
+    },
+  );
 
-  app.get("/ready", async () => {
-    await app.db.request().query("select 1 as ok");
-    await app.mongoDb.command({ ping: 1 });
-    return { ok: true };
-  });
+  app.get(
+    "/ready",
+    {
+      config: {
+        rateLimit: false,
+      },
+    },
+    async () => {
+      await app.db.request().query("select 1 as ok");
+      await app.mongoDb.command({ ping: 1 });
+      return { ok: true };
+    },
+  );
 
   app.register(authRoutes, {
     prefix: "/auth",

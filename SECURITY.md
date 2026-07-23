@@ -15,14 +15,15 @@ The project currently demonstrates:
 - Password hashing and hashed session and verification tokens
 - Secure, HTTP-only, same-site cookies in production
 - CSRF validation for state-changing browser requests
-- Application-level registration and login rate limits
+- An application-wide, in-memory API request ceiling that does not rely on forwarded client-address headers
+- Tighter application-level registration and login rate limits
 - Administrative key protection for internal API routes
 - Signature verification for production email webhooks
 - Environment-based secret handling for local and deployed environments
 - Automated builds, container validation, and CodeQL analysis in GitHub Actions
 - Non-destructive public endpoint checks and a reproducible [OWASP ZAP baseline scan](security/zap.yaml)
 
-Additional hardening remains part of the project roadmap. Current considerations include HSTS, selected scanner warning dispositions, production authentication-flow validation, expanded static analysis, and Azure security and auditing options. These are evaluated according to the scope, cost, and learning value of a public technical portfolio.
+Additional hardening remains part of the project roadmap. Current considerations include trusted proxy handling, route- and identity-specific rate limits, HSTS, selected scanner warning dispositions, production authentication-flow validation, expanded static analysis, and Azure security and auditing options. These are evaluated according to the scope, cost, and learning value of a public technical portfolio.
 
 A public overview of the implemented controls, security testing, findings, and current hardening priorities is available on the [CM Platform Security Review](https://cmplatform.dev/security) page.
 

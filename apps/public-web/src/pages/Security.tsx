@@ -52,6 +52,12 @@ const completedChecks: CompletedCheck[] = [
     proof: "GET /topic-routing returned sample keys and queue metadata"
   },
   {
+    title: "Application request ceiling",
+    body:
+      "Fastify applies an in-memory request ceiling across API routes without relying on unverified forwarded client-address headers. Health and readiness probes remain exempt.",
+    proof: "300 API requests per minute per svc-core instance; excess requests receive HTTP 429"
+  },
+  {
     title: "Mutation boundary",
     body: "Representative state-changing demo routes reject requests that do not include the expected same-origin CSRF token.",
     proof: "DELETE /topic-routing and DELETE /widgets returned 403 Invalid CSRF token"
@@ -104,6 +110,11 @@ const followUpChecks: FollowUpCheck[] = [
     title: "Authentication flow and rate-limit smoke test",
     body:
       "Create and verify a test account, delete it through My Account, and perform a careful low-volume rate-limit check without locking out normal use or sending excessive email."
+  },
+  {
+    title: "Refine route-specific rate limits",
+    body:
+      "Add tighter resource- and identity-based limits for sensitive routes, and introduce per-client limits only after the production proxy boundary can provide a trusted client address."
   },
   {
     title: "Azure posture follow-up",
