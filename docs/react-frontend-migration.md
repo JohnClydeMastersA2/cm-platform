@@ -1,8 +1,10 @@
-# Public Web v2 Plan
+# React Frontend Migration
+
+> Status: Completed. The React application replaced the original frontend and now occupies the canonical `apps/public-web` workspace.
 
 The current public website is a Vite, TypeScript, Bootstrap application with a custom hash router. It has worked well enough to launch the portfolio, but `apps/public-web/src/main.ts` now carries too many responsibilities: route selection, page rendering, API type definitions, Bootstrap setup, interactive page behavior, and navigation state.
 
-Public Web v2 is a side-by-side React implementation intended to improve maintainability while preserving the low-cost hosting model.
+The replacement began as a side-by-side React implementation intended to improve maintainability while preserving the low-cost hosting model.
 
 ## Goals
 
@@ -15,7 +17,7 @@ Public Web v2 is a side-by-side React implementation intended to improve maintai
 
 ## Commit 1 Scope
 
-Commit 1 creates `apps/public-web-v2` as an isolated workspace. It proves that React, Vite, TypeScript, React Router, and Bootstrap can run together without changing the current production app.
+Commit 1 created an isolated replacement workspace. It proved that React, Vite, TypeScript, React Router, and Bootstrap could run together without changing the production app.
 
 React is responsible for:
 

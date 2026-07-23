@@ -17,7 +17,7 @@ The repository is under active development. Some features are production-oriente
 
 ```text
 apps/svc-core                 Fastify API service
-apps/public-web-v2            canonical React web application
+apps/public-web               React web application
 apps/public-web               legacy Vite web application
 packages/auth                 password and token primitives
 packages/contracts            shared API validation contracts
@@ -39,7 +39,7 @@ scripts                       PowerShell automation and smoke tests
 docs                          architecture, strategy, and operational notes
 ```
 
-`apps/public-web-v2` is the current frontend and is what the production-style Docker image serves. The `public-v2:*` scripts operate on this application. The older `public:*` scripts still target `apps/public-web` and are retained during the migration.
+`apps/public-web` is the canonical React frontend served by the production-style Docker image.
 
 ## Prerequisites
 
@@ -94,7 +94,7 @@ npm run api:dev
 Start the current React web application in another window:
 
 ```powershell
-npm run public-v2:dev
+npm run public:dev
 ```
 
 The normal local endpoints are:
@@ -239,7 +239,7 @@ PowerShell is the primary local command environment. Prefer root npm scripts as 
 thing:action
 ```
 
-Examples include `api:dev`, `db:migrate`, `public-v2:build`, and `infra:up`. Run long-lived applications, workers, tunnels, and log watchers in separate PowerShell windows so each retains visible output.
+Examples include `api:dev`, `db:migrate`, `public:build`, and `infra:up`. Run long-lived applications, workers, tunnels, and log watchers in separate PowerShell windows so each retains visible output.
 
 ## Dedication
 

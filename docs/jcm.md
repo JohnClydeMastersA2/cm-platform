@@ -29,7 +29,7 @@ npm run infra:workers:up
 npm run api:dev
 
 In a second terminal:
-npm run public-v2:dev
+npm run public:dev
 
 You only need the Cloudflare tunnel if you want to test Resend webhooks:
 npm run email-webhooks:tunnel

@@ -43,7 +43,7 @@ const platformCards = [
     title: "React Frontend",
     body:
       "React organizes the public website into reusable pages, shared layout, route-aware navigation, and interactive demo views while Bootstrap provides the visual foundation.",
-    proof: "React, React Router, Vite, Bootstrap, apps/public-web-v2"
+    proof: "React, React Router, Vite, Bootstrap, apps/public-web"
   },
   {
     title: "CI/CD",
