@@ -1,12 +1,23 @@
 import type { FastifyInstance } from "fastify";
+import { RateLimiterMemory } from "rate-limiter-flexible";
+import { allowRateLimitedRequest } from "../../lib/route_rate_limit.js";
 import {
   getOfferById,
   listOffers,
 } from "./offer.repo.js";
 import { OfferParamsSchema } from "./offer.schema.js";
 
+const listOffersRateLimiter = new RateLimiterMemory({
+  points: 120,
+  duration: 60,
+});
+
 export async function offerRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/", async () => {
+  app.get("/", async (request, reply) => {
+    if (!await allowRateLimitedRequest(listOffersRateLimiter.consume(request.ip), reply)) {
+      return;
+    }
+
     return listOffers(app.db);
   });
 

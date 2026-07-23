@@ -4,6 +4,8 @@ import {
   type WidgetConsumerProcessingRequestedMessage,
 } from "@cm/messaging/widget-consumer";
 import type { FastifyInstance } from "fastify";
+import { RateLimiterMemory } from "rate-limiter-flexible";
+import { allowRateLimitedRequest } from "../../lib/route_rate_limit.js";
 import {
   createWidgetConsumerItem,
   deleteAllWidgetConsumerItems,
@@ -19,6 +21,11 @@ type WidgetConsumerOverview = {
   rabbitMqMessageCount: number;
   processedBy: Record<string, number>;
 };
+
+const deleteWidgetConsumersRateLimiter = new RateLimiterMemory({
+  points: 10,
+  duration: 60,
+});
 
 export async function widgetConsumerRoutes(app: FastifyInstance): Promise<void> {
   app.get("/", async () => {
@@ -55,7 +62,11 @@ export async function widgetConsumerRoutes(app: FastifyInstance): Promise<void> 
     reply.code(201).send(await buildOverview(app));
   });
 
-  app.delete("/", async () => {
+  app.delete("/", async (request, reply) => {
+    if (!await allowRateLimitedRequest(deleteWidgetConsumersRateLimiter.consume(request.ip), reply)) {
+      return;
+    }
+
     await app.messaging.purgeWidgetConsumerQueue();
     await deleteAllWidgetConsumerItems(app.db);
     return buildOverview(app);

@@ -1,12 +1,23 @@
 import type { FastifyInstance } from "fastify";
+import { RateLimiterMemory } from "rate-limiter-flexible";
+import { allowRateLimitedRequest } from "../../lib/route_rate_limit.js";
 import {
   getAdvertiserById,
   listAdvertisers,
 } from "./advertiser.repo.js";
 import { AdvertiserParamsSchema } from "./advertiser.schema.js";
 
+const listAdvertisersRateLimiter = new RateLimiterMemory({
+  points: 120,
+  duration: 60,
+});
+
 export async function advertiserRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/", async () => {
+  app.get("/", async (request, reply) => {
+    if (!await allowRateLimitedRequest(listAdvertisersRateLimiter.consume(request.ip), reply)) {
+      return;
+    }
+
     return listAdvertisers(app.db);
   });
 

@@ -54,8 +54,8 @@ const completedChecks: CompletedCheck[] = [
   {
     title: "Application request ceiling",
     body:
-      "Fastify applies an in-memory request ceiling across API routes without relying on unverified forwarded client-address headers. Health and readiness probes remain exempt.",
-    proof: "300 API requests per minute per svc-core instance; excess requests receive HTTP 429"
+      "Fastify applies an in-memory request ceiling across API routes, with tighter controls for authentication, signed webhooks, database-backed reads, and destructive demo operations. The limits use the socket-derived address instead of unverified forwarded client-address headers. Health and readiness probes remain exempt.",
+    proof: "300 API requests per minute per instance; route limits range from 5 attempts per 15 minutes to 120 requests per minute"
   },
   {
     title: "Mutation boundary",
@@ -112,9 +112,9 @@ const followUpChecks: FollowUpCheck[] = [
       "Create and verify a test account, delete it through My Account, and perform a careful low-volume rate-limit check without locking out normal use or sending excessive email."
   },
   {
-    title: "Refine route-specific rate limits",
+    title: "Add trusted client and distributed limits",
     body:
-      "Add tighter resource- and identity-based limits for sensitive routes, and introduce per-client limits only after the production proxy boundary can provide a trusted client address."
+      "Establish a verified production proxy boundary before introducing per-client limits, then evaluate identity-specific and shared-store enforcement across application instances."
   },
   {
     title: "Azure posture follow-up",

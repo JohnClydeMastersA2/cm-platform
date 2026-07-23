@@ -1,4 +1,6 @@
 import type { FastifyInstance } from "fastify";
+import { RateLimiterMemory } from "rate-limiter-flexible";
+import { allowRateLimitedRequest } from "../../lib/route_rate_limit.js";
 import {
   createPublisherRegistration,
   getPublisherById,
@@ -13,8 +15,21 @@ import {
   PublisherRegistrationSchema,
 } from "./publisher.schema.js";
 
+const listPublishersRateLimiter = new RateLimiterMemory({
+  points: 120,
+  duration: 60,
+});
+const publisherLoginRateLimiter = new RateLimiterMemory({
+  points: 10,
+  duration: 15 * 60,
+});
+
 export async function publisherRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/", async () => {
+  app.get("/", async (request, reply) => {
+    if (!await allowRateLimitedRequest(listPublishersRateLimiter.consume(request.ip), reply)) {
+      return;
+    }
+
     return listPublishers(app.db);
   });
 
@@ -87,6 +102,10 @@ export async function publisherRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post("/login", async (request, reply) => {
+    if (!await allowRateLimitedRequest(publisherLoginRateLimiter.consume(request.ip), reply)) {
+      return;
+    }
+
     const parsed = PublisherLoginSchema.safeParse(request.body);
 
     if (!parsed.success) {

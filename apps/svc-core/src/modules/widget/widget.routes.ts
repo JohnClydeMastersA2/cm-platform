@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { widgetMessageTypes, WidgetProcessingRequestedMessageSchema } from "@cm/messaging/widget";
 import type { FastifyInstance } from "fastify";
 import type { GetMessage } from "amqplib";
+import { RateLimiterMemory } from "rate-limiter-flexible";
+import { allowRateLimitedRequest } from "../../lib/route_rate_limit.js";
 import {
   createWidget,
   deleteAllWidgets,
@@ -45,8 +47,21 @@ type WidgetDeadLetterMessage = {
   repairAttempt: boolean;
 };
 
+const listWidgetsRateLimiter = new RateLimiterMemory({
+  points: 60,
+  duration: 60,
+});
+const deleteWidgetsRateLimiter = new RateLimiterMemory({
+  points: 10,
+  duration: 60,
+});
+
 export async function widgetRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/", async () => {
+  app.get("/", async (request, reply) => {
+    if (!await allowRateLimitedRequest(listWidgetsRateLimiter.consume(request.ip), reply)) {
+      return;
+    }
+
     return {
       widgets: await listWidgets(app.db),
       rabbitMqMessageCount: await app.messaging.getWidgetProcessingMessageCount(),
@@ -95,7 +110,11 @@ export async function widgetRoutes(app: FastifyInstance): Promise<void> {
     } satisfies CreateWidgetsResponse);
   });
 
-  app.delete("/", async () => {
+  app.delete("/", async (request, reply) => {
+    if (!await allowRateLimitedRequest(deleteWidgetsRateLimiter.consume(request.ip), reply)) {
+      return;
+    }
+
     await app.messaging.purgeWidgetQueues();
     await deleteAllWidgets(app.db);
 

@@ -1,7 +1,14 @@
 import type { FastifyBaseLogger, FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { IncomingHttpHeaders } from "node:http";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 import { Webhook } from "svix";
+import { allowRateLimitedRequest } from "../../lib/route_rate_limit.js";
 import { recordEmailWebhookEvent } from "../../modules/email_webhook_event/email_webhook_event.repo.js";
+
+const emailEventsRateLimiter = new RateLimiterMemory({
+  points: 120,
+  duration: 60,
+});
 
 type EmailEventPayload = Record<string, unknown> & {
   id?: string;
@@ -32,6 +39,10 @@ export const emailEventsWebhookRoutes: FastifyPluginAsync<EmailEventsWebhookRout
   });
 
   app.post("/webhooks/email-events", async (request, reply) => {
+    if (!await allowRateLimitedRequest(emailEventsRateLimiter.consume(request.ip), reply)) {
+      return;
+    }
+
     const payload = typeof request.body === "string" ? request.body : "";
 
     if (!opts.webhookSecret) {
