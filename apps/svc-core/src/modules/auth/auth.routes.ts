@@ -3,7 +3,10 @@ import { emailMessageTypes, type EmailVerificationRequestedMessage } from "@cm/m
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
 import { RateLimiterMemory } from "rate-limiter-flexible";
-import { allowRateLimitedRequest } from "../../lib/route_rate_limit.js";
+import {
+  allowRateLimitedRequest,
+  getRateLimitRetryAfterSeconds,
+} from "../../lib/route_rate_limit.js";
 import {
   createEmailVerificationChallenge,
   deleteDemoAccount,
@@ -114,7 +117,13 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
       return;
     }
 
-    if (!await allowRateLimitedRequest(loginRateLimiter.consume(request.ip), reply)) {
+    try {
+      await loginRateLimiter.consume(request.ip);
+    } catch (error) {
+      reply
+        .code(429)
+        .header("retry-after", String(getRateLimitRetryAfterSeconds(error)))
+        .send({ error: "Too many requests. Please wait before trying again." });
       return;
     }
 

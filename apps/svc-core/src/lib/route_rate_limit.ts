@@ -9,7 +9,7 @@ export async function allowRateLimitedRequest(
     await consumption;
     return true;
   } catch (error) {
-    const retryAfterSeconds = getRetryAfterSeconds(error);
+    const retryAfterSeconds = getRateLimitRetryAfterSeconds(error);
 
     reply
       .code(429)
@@ -20,7 +20,7 @@ export async function allowRateLimitedRequest(
   }
 }
 
-function getRetryAfterSeconds(error: unknown): number {
+export function getRateLimitRetryAfterSeconds(error: unknown): number {
   if (
     error
     && typeof error === "object"
