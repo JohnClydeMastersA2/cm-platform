@@ -43,14 +43,6 @@ const environmentRows: EnvironmentRow[] = [
   }
 ];
 
-const providerBindingExamples = [
-  "Email capability: currently bound to Resend credentials",
-  "Database capability: bound to local SQL Server or Azure SQL",
-  "Messaging capability: bound to local RabbitMQ or CloudAMQP",
-  "Edge access: bound to Cloudflare DNS and Access policy",
-  "Future governance: Azure Key Vault could become the secret source without changing application variable names"
-];
-
 const configurationCards = [
   {
     title: "Committed example",
@@ -78,7 +70,7 @@ export function Secrets() {
       <div className="platform-hero">
         <div>
           <p className="platform-kicker">Containers / Secrets</p>
-          <h1>Secret Handling Across Environments</h1>
+          <h1>Configuration &amp; Secrets</h1>
           <p className="platform-lede">
             Secrets are part of the runtime contract for cm-platform. The goal is to keep local
             development convenient while making production depend on injected secrets rather than values
@@ -189,27 +181,6 @@ export function Secrets() {
         </div>
       </section>
 
-      <section className="platform-section">
-        <div>
-          <h2>Provider Binding</h2>
-          <p>
-            Application code should depend on platform capabilities, while each environment binds those
-            capabilities to concrete providers through configuration and secrets. For example, the
-            platform needs an email-sending capability; production currently binds that capability to
-            Resend by providing the expected credentials.
-          </p>
-          <p>
-            If a provider changes later, the adapter and secret values may change, but the rest of the
-            platform should continue to ask for the same capability rather than spreading
-            provider-specific assumptions across the codebase.
-          </p>
-        </div>
-        <div className="future-list">
-          {providerBindingExamples.map((example) => (
-            <span key={example}>{example}</span>
-          ))}
-        </div>
-      </section>
       <BackToTop />
     </section>
   );

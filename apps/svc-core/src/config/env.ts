@@ -29,6 +29,17 @@ const OptionalNonEmptyString = z.preprocess((value) => {
   return value;
 }, z.string().min(1).optional());
 
+const MonitorList = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  return value
+    .split(/[;,]/)
+    .map((recipient) => recipient.trim())
+    .filter(Boolean);
+}, z.array(z.email()).min(1));
+
 const EnvSchema = z.object({
   DB_SERVER: z.string().min(1),
   DB_PORT: z.coerce.number().int().positive().default(1433),
@@ -51,6 +62,7 @@ const EnvSchema = z.object({
   MONGODB_URI: z.url(),
   MONGODB_DATABASE: z.string().min(1).default("CMPlatformDocuments"),
   RESEND_WEBHOOK_SECRET: OptionalNonEmptyString,
+  CM_PLATFORM_MONITORS: MonitorList,
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -60,6 +72,7 @@ export function loadEnv(): Env {
 
   const rawEnv = {
     ...process.env,
+    CM_PLATFORM_MONITORS: process.env.CM_PLATFORM_MONITORS ?? process.env.CM_Platform_Monitors,
     PUBLIC_WEB_BASE_URL: process.env.PUBLIC_WEB_BASE_URL ?? process.env.PUBLISHER_WEB_BASE_URL,
   };
   const parsed = EnvSchema.safeParse(rawEnv);

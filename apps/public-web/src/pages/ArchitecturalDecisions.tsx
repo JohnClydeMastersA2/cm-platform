@@ -2,16 +2,6 @@ import { BackToTop } from "../components/BackToTop";
 
 const decisions = [
   {
-    title: "Why Build CM Platform?",
-    body:
-      "CM Platform began as an exploration of modern backend technologies but has evolved into a comprehensive software engineering portfolio. Rather than building isolated demonstrations of individual frameworks, the project is intended to show how modern software systems are conceived, organized, implemented, deployed, secured, monitored, and maintained. It serves as both a learning platform and a long-term record of my continued growth as a software engineer."
-  },
-  {
-    title: "Why Simplicity?",
-    body:
-      "A recurring objective throughout CM Platform is to favor simple, understandable solutions over unnecessary complexity. Modern software engineering often rewards sophisticated frameworks and abstractions, but long-term maintainability depends on systems that developers can quickly understand, modify, and support. Throughout the platform, architectural decisions intentionally prioritize clarity, explicitness, and operational simplicity. New technologies are introduced only when they provide meaningful value to the platform rather than simply expanding the technology stack."
-  },
-  {
     title: "Why Fastify?",
     body:
       "Fastify was selected as the primary backend framework after evaluating several alternatives, including Java/Spring Boot. The decision was based on its lightweight architecture, excellent TypeScript support, plugin-based extensibility, and high-performance request handling. More importantly, Fastify encourages clean separation of concerns through plugins, decorators, and route registration, making it well suited for a modular platform intended to evolve over time. The choice also provided an opportunity to gain practical experience with the modern Node.js ecosystem while preserving a strong focus on software architecture rather than framework-specific conventions."
@@ -60,11 +50,6 @@ const decisions = [
     title: "Why Infrastructure as Code?",
     body:
       "I am considering the idea that infrastructure should be versioned, reviewed, and deployed using the same engineering discipline as application code (which is admittedly, new to me). Using Bicep allows cloud resources to be recreated consistently across environments while reducing configuration drift and improving repeatability. Treating infrastructure as source code also supports automated deployments and simplifies disaster recovery."
-  },
-  {
-    title: "Why PowerShell?",
-    body:
-      "PowerShell serves as the operational automation language for the platform. It provides a consistent command surface for developers working in Windows environments and simplifies repetitive operational tasks such as environment setup, database management, infrastructure control, backup procedures, and deployment support. The objective is to automate routine operations so that documented procedures become executable rather than manual."
   },
   {
     title: "Why AI-Assisted Development?",

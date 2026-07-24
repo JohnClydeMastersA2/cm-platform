@@ -148,7 +148,7 @@ export function TopicRouting() {
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div className="rabbitmq-demo-copy">
           <p className="platform-kicker">Exchange routing pattern</p>
-          <h1 className="h3 mb-2">Topic Routing with RabbitMQ</h1>
+          <h1 className="h3 mb-2">Topic Routing</h1>
           <p className="text-muted mb-0">
             This demonstration publishes one durable event to the <code>cm.topic-demo</code> topic exchange
             with a routing key such as <code>widget.important.v1</code>. RabbitMQ compares that routing key

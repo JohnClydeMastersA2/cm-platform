@@ -1,5 +1,13 @@
 import type { FastifyInstance } from "fastify";
+import { randomUUID } from "node:crypto";
+import {
+  emailMessageTypes,
+  type SystemEmailRequestedMessage,
+} from "@cm/messaging/email";
 import { emailWebhookEvents } from "../email_webhook_event/email_webhook_event.repo.js";
+
+const webhookTestEmailSubject = "Email Webhook Event Test";
+const webhookTestEmailBody = "This is a test email from CM Platform. Sending this email should cause an event to be sent to the email-webhook handler.";
 
 type Disposition = "online" | "degraded" | "offline" | "unknown";
 
@@ -17,7 +25,14 @@ type EmailWebhookSummary = {
   lastReceivedAt: string | null;
 };
 
-export async function platformStatusRoutes(app: FastifyInstance): Promise<void> {
+type PlatformStatusRoutesOptions = {
+  monitorEmails: string[];
+};
+
+export async function platformStatusRoutes(
+  app: FastifyInstance,
+  opts: PlatformStatusRoutesOptions,
+): Promise<void> {
   app.get("/", async () => {
     const checkedAt = new Date().toISOString();
     const [
@@ -54,6 +69,40 @@ export async function platformStatusRoutes(app: FastifyInstance): Promise<void> 
       ],
     };
   });
+
+  app.post(
+    "/email-webhook-test",
+    {
+      config: {
+        rateLimit: {
+          max: 3,
+          timeWindow: "15 minutes",
+        },
+      },
+    },
+    async (_request, reply) => {
+      const message: SystemEmailRequestedMessage = {
+        messageType: emailMessageTypes.systemEmailRequested,
+        messageId: randomUUID(),
+        requestedAt: new Date().toISOString(),
+        source: "svc-core.platform-status",
+        email: {
+          to: opts.monitorEmails,
+          subject: webhookTestEmailSubject,
+          html: `<p>${webhookTestEmailBody}</p>`,
+          text: webhookTestEmailBody,
+        },
+      };
+
+      await app.messaging.publishSystemEmailRequested(message);
+
+      reply.code(202).send({
+        ok: true,
+        messageId: message.messageId,
+        recipientCount: opts.monitorEmails.length,
+      });
+    },
+  );
 }
 
 async function getApiRequirement(
@@ -92,7 +141,7 @@ async function getDatabaseRequirement(
 
     return {
       key: "database",
-      name: "Database",
+      name: "SQL Database",
       disposition: "online",
       detail: "SQL Server accepted a readiness query.",
       evidence: `Connected to ${databaseName}.`,
@@ -101,7 +150,7 @@ async function getDatabaseRequirement(
   } catch (err) {
     return failedRequirement(
       "database",
-      "Database",
+      "SQL Database",
       "SQL Server readiness query failed.",
       err,
       checkedAt,

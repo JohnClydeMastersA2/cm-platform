@@ -126,7 +126,7 @@ export function CompetingConsumers() {
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div className="rabbitmq-demo-copy">
           <p className="platform-kicker">Worker scaling pattern</p>
-          <h1 className="h3 mb-2">Competing Consumers with RabbitMQ</h1>
+          <h1 className="h3 mb-2">Competing Consumers</h1>
           <p className="text-muted mb-0">
             This demonstration uses one RabbitMQ queue and multiple worker instances to show competing
             consumers. Creating widgets writes rows to SQL Server with a status of queued, then publishes

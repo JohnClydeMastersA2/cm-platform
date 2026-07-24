@@ -134,18 +134,25 @@ export function Security() {
     <section className="platform-overview">
       <div className="platform-hero">
         <div>
-          <p className="platform-kicker">Launch readiness</p>
-          <h1>Security Launch Review</h1>
+          <p className="platform-kicker">Platform security</p>
+          <h1>Security Review</h1>
           <p className="platform-lede">
-            This page records lightweight public-launch security validation for cm-platform. It is not a
-            formal penetration test; it is a practical review of exposure, browser protections, public
-            health checks, and the next safe scanning steps for a technical portfolio site.
+            Security is treated as part of CM Platform's application architecture and operating model.
+            The platform combines browser protections, request validation, authentication controls,
+            rate limiting, secret management, signed webhooks, automated analysis, and cloud boundary
+            configuration to reduce risk across the public site and supporting services.
+          </p>
+          <p className="platform-lede mt-3">
+            This page records the controls that have been implemented, the evidence used to validate
+            them, and the hardening decisions that remain under review. It is a practical engineering
+            assessment for a technical portfolio rather than a security certification or third-party
+            penetration test.
           </p>
         </div>
         <div className="platform-stack" aria-label="Security launch review summary">
           <StackRow label="Scope" value="Public site, public API reads, browser headers, Cloudflare edge behavior" />
           <StackRow label="Approach" value="Passive checks, public smoke tests, and non-destructive automated baseline scan" />
-          <StackRow label="Limit" value="This is launch validation, not a third-party penetration test" />
+          <StackRow label="Limit" value="Practical engineering review, not formal certification or third-party penetration testing" />
         </div>
       </div>
 

@@ -35,6 +35,7 @@ type BuildAppOptions = {
   rabbitMqUrl: string;
   mongoDbUri: string;
   mongoDbDatabase: string;
+  monitorEmails: string[];
   resendWebhookSecret?: string | undefined;
 };
 
@@ -135,7 +136,10 @@ export function buildApp(opts: BuildAppOptions) {
   app.register(widgetConsumerRoutes, { prefix: "/consumer-widgets" });
   app.register(topicRoutingRoutes, { prefix: "/topic-routing" });
   app.register(priorityQueueRoutes, { prefix: "/priority-queue" });
-  app.register(platformStatusRoutes, { prefix: "/platform/status" });
+  app.register(platformStatusRoutes, {
+    prefix: "/platform/status",
+    monitorEmails: opts.monitorEmails,
+  });
   app.register(internalSurface);
 
   return app;

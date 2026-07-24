@@ -6,7 +6,7 @@ import type { SendEmailRequest } from "@cm/email";
 import { loadEnv } from "./config/env.js";
 import {
   assertEmailTopology,
-  EmailVerificationRequestedMessageSchema,
+  EmailDispatchMessageSchema,
   emailQueues,
 } from "@cm/messaging/email";
 
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    const parsed = parseEmailVerificationRequested(message.content);
+    const parsed = parseEmailDispatchMessage(message.content);
 
     if (!parsed) {
       channel.reject(message, false);
@@ -86,10 +86,10 @@ async function main(): Promise<void> {
   });
 }
 
-function parseEmailVerificationRequested(content: Buffer) {
+function parseEmailDispatchMessage(content: Buffer) {
   try {
     const parsedJson = JSON.parse(content.toString("utf8")) as unknown;
-    const parsed = EmailVerificationRequestedMessageSchema.safeParse(parsedJson);
+    const parsed = EmailDispatchMessageSchema.safeParse(parsedJson);
 
     if (!parsed.success) {
       logger.warn(
@@ -109,7 +109,7 @@ function parseEmailVerificationRequested(content: Buffer) {
 }
 
 function toSendEmailRequest(
-  email: NonNullable<ReturnType<typeof parseEmailVerificationRequested>>["email"],
+  email: NonNullable<ReturnType<typeof parseEmailDispatchMessage>>["email"],
 ): SendEmailRequest {
   return {
     to: email.to,

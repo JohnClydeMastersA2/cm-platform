@@ -108,8 +108,8 @@ export function Mongodb() {
     <div className="platform-overview queue-panel">
       <section className="platform-hero">
         <div>
-          <div className="platform-kicker">Document-oriented NoSQL</div>
-          <h1 className="h3 mb-2">Email Webhook Explorer with MongoDB</h1>
+          <div className="platform-kicker">Email Webhook Explorer with MongoDB</div>
+          <h1 className="h3 mb-2">NoSQL with MongoDB</h1>
           <p className="platform-lede">
             CM Platform includes email delivery through the Resend API and a webhook that tracks
             delivery outcomes. Each webhook arrives as a JSON payload and is stored as a document in

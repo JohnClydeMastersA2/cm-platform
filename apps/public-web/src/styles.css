@@ -597,6 +597,13 @@ body {
   vertical-align: middle;
 }
 
+.infrastructure-action-button {
+  --bs-btn-padding-x: 0.4rem;
+  --bs-btn-padding-y: 0.08rem;
+  --bs-btn-font-size: 0.72rem;
+  --bs-btn-border-radius: 0.25rem;
+}
+
 .at-a-glance-table {
   min-width: 44rem;
 }

@@ -225,6 +225,10 @@ resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: mongoDbDatabase
             }
             {
+              name: 'CM_PLATFORM_MONITORS'
+              value: demoMaintenanceMonitors
+            }
+            {
               name: 'RESEND_WEBHOOK_SECRET'
               secretRef: 'resend-webhook-secret'
             }

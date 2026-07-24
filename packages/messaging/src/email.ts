@@ -12,10 +12,12 @@ export const emailQueues = {
 // RabbitMQ routing keys are broker-level addresses used to route published messages to queues.
 export const emailRoutingKeys = {
   emailVerificationRequested: "auth.email_verification_requested.v1",
+  systemEmailRequested: "system.email_requested.v1",
 } as const;
 
 export const emailMessageTypes = {
   emailVerificationRequested: "auth.email_verification_requested.v1",
+  systemEmailRequested: "system.email_requested.v1",
 } as const;
 
 const EmailRecipientsSchema = z.union([
@@ -42,10 +44,25 @@ export const EmailVerificationRequestedMessageSchema = z.object({
   email: SendEmailRequestMessageSchema,
 });
 
+export const SystemEmailRequestedMessageSchema = z.object({
+  messageType: z.literal(emailMessageTypes.systemEmailRequested),
+  messageId: z.uuid(),
+  requestedAt: z.string().datetime(),
+  source: z.string().min(1),
+  email: SendEmailRequestMessageSchema,
+});
+
+export const EmailDispatchMessageSchema = z.discriminatedUnion("messageType", [
+  EmailVerificationRequestedMessageSchema,
+  SystemEmailRequestedMessageSchema,
+]);
+
 export type SendEmailRequestMessage = z.infer<typeof SendEmailRequestMessageSchema>;
 export type EmailVerificationRequestedMessage = z.infer<
   typeof EmailVerificationRequestedMessageSchema
 >;
+export type SystemEmailRequestedMessage = z.infer<typeof SystemEmailRequestedMessageSchema>;
+export type EmailDispatchMessage = z.infer<typeof EmailDispatchMessageSchema>;
 
 export async function assertEmailTopology(channel: Channel): Promise<void> {
   await channel.assertExchange(emailExchangeName, "topic", { durable: true });
@@ -65,16 +82,36 @@ export async function assertEmailTopology(channel: Channel): Promise<void> {
     emailExchangeName,
     emailRoutingKeys.emailVerificationRequested,
   );
+  await channel.bindQueue(
+    emailQueues.dispatch,
+    emailExchangeName,
+    emailRoutingKeys.systemEmailRequested,
+  );
 }
 
 export async function publishEmailVerificationRequested(
   channel: ConfirmChannel,
   message: EmailVerificationRequestedMessage,
 ): Promise<void> {
+  await publishEmailMessage(channel, emailRoutingKeys.emailVerificationRequested, message);
+}
+
+export async function publishSystemEmailRequested(
+  channel: ConfirmChannel,
+  message: SystemEmailRequestedMessage,
+): Promise<void> {
+  await publishEmailMessage(channel, emailRoutingKeys.systemEmailRequested, message);
+}
+
+async function publishEmailMessage(
+  channel: ConfirmChannel,
+  routingKey: string,
+  message: EmailDispatchMessage,
+): Promise<void> {
   const payload = Buffer.from(JSON.stringify(message), "utf8");
   const accepted = channel.publish(
     emailExchangeName,
-    emailRoutingKeys.emailVerificationRequested,
+    routingKey,
     payload,
     {
       appId: message.source,

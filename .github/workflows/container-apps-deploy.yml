@@ -64,8 +64,9 @@ jobs:
           echo "IMAGE_TAG=${image_tag}" >> "${GITHUB_ENV}"
           echo "Using image tag: ${image_tag}"
 
-      - name: Validate required runtime secrets
+      - name: Validate required runtime configuration
         env:
+          CM_PLATFORM_MONITORS: ${{ vars.CM_PLATFORM_MONITORS }}
           SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
@@ -76,6 +77,7 @@ jobs:
         run: |
           missing=()
 
+          [[ -z "${CM_PLATFORM_MONITORS}" ]] && missing+=("CM_PLATFORM_MONITORS")
           [[ -z "${SQL_APP_PASSWORD}" ]] && missing+=("SQL_APP_PASSWORD")
           [[ -z "${ADMIN_KEY}" ]] && missing+=("ADMIN_KEY")
           [[ -z "${RABBITMQ_URL}" ]] && missing+=("RABBITMQ_URL")
@@ -85,17 +87,18 @@ jobs:
           [[ -z "${RESEND_WEBHOOK_SECRET}" ]] && missing+=("RESEND_WEBHOOK_SECRET")
 
           if (( ${#missing[@]} > 0 )); then
-            printf 'Missing required GitHub production secret(s): %s\n' "${missing[*]}"
+            printf 'Missing required GitHub production configuration: %s\n' "${missing[*]}"
             exit 1
           fi
 
-          echo "Required runtime secret names are present."
+          echo "Required runtime configuration is present."
 
       - name: Build Container Apps Bicep
         run: az bicep build --file "${BICEP_TEMPLATE}"
 
       - name: What-if Container Apps deployment
         env:
+          CM_PLATFORM_MONITORS: ${{ vars.CM_PLATFORM_MONITORS }}
           SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
@@ -112,6 +115,7 @@ jobs:
       - name: Deploy Container Apps
         if: inputs.action == 'DEPLOY APPS'
         env:
+          CM_PLATFORM_MONITORS: ${{ vars.CM_PLATFORM_MONITORS }}
           SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
@@ -144,5 +148,5 @@ jobs:
             echo "- Worker apps: ca-cmp-email-prod, ca-cmp-widget-fast-prod, ca-cmp-widget-slow-prod"
             echo "- Internal apps: ca-cmp-healthcare-prod"
             echo "- Scheduled job: job-cmp-demo-maint-prod"
-            echo "- Secret values were supplied through the GitHub production environment"
+            echo "- Runtime variables and secret values were supplied through the GitHub production environment"
           } >> "${GITHUB_STEP_SUMMARY}"

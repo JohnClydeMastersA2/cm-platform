@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BackToTop } from "../components/BackToTop";
 import { formatDateWithSeconds } from "../lib/date";
-import { readError } from "../lib/http";
+import { csrfFetch, readError } from "../lib/http";
 
 type InfrastructureDisposition = "online" | "degraded" | "offline" | "unknown";
 
@@ -26,6 +26,8 @@ export function Infrastructure() {
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [message, setMessage] = useState<string | undefined>();
+  const [emailTestState, setEmailTestState] = useState<LoadState>("idle");
+  const [emailTestMessage, setEmailTestMessage] = useState<string | undefined>();
 
   useEffect(() => {
     void loadStatus();
@@ -51,8 +53,20 @@ export function Infrastructure() {
         throw new Error(await readError(response, "Unable to load platform infrastructure status"));
       }
 
-      setPlatformStatus((await response.json()) as PlatformStatus);
+      const nextStatus = (await response.json()) as PlatformStatus;
+
+      setPlatformStatus(nextStatus);
       setLoadState("success");
+
+      if (
+        emailTestState === "success"
+        && nextStatus.requirements.some(
+          (requirement) => requirement.key === "email-webhook" && requirement.disposition === "online"
+        )
+      ) {
+        setEmailTestState("idle");
+        setEmailTestMessage(undefined);
+      }
     } catch (err) {
       setPlatformStatus(buildUnavailablePlatformStatus(err));
       setLoadState("error");
@@ -64,6 +78,37 @@ export function Infrastructure() {
     }
   }
 
+  async function sendWebhookTestEmail() {
+    if (emailTestState === "submitting") {
+      return;
+    }
+
+    setEmailTestState("submitting");
+    setEmailTestMessage(undefined);
+
+    try {
+      const response = await csrfFetch("/platform/status/email-webhook-test", {
+        method: "POST"
+      });
+
+      if (!response.ok) {
+        throw new Error(await readError(response, "Unable to queue the test email"));
+      }
+
+      const result = (await response.json()) as { recipientCount?: number };
+      const recipientText =
+        typeof result.recipientCount === "number"
+          ? ` for ${result.recipientCount} monitor recipient${result.recipientCount === 1 ? "" : "s"}`
+          : "";
+
+      setEmailTestState("success");
+      setEmailTestMessage(`Test email queued${recipientText}. Refresh status after the webhook event arrives.`);
+    } catch (err) {
+      setEmailTestState("error");
+      setEmailTestMessage(err instanceof Error ? err.message : "Unable to queue the test email.");
+    }
+  }
+
   return (
     <section className="platform-overview">
       <div className="platform-hero">
@@ -71,9 +116,16 @@ export function Infrastructure() {
           <p className="platform-kicker">Platform operations</p>
           <h1>Infrastructure Status</h1>
           <p className="platform-lede">
-            This page shows the current disposition of the local cm-platform requirements that support
-            the API, messaging demos, account verification, background processing, and email webhook
-            flow.
+            CM Platform combines a public web application and Fastify API with relational and document
+            persistence, RabbitMQ messaging, background consumers, and email webhook processing. This
+            page brings those dependencies together into a live operational view of the services that
+            support the platform.
+          </p>
+          <p className="platform-lede mt-3">
+            Status is assembled by the API using readiness queries, broker queue metadata, attached
+            consumer counts, and stored webhook history. The results provide practical evidence that the
+            platform components are connected and available, while distinguishing direct health checks
+            from signals that only indicate recent activity.
           </p>
           <div className="platform-hero-actions">
             <button className="btn btn-primary" type="button" onClick={() => void loadStatus()} disabled={isRefreshing}>
@@ -136,6 +188,28 @@ export function Infrastructure() {
                     <td>
                       <div>{requirement.evidence}</div>
                       <div className="text-muted small">Checked {formatDateWithSeconds(requirement.checkedAt)}</div>
+                      {requirement.key === "email-webhook" ? (
+                        <>
+                          <button
+                            className="btn btn-outline-primary infrastructure-action-button mt-2"
+                            type="button"
+                            onClick={() => void sendWebhookTestEmail()}
+                            disabled={emailTestState === "submitting"}
+                          >
+                            {emailTestState === "submitting" ? "Sending..." : "Send Email Now"}
+                          </button>
+                          {emailTestMessage ? (
+                            <div
+                              className={`small mt-1 ${
+                                emailTestState === "error" ? "text-danger" : "text-success"
+                              }`}
+                              role={emailTestState === "error" ? "alert" : "status"}
+                            >
+                              {emailTestMessage}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : null}
                     </td>
                   </tr>
                 ))
@@ -194,7 +268,7 @@ function buildUnavailablePlatformStatus(err: unknown): PlatformStatus {
     },
     {
       key: "database",
-      name: "Database",
+      name: "SQL Database",
       disposition: "unknown",
       detail: "Database status cannot be checked until the API service is running."
     },

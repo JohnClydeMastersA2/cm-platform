@@ -34,11 +34,19 @@ export function Iam() {
       <div className="platform-hero">
         <div>
           <p className="platform-kicker">Identity and access</p>
-          <h1>Account Creation Workflow</h1>
+          <h1>Account Creation</h1>
           <p className="platform-lede">
-            CM Platform includes a simple account workflow with email/password registration, basic
-            password validation, email confirmation, login, session inspection, logout, and account
-            deletion for repeatable demos.
+            CM Platform implements an account creation path that connects the React registration form,
+            Fastify request validation, password hashing, SQL-backed account state, and time-limited
+            email verification. Verification messages are published through RabbitMQ and delivered by
+            the background email dispatcher so account creation does not depend on synchronous email
+            delivery.
+          </p>
+          <p className="platform-lede mt-3">
+            After verification, users can log in through an HTTP-only browser session, inspect their
+            account and session state, log out, or delete the account to replay the workflow. The goal is
+            to demonstrate a complete, understandable identity lifecycle rather than present CM Platform
+            as a full identity-management product.
           </p>
         </div>
         <div className="platform-stack" aria-label="Identity workflow summary">

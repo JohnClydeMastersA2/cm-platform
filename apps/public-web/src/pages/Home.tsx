@@ -101,8 +101,8 @@ export function Home() {
           </p>
           <p className="platform-lede mt-3">
             Rather than showcasing individual technologies in isolation, CM Platform demonstrates how
-            these capabilities work together to build maintainable, scalable, and production-ready
-            software systems.
+            these capabilities can work together to build a maintainable, scalable, and production-ready
+            software system.
           </p>
         </div>
         <div className="platform-stack" aria-label="Platform architecture summary">
@@ -118,7 +118,7 @@ export function Home() {
           <h2>Built by John Clyde Masters</h2>
           <p>
             CM Platform is a software engineering portfolio. Every feature represents technology that I
-            have studied, implemented, and integrated into the project, providing practical evidence of
+            have studied, implemented, and integrated into the project, providing a practical review of
             my approach to software engineering and my commitment to continuously expanding my technical
             capabilities.
           </p>

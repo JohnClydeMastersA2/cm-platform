@@ -159,7 +159,7 @@ export function PriorityQueue() {
     <div className="demo-panel queue-panel">
       <div className="mb-4 rabbitmq-demo-copy">
         <p className="platform-kicker">Priority messaging</p>
-        <h1 className="h3 mb-2">Priority Queue with RabbitMQ</h1>
+        <h1 className="h3 mb-2">Priority Queue</h1>
         <p className="text-muted mb-0">
           This demonstration uses one RabbitMQ queue declared with <code>x-max-priority</code>. Publishing
           assigns each job a priority number, and RabbitMQ prefers higher-priority waiting messages when

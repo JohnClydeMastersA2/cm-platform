@@ -185,8 +185,8 @@ export function Widgets() {
     <div className="demo-panel queue-panel">
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
-          <p className="platform-kicker">Reliable messaging</p>
-          <h1 className="h3 mb-2">Messaging with RabbitMQ + Retries & Dead Letter Queue</h1>
+          <p className="platform-kicker">Reliable Messaging with RabbitMQ</p>
+          <h1 className="h3 mb-2">Queue Basics, Retry and DLQs</h1>
           <p className="text-muted mb-0">
             This demonstration uses RabbitMQ as the work queue and SQL Server as the visible state store.
             Creating widgets inserts rows into dbo.WidgetQueueDemo with a status of queued, then publishes

@@ -62,7 +62,7 @@ export const routes: AppRoute[] = [
   },
   {
     path: "/iam",
-    label: "IAM Overview",
+    label: "Account Creation",
     Component: Iam
   },
   {
@@ -129,7 +129,7 @@ export const routeGroups: AppRouteGroup[] = [
     id: "identity-access",
     label: "Identity and Access",
     items: [
-      { path: "/iam", label: "Overview" },
+      { path: "/iam", label: "Account Creation" },
       { path: "/register", label: "Create Account" },
       { path: "/login", label: "Login" }
     ]

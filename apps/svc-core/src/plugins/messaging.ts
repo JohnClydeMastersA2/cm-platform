@@ -6,7 +6,9 @@ import {
   assertEmailTopology,
   emailQueues,
   publishEmailVerificationRequested,
+  publishSystemEmailRequested,
   type EmailVerificationRequestedMessage,
+  type SystemEmailRequestedMessage,
 } from "@cm/messaging/email";
 import {
   assertWidgetTopology,
@@ -55,6 +57,7 @@ export type QueueOverview = {
 
 export type MessagingClient = {
   publishEmailVerificationRequested(message: EmailVerificationRequestedMessage): Promise<void>;
+  publishSystemEmailRequested(message: SystemEmailRequestedMessage): Promise<void>;
   publishWidgetProcessingRequested(message: WidgetProcessingRequestedMessage): Promise<void>;
   publishWidgetProcessingRetry(message: WidgetProcessingRequestedMessage): Promise<void>;
   publishWidgetConsumerProcessingRequested(message: WidgetConsumerProcessingRequestedMessage): Promise<void>;
@@ -108,6 +111,9 @@ async function messagingPluginImpl(
   app.decorate("messaging", {
     publishEmailVerificationRequested: async (message: EmailVerificationRequestedMessage) => {
       await publishEmailVerificationRequested(channel, message);
+    },
+    publishSystemEmailRequested: async (message: SystemEmailRequestedMessage) => {
+      await publishSystemEmailRequested(channel, message);
     },
     publishWidgetProcessingRequested: async (message: WidgetProcessingRequestedMessage) => {
       await publishWidgetProcessingRequested(channel, message);

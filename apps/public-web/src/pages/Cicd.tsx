@@ -126,12 +126,21 @@ export function Cicd() {
     <section className="platform-overview">
       <div className="platform-hero">
         <div>
-          <p className="platform-kicker">CI/CD and Azure</p>
-          <h1>Deployment Pipeline and Cloud Runtime</h1>
+          <p className="platform-kicker">Deployment Pipeline and Cloud Runtime</p>
+          <h1>CI/CD and Azure</h1>
           <p className="platform-lede">
-            CM Platform uses Docker, GitHub Actions, GHCR, Azure Bicep, Azure Container Apps,
-            and Azure SQL to turn local TypeScript services into a protected, production-like
-            public portfolio environment.
+            CM Platform treats software delivery as part of the engineering system rather than a final
+            manual step. Changes are rebuilt on clean GitHub-hosted runners, validated through automated
+            builds and security analysis, and packaged as immutable, commit-tagged container images in
+            GitHub Container Registry. This creates a traceable path from source code to each deployable
+            artifact.
+          </p>
+          <p className="platform-lede mt-3">
+            Production promotion is intentionally separate from image creation. Protected GitHub
+            workflows authenticate to Azure through OIDC, preview infrastructure changes with Bicep
+            what-if, inject environment-specific configuration, and deploy the selected image versions
+            to Azure Container Apps. Database, application, and smoke-test activities remain explicit so
+            a release can be reviewed and verified at each boundary.
           </p>
           <div className="platform-hero-actions">
             <span>Reference: docs/deployment-plan.md</span>
