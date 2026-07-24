@@ -87,6 +87,12 @@ const completedChecks: CompletedCheck[] = [
     proof: "Post-cutover ZAP baseline reported FAIL-NEW 0, WARN-NEW 7, PASS 54; report retained locally under security-reports/"
   },
   {
+    title: "Static analysis disposition",
+    body:
+      "CodeQL rate-limit findings were tested against the implemented Fastify controls. Findings that remained because the analyzer does not model those patterns were documented and dismissed instead of adding scanner-specific application complexity.",
+    proof: "Seven findings closed through route controls; four authorization-related findings reviewed as covered runtime behavior"
+  },
+  {
     title: "Azure Advisor security review",
     body:
       "Azure Advisor was queried for subscription and resource-level security recommendations. Findings were grouped into governance items, paid Defender evaluations, and Azure SQL hardening choices.",
@@ -181,6 +187,13 @@ export function Security() {
             include cache-control tuning, HSTS, X-Content-Type-Options on static text files, CSP
             style-src usage, and cross-origin isolation headers. Several are expected for this portfolio
             launch and should be handled as conscious hardening choices rather than emergency defects.
+          </p>
+          <p>
+            CodeQL rate-limit findings were also reviewed against live application behavior. Four
+            authorization-related findings remained after a focused implementation experiment, even
+            though the affected handlers are protected by the global request ceiling and tighter route
+            limits. Those findings are treated as documented analyzer limitations rather than reasons to
+            add application complexity without an operational benefit.
           </p>
           <p>
             Azure Advisor added an internal cloud posture view. Its most actionable findings are not all
