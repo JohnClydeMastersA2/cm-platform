@@ -1,6 +1,6 @@
 # CM Platform
 
-CM Platform is a polyglot application and infrastructure project used to build and demonstrate practical platform capabilities. It combines a Fastify API, a React web application, background workers, a Spring Boot healthcare transformation service, shared TypeScript packages, data stores, messaging, email delivery, container workflows, and Azure infrastructure as code.
+CM Platform is an application and infrastructure project that uses multiple technologies to build and demonstrate practical platform capabilities. It combines a Fastify API, a React web application, background workers, a Spring Boot healthcare transformation service, shared TypeScript packages, data stores, messaging, email delivery, container workflows, and Azure infrastructure as code.
 
 The repository is under active development. Some features are production-oriented foundations, while others are intentionally visible demonstrations of messaging, identity, data, and operational patterns.
 
