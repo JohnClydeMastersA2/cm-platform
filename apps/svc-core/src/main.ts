@@ -22,6 +22,7 @@ async function start() {
     dbTrustServerCertificate: env.DB_TRUST_SERVER_CERTIFICATE,
     authApiBaseUrl: env.AUTH_API_BASE_URL,
     publicWebBaseUrl: env.PUBLIC_WEB_BASE_URL,
+    healthcareTransformBaseUrl: env.HEALTHCARE_TRANSFORM_BASE_URL,
     rabbitMqUrl: env.RABBITMQ_URL,
     mongoDbUri: env.MONGODB_URI,
     mongoDbDatabase: env.MONGODB_DATABASE,

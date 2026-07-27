@@ -20,7 +20,7 @@ The repository is under active development. Some features are production-oriente
 - **Background processing:** RabbitMQ email delivery, competing consumers, retries, dead-letter queues, priority queues, topic routing, and scheduled demo maintenance
 - **Data:** SQL Server locally, Azure SQL in production, and MongoDB for webhook events and healthcare document artifacts
 - **Cloud and delivery:** Docker, Azure Container Apps, GitHub Actions, GHCR, Bicep, Azure OIDC, protected deployment workflows, Cloudflare, and managed production dependencies
-- **Healthcare:** Java 21 and Spring Boot service supporting document submission, MongoDB artifact persistence, and initial ASC X12 835 parsing
+- **Healthcare:** Java 21 and Spring Boot service supporting curated 835 processing, document submission, MongoDB artifact persistence, archive retrieval, and initial ASC X12 835 parsing
 - **Security and operations:** CSRF protection, secure session cookies, rate limiting, webhook signature verification, CodeQL, OWASP ZAP baseline scanning, structured logging, readiness checks, and production smoke tests
 - **Testing:** Workspace builds, API smoke tests, Spring/JUnit tests, database checks, container validation, Bicep validation, and production-like local verification
 

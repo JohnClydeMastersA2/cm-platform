@@ -15,6 +15,7 @@ import { internalSurface } from "./surfaces/internal.surface.js";
 import { widgetRoutes } from "./modules/widget/widget.routes.js";
 import { widgetConsumerRoutes } from "./modules/widget_consumer/widget_consumer.routes.js";
 import { emailWebhookEventRoutes } from "./modules/email_webhook_event/email_webhook_event.routes.js";
+import { healthcareRoutes } from "./modules/healthcare/healthcare.routes.js";
 
 const instanceRateLimitMax = 300;
 const instanceRateLimitWindow = "1 minute";
@@ -32,6 +33,7 @@ type BuildAppOptions = {
   dbTrustServerCertificate: boolean;
   authApiBaseUrl: string;
   publicWebBaseUrl: string;
+  healthcareTransformBaseUrl: string;
   rabbitMqUrl: string;
   mongoDbUri: string;
   mongoDbDatabase: string;
@@ -139,6 +141,10 @@ export function buildApp(opts: BuildAppOptions) {
   app.register(platformStatusRoutes, {
     prefix: "/platform/status",
     monitorEmails: opts.monitorEmails,
+  });
+  app.register(healthcareRoutes, {
+    prefix: "/healthcare",
+    healthcareTransformBaseUrl: opts.healthcareTransformBaseUrl,
   });
   app.register(internalSurface);
 

@@ -2,7 +2,11 @@
 
 Java/Spring Boot healthcare document transformation and archive microservice for CM Platform.
 
-This service is deployed as an internal-only Azure Container App. It is not exposed publicly and is not wired into `svc-core` or `public-web` yet.
+This service is deployed as an internal-only Azure Container App. It is not exposed
+directly to the public internet or wired into `public-web` yet.
+
+`svc-core` now provides the controlled platform-facing path for curated source
+documents and archive JSON retrieval. The Java service remains internal-only.
 
 ## Current Scope
 
@@ -199,3 +203,18 @@ N1 payer and payee basics
 ```
 
 Search beyond the recent-submissions list is still planned future work.
+
+## Platform Proxy
+
+`apps/svc-core` proxies the curated workflow through:
+
+```text
+GET  /healthcare/source-documents
+GET  /healthcare/source-documents/{sourceId}
+POST /healthcare/source-documents/{sourceId}/process
+GET  /healthcare/documents/{documentId}
+GET  /healthcare/documents/{documentId}/json
+```
+
+Raw EDI retrieval intentionally remains available only on the internal Java
+service for now.

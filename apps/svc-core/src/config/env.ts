@@ -58,6 +58,7 @@ const EnvSchema = z.object({
 
   AUTH_API_BASE_URL: z.url().default("http://localhost:3000"),
   PUBLIC_WEB_BASE_URL: z.url().default("http://localhost:5173"),
+  HEALTHCARE_TRANSFORM_BASE_URL: z.url().default("http://localhost:8081"),
   RABBITMQ_URL: z.url(),
   MONGODB_URI: z.url(),
   MONGODB_DATABASE: z.string().min(1).default("CMPlatformDocuments"),

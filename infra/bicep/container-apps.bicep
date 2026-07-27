@@ -213,6 +213,10 @@ resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: publicBaseUrl
             }
             {
+              name: 'HEALTHCARE_TRANSFORM_BASE_URL'
+              value: 'https://${healthcareTransformApp.properties.configuration.ingress.fqdn}'
+            }
+            {
               name: 'RABBITMQ_URL'
               secretRef: 'rabbitmq-url'
             }
