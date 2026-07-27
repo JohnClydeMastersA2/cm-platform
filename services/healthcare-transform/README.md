@@ -14,6 +14,7 @@ This service is deployed as an internal-only Azure Container App. It is not expo
 - Multipart ASC X12 835 upload validation with public-mode rejection of unapproved source documents
 - Curated 835 source document catalog
 - Process-by-source-document endpoint with duplicate detection
+- Read-only archive retrieval for original EDI and transformed JSON artifacts
 - Dedicated MongoDB persistence for submission status and binary artifacts
 
 ## Local Development
@@ -124,6 +125,8 @@ GET  /api/documents/capabilities
 POST /api/documents
 GET  /api/documents
 GET  /api/documents/{id}
+GET  /api/documents/{id}/raw
+GET  /api/documents/{id}/json
 GET  /api/source-documents
 GET  /api/source-documents/{sourceId}
 POST /api/source-documents/{sourceId}/process
@@ -135,6 +138,11 @@ the public demo. `POST /api/source-documents/{sourceId}/process` processes one
 of those known files without requiring the user to download and re-upload it.
 Repeated processing of the same source document returns the existing completed
 submission for the same source hash and parser version.
+
+`GET /api/documents/{id}/raw` returns the archived original EDI artifact.
+`GET /api/documents/{id}/json` returns the archived transformed JSON artifact.
+Both endpoints are read-only and return `ARTIFACT_NOT_FOUND` if the requested
+artifact does not exist for the submission.
 
 `POST /api/documents` accepts a multipart field named `file`, rejects empty,
 unsupported, malformed, larger-than-10-MiB, or unapproved source files. In the
@@ -170,6 +178,8 @@ Example:
 ```powershell
 curl.exe -F "file=@src/test/resources/x12/835/minimal-835.edi" http://localhost:8081/api/documents
 curl.exe http://localhost:8081/api/documents
+curl.exe http://localhost:8081/api/source-documents
+curl.exe -X POST http://localhost:8081/api/source-documents/emedny-835-professional-with-payment/process
 ```
 
 For local parser/archive development before the curated source catalog exists,

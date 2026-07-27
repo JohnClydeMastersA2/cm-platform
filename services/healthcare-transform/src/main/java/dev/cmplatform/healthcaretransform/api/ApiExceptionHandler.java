@@ -1,5 +1,6 @@
 package dev.cmplatform.healthcaretransform.api;
 
+import dev.cmplatform.healthcaretransform.document.ArtifactNotFoundException;
 import dev.cmplatform.healthcaretransform.document.DocumentNotFoundException;
 import dev.cmplatform.healthcaretransform.document.InvalidDocumentException;
 import dev.cmplatform.healthcaretransform.document.UnapprovedSourceDocumentException;
@@ -49,6 +50,12 @@ public class ApiExceptionHandler {
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public ApiError notFound(DocumentNotFoundException exception) {
     return new ApiError("DOCUMENT_NOT_FOUND", exception.getMessage(), Instant.now(), Map.of());
+  }
+
+  @ExceptionHandler(ArtifactNotFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public ApiError artifactNotFound(ArtifactNotFoundException exception) {
+    return new ApiError("ARTIFACT_NOT_FOUND", exception.getMessage(), Instant.now(), Map.of());
   }
 
   @ExceptionHandler(SourceDocumentNotFoundException.class)

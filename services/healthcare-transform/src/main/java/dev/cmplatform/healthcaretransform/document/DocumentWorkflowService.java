@@ -174,6 +174,21 @@ public class DocumentWorkflowService {
     return submissionRepository.findById(id).orElseThrow(() -> new DocumentNotFoundException(id));
   }
 
+  public Artifact getRawArtifact(String submissionId) {
+    get(submissionId);
+    return getArtifact(submissionId, ArtifactKind.ORIGINAL);
+  }
+
+  public Artifact getTransformedArtifact(String submissionId) {
+    get(submissionId);
+    return getArtifact(submissionId, ArtifactKind.TRANSFORMED);
+  }
+
+  private Artifact getArtifact(String submissionId, ArtifactKind kind) {
+    return artifactRepository.findBySubmissionIdAndKind(submissionId, kind)
+        .orElseThrow(() -> new ArtifactNotFoundException(submissionId, kind));
+  }
+
   private byte[] readAndValidate(MultipartFile file) {
     if (file == null || file.isEmpty()) {
       throw new InvalidDocumentException("A non-empty file is required.");

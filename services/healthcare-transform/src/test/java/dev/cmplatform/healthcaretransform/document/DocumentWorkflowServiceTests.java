@@ -147,6 +147,61 @@ class DocumentWorkflowServiceTests {
   }
 
   @Test
+  void getRawArtifactReturnsOriginalArtifact() {
+    Submission submission = submission("submission-1");
+    Artifact original = artifact("artifact-1", "submission-1", ArtifactKind.ORIGINAL, "sample.edi", "text/plain", "ISA*00*~");
+    when(submissionRepository.findById("submission-1")).thenReturn(Optional.of(submission));
+    when(artifactRepository.findBySubmissionIdAndKind("submission-1", ArtifactKind.ORIGINAL))
+        .thenReturn(Optional.of(original));
+
+    Artifact result = workflowService.getRawArtifact("submission-1");
+
+    assertThat(result).isSameAs(original);
+  }
+
+  @Test
+  void getTransformedArtifactReturnsJsonArtifact() {
+    Submission submission = submission("submission-1");
+    Artifact transformed = artifact(
+        "artifact-2",
+        "submission-1",
+        ArtifactKind.TRANSFORMED,
+        "sample.edi.json",
+        "application/json",
+        "{\"payment\":{}}");
+    when(submissionRepository.findById("submission-1")).thenReturn(Optional.of(submission));
+    when(artifactRepository.findBySubmissionIdAndKind("submission-1", ArtifactKind.TRANSFORMED))
+        .thenReturn(Optional.of(transformed));
+
+    Artifact result = workflowService.getTransformedArtifact("submission-1");
+
+    assertThat(result).isSameAs(transformed);
+  }
+
+  @Test
+  void artifactRetrievalRejectsUnknownSubmission() {
+    when(submissionRepository.findById("missing")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> workflowService.getRawArtifact("missing"))
+        .isInstanceOf(DocumentNotFoundException.class)
+        .hasMessageContaining("missing");
+
+    verify(artifactRepository, never()).findBySubmissionIdAndKind(any(), any());
+  }
+
+  @Test
+  void artifactRetrievalRejectsMissingArtifact() {
+    Submission submission = submission("submission-1");
+    when(submissionRepository.findById("submission-1")).thenReturn(Optional.of(submission));
+    when(artifactRepository.findBySubmissionIdAndKind("submission-1", ArtifactKind.TRANSFORMED))
+        .thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> workflowService.getTransformedArtifact("submission-1"))
+        .isInstanceOf(ArtifactNotFoundException.class)
+        .hasMessageContaining("TRANSFORMED");
+  }
+
+  @Test
   void unapprovedUploadIsRejectedBeforePersistenceWithSafeDetails() throws IOException {
     byte[] content = new ClassPathResource("x12/835/minimal-835.edi").getContentAsByteArray();
     workflowService = new DocumentWorkflowService(
@@ -257,5 +312,25 @@ class DocumentWorkflowServiceTests {
         now,
         new ArrayList<>(),
         new ArrayList<>());
+  }
+
+  private Artifact artifact(
+      String id,
+      String submissionId,
+      ArtifactKind kind,
+      String filename,
+      String contentType,
+      String data) {
+    byte[] bytes = data.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    return new Artifact(
+        id,
+        submissionId,
+        kind,
+        filename,
+        contentType,
+        bytes.length,
+        "hash",
+        bytes,
+        java.time.Instant.now());
   }
 }
