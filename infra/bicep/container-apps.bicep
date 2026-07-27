@@ -329,6 +329,12 @@ resource healthcareTransformApp 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'auto'
         allowInsecure: false
       }
+      secrets: [
+        {
+          name: 'mongodb-uri'
+          value: mongoDbUri
+        }
+      ]
     }
     template: {
       scale: {
@@ -343,6 +349,14 @@ resource healthcareTransformApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'SERVER_PORT'
               value: '8081'
+            }
+            {
+              name: 'HEALTHCARE_TRANSFORM_MONGODB_URI'
+              secretRef: 'mongodb-uri'
+            }
+            {
+              name: 'HEALTHCARE_TRANSFORM_MONGODB_DATABASE'
+              value: mongoDbDatabase
             }
           ]
           resources: {

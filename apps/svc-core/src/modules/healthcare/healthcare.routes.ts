@@ -47,6 +47,10 @@ export async function healthcareRoutes(
     await forwardHealthcareRequest(() => client.processSourceDocument(parsed.data.sourceId), reply);
   });
 
+  app.get("/documents/capabilities", async (_request, reply) => {
+    await forwardHealthcareRequest(() => client.getDocumentCapabilities(), reply);
+  });
+
   app.get("/documents/:documentId", async (request, reply) => {
     const parsed = HealthcareDocumentParamsSchema.safeParse(request.params);
     if (!parsed.success) {

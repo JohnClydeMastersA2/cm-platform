@@ -25,6 +25,10 @@ export class HealthcareTransformClient {
     });
   }
 
+  getDocumentCapabilities(): Promise<Response> {
+    return this.request("/api/documents/capabilities");
+  }
+
   getDocument(documentId: string): Promise<Response> {
     return this.request(`/api/documents/${encodeURIComponent(documentId)}`);
   }
