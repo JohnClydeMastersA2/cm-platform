@@ -1,6 +1,21 @@
 spring:
   application:
     name: healthcare-transform
+  mongodb:
+    uri: ${HEALTHCARE_TRANSFORM_MONGODB_URI:mongodb://localhost:27017}
+    database: ${HEALTHCARE_TRANSFORM_MONGODB_DATABASE:healthcare_transform}
+  data:
+    mongodb:
+      auto-index-creation: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+healthcare-transform:
+  uploads:
+    max-bytes: 10485760
+    allow-unapproved: ${HEALTHCARE_TRANSFORM_ALLOW_UNAPPROVED_UPLOADS:false}
 
 server:
   port: 8081

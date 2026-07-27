@@ -186,8 +186,6 @@ Transaction-specific endpoints may be useful once search fields diverge enough t
 
 ## First Slice
 
-Start with the existing Java 835 parser.
-
 Minimum useful milestone:
 
 - Spring Boot service skeleton

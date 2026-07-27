@@ -11,6 +11,10 @@ This service is deployed as an internal-only Azure Container App. It is not expo
 - HTTP health/readiness endpoints
 - Capabilities endpoint
 - First-slice ASC X12 835 parse endpoint
+- Multipart ASC X12 835 upload validation with public-mode rejection of unapproved source documents
+- Curated 835 source document catalog
+- Process-by-source-document endpoint with duplicate detection
+- Dedicated MongoDB persistence for submission status and binary artifacts
 
 ## Local Development
 
@@ -33,6 +37,16 @@ The service defaults to:
 ```text
 http://localhost:8081
 ```
+
+The service expects MongoDB at `mongodb://localhost:27017` and uses the standalone
+`healthcare_transform` database by default. Override either value with:
+
+```text
+HEALTHCARE_TRANSFORM_MONGODB_URI
+HEALTHCARE_TRANSFORM_MONGODB_DATABASE
+```
+
+Do not commit an Atlas connection string or password to the repository.
 
 ## Maven Commands
 
@@ -107,10 +121,65 @@ target/    Maven's build output directory.
 GET  /health
 GET  /ready
 GET  /api/documents/capabilities
+POST /api/documents
+GET  /api/documents
+GET  /api/documents/{id}
+GET  /api/source-documents
+GET  /api/source-documents/{sourceId}
+POST /api/source-documents/{sourceId}/process
 POST /api/x12/835/parse
 ```
 
-The 835 endpoint currently parses a small first slice of an ASC X12 835 payload:
+`GET /api/source-documents` lists the curated sample 835 files that are safe for
+the public demo. `POST /api/source-documents/{sourceId}/process` processes one
+of those known files without requiring the user to download and re-upload it.
+Repeated processing of the same source document returns the existing completed
+submission for the same source hash and parser version.
+
+`POST /api/documents` accepts a multipart field named `file`, rejects empty,
+unsupported, malformed, larger-than-10-MiB, or unapproved source files. In the
+default public-safe mode, valid 835 uploads are accepted only when the uploaded
+file SHA-256 matches the curated source-document catalog. Rejected unapproved
+uploads are not stored.
+
+Unapproved upload responses include safe diagnostic metadata such as received
+time, filename, content type, size, SHA-256, and detected document type:
+
+```json
+{
+  "code": "UNAPPROVED_SOURCE_DOCUMENT",
+  "message": "Uploaded healthcare documents are not accepted in this public demo. Choose one of the curated source 835 files instead.",
+  "timestamp": "2026-07-27T20:30:00Z",
+  "details": {
+    "receivedAt": "2026-07-27T20:30:00Z",
+    "filename": "example.edi",
+    "contentType": "text/plain",
+    "size": 2048,
+    "sha256": "...",
+    "documentType": "X12_835"
+  }
+}
+```
+
+When accepted, files are stored in MongoDB. The `submissions` collection
+contains workflow metadata; the `artifacts` collection stores original and
+transformed file bytes separately.
+
+Example:
+
+```powershell
+curl.exe -F "file=@src/test/resources/x12/835/minimal-835.edi" http://localhost:8081/api/documents
+curl.exe http://localhost:8081/api/documents
+```
+
+For local parser/archive development before the curated source catalog exists,
+set:
+
+```text
+HEALTHCARE_TRANSFORM_ALLOW_UNAPPROVED_UPLOADS=true
+```
+
+The 835 parser currently extracts:
 
 ```text
 ISA / GS / ST envelope values
@@ -119,4 +188,4 @@ TRN trace values
 N1 payer and payee basics
 ```
 
-Archive storage and search are still planned future work.
+Search beyond the recent-submissions list is still planned future work.

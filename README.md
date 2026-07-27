@@ -1,6 +1,6 @@
 # CM Platform
 
-CM Platform is an application and infrastructure project that uses multiple technologies to build and demonstrate practical platform capabilities. It combines a Fastify API, a React web application, background workers, a Spring Boot healthcare transformation service, shared TypeScript packages, data stores, messaging, email delivery, container workflows, and Azure infrastructure as code.
+CM Platform is an application and infrastructure project that uses multiple technologies to build and demonstrate practical platform capabilities. It combines a Fastify API, a React web application, background workers, a Spring Boot healthcare transformation service (current development), shared TypeScript packages, data stores, messaging, email delivery, container workflows, and Azure infrastructure as code.
 
 The repository is under active development. Some features are production-oriented foundations, while others are intentionally visible demonstrations of messaging, identity, data, and operational patterns.
 
@@ -13,12 +13,22 @@ The repository is under active development. Some features are production-oriente
 - Azure Bicep and GitHub Actions for cloud infrastructure and deployment
 - PowerShell as the primary local automation environment
 
+## Current Capabilities
+
+- **Frontend:** React 19, TypeScript, Vite, React Router, Bootstrap, account workflows, infrastructure status, and interactive messaging demonstrations
+- **API:** Node.js 24, Fastify 5, validation contracts, authentication, internal administration, webhooks, health checks, and platform-status endpoints
+- **Background processing:** RabbitMQ email delivery, competing consumers, retries, dead-letter queues, priority queues, topic routing, and scheduled demo maintenance
+- **Data:** SQL Server locally, Azure SQL in production, and MongoDB for webhook events and healthcare document artifacts
+- **Cloud and delivery:** Docker, Azure Container Apps, GitHub Actions, GHCR, Bicep, Azure OIDC, protected deployment workflows, Cloudflare, and managed production dependencies
+- **Healthcare:** Java 21 and Spring Boot service supporting document submission, MongoDB artifact persistence, and initial ASC X12 835 parsing
+- **Security and operations:** CSRF protection, secure session cookies, rate limiting, webhook signature verification, CodeQL, OWASP ZAP baseline scanning, structured logging, readiness checks, and production smoke tests
+- **Testing:** Workspace builds, API smoke tests, Spring/JUnit tests, database checks, container validation, Bicep validation, and production-like local verification
+
 ## Repository Structure
 
 ```text
 apps/svc-core                 Fastify API service
 apps/public-web               React web application
-apps/public-web               legacy Vite web application
 packages/auth                 password and token primitives
 packages/contracts            shared API validation contracts
 packages/email                SMTP email delivery

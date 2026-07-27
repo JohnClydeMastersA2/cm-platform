@@ -1,0 +1,121 @@
+{
+  "documents": [
+    {
+      "sourceId": "emedny-835-inpatient-drg-retro",
+      "title": "eMedNY 835 Inpatient DRG Retro",
+      "filename": "emedny_835_inpatient_drg_retro.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/emedny_835_inpatient_drg_retro.edi",
+      "sha256": "f0ac4249dd1c547d1b91ff868e0cd48bef63fb8f480fb41ed7d6b56bf599d0ac",
+      "sourceName": "eMedNY",
+      "sourceUrl": "https://www.emedny.org/hipaa/5010/5010_sample_files/835%20Inst%20Sample%28Inpatient%20DRG%20Retro%29.txt",
+      "description": "Institutional inpatient DRG retro adjustment sample with negative and positive CLP examples.",
+      "primaryTestValue": "Institutional inpatient DRG retro adjustment; negative and positive CLP examples",
+      "deidentified": true
+    },
+    {
+      "sourceId": "emedny-835-institutional-claims-only",
+      "title": "eMedNY 835 Institutional Claims Only",
+      "filename": "emedny_835_institutional_claims_only.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/emedny_835_institutional_claims_only.edi",
+      "sha256": "b3b6f7aeae43cc2b5f4f189e83d127c5bd9093523fe0d995afdc27cd2b6deadc",
+      "sourceName": "eMedNY",
+      "sourceUrl": "https://www.emedny.org/hipaa/5010/5010_sample_files/835%20Sample%20%28Institutional%20Claims%20only%29.2014.txt",
+      "description": "Institutional claims sample with payment and patient responsibility adjustment.",
+      "primaryTestValue": "Institutional claims, payment plus patient responsibility adjustment",
+      "deidentified": true
+    },
+    {
+      "sourceId": "emedny-835-outpatient-retro",
+      "title": "eMedNY 835 Outpatient Retro",
+      "filename": "emedny_835_outpatient_retro.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/emedny_835_outpatient_retro.edi",
+      "sha256": "b097150cb1a7630af5088293ea1c2de878247fa00bbe290319d3571601d50396",
+      "sourceName": "eMedNY",
+      "sourceUrl": "https://www.emedny.org/hipaa/5010/5010_sample_files/835Sample%28OutpatientRetro%29.txt",
+      "description": "Outpatient retro adjustment sample with no-payment BPR and PLB segments.",
+      "primaryTestValue": "Outpatient retro adjustment, no-payment BPR and PLB",
+      "deidentified": true
+    },
+    {
+      "sourceId": "emedny-835-pharmacy",
+      "title": "eMedNY 835 Pharmacy",
+      "filename": "emedny_835_pharmacy.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/emedny_835_pharmacy.edi",
+      "sha256": "2580e7375ac742a9545c01b3f44bb3b446e7642bacfaa564d2635c3166be2bac",
+      "sourceName": "eMedNY",
+      "sourceUrl": "https://www.emedny.org/hipaa/5010/5010_sample_files/835%20Sample%20Pharmacy.2014.txt",
+      "description": "Pharmacy sample with NDC-style service lines and provider-level adjustments.",
+      "primaryTestValue": "Pharmacy/NDC-style service lines and PLB",
+      "deidentified": true
+    },
+    {
+      "sourceId": "emedny-835-professional-no-payment",
+      "title": "eMedNY 835 Professional No Payment",
+      "filename": "emedny_835_professional_no_payment.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/emedny_835_professional_no_payment.edi",
+      "sha256": "8959ae411e7a6426835818f35888930ed0cd8be57301188089ae69d1daed580c",
+      "sourceName": "eMedNY",
+      "sourceUrl": "https://www.emedny.org/hipaa/5010/5010_sample_files/835%20Sample%20%28Professional%20Claims%20only-no%20payment%29.2014.txt",
+      "description": "Professional no-payment ERA sample with service-line denials.",
+      "primaryTestValue": "Professional no-payment ERA with service-line denials",
+      "deidentified": true
+    },
+    {
+      "sourceId": "emedny-835-professional-with-payment",
+      "title": "eMedNY 835 Professional With Payment",
+      "filename": "emedny_835_professional_with_payment.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/emedny_835_professional_with_payment.edi",
+      "sha256": "430c849f2c161588b1a4c3ca0d7767dea330f7206eab4781d4baccdc2a280f80",
+      "sourceName": "eMedNY",
+      "sourceUrl": "https://www.emedny.org/hipaa/5010/5010_sample_files/835%20Sample%20%28Professional%20Claims%20only-w%20payment%29.2014.txt",
+      "description": "Professional remittance sample with paid and denied service lines.",
+      "primaryTestValue": "Professional paid and denied service lines in one remittance",
+      "deidentified": true
+    },
+    {
+      "sourceId": "healthcare-data-insight-835-all-fields",
+      "title": "Healthcare Data Insight 835 All Fields",
+      "filename": "healthcare_data_insight_835_all_fields.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/healthcare_data_insight_835_all_fields.edi",
+      "sha256": "1649f7cabfda3f465e62041e73b3b82ed68d9c977915802d769eff300ab361da",
+      "sourceName": "Healthcare Data Insight",
+      "sourceUrl": "https://github.com/Healthcare-Data-Insight/api-examples/raw/refs/heads/main/edi_files/835/835-all-fields.dat",
+      "description": "Broad segment coverage sample including TS3, REF, AMT, QTY, LQ, and multiple SVC lines.",
+      "primaryTestValue": "Broad segment coverage including TS3, REF, AMT, QTY, LQ, multiple SVC lines",
+      "deidentified": true
+    },
+    {
+      "sourceId": "healthcare-data-insight-835-denial",
+      "title": "Healthcare Data Insight 835 Denial",
+      "filename": "healthcare_data_insight_835_denial.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/healthcare_data_insight_835_denial.edi",
+      "sha256": "dc4bfb7630d504695e95d5a3c7860823432d82ec9c534a0d5a697ee7a8b74731",
+      "sourceName": "Healthcare Data Insight",
+      "sourceUrl": "https://github.com/Healthcare-Data-Insight/api-examples/raw/refs/heads/main/edi_files/835/835-denial.dat",
+      "description": "Compact denial sample with alternate component separator usage.",
+      "primaryTestValue": "Compact denial scenario; includes non-standard component separator in some fields",
+      "deidentified": true
+    },
+    {
+      "sourceId": "nevada-medicaid-sample-835-extracted",
+      "title": "Nevada Medicaid Sample 835 Extracted",
+      "filename": "nevada_medicaid_sample_835_extracted.edi",
+      "documentType": "X12_835",
+      "resourcePath": "source-documents/x12/835/nevada_medicaid_sample_835_extracted.edi",
+      "sha256": "92bd582c8a00a4df03e7cba6c85f415d5349e5523731beb62911daf7cb1704a9",
+      "sourceName": "Nevada Medicaid",
+      "sourceUrl": "https://www.medicaid.nv.gov/Downloads/provider/Sample_835_File.pdf",
+      "description": "Nevada Medicaid sample extracted from PDF text with multiple ST transaction sets and PLB.",
+      "primaryTestValue": "Multiple ST transaction sets and PLB",
+      "deidentified": true
+    }
+  ]
+}
