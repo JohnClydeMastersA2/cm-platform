@@ -49,6 +49,20 @@ This workflow gives the product a natural user action: choose a sample 835 and
 process it. Users do not need to download a sample and upload it back to the
 same system.
 
+## Platform Access Boundary
+
+The curated workflow is owned by the healthcare-transform microservice. The
+service exposes its domain API under `/api/source-documents` and `/api/documents`.
+
+`svc-core` exposes a controlled platform facade under `/healthcare/...` so the
+Java service can remain internal-only while selected safe capabilities are made
+available to the rest of CM Platform. The proxy should stay thin: it forwards
+curated catalog, processing, metadata, and JSON retrieval requests, but it does
+not parse X12, store healthcare artifacts, or own healthcare archive rules.
+
+Raw EDI retrieval intentionally remains available only on the internal Java
+service for now.
+
 ## Current Corpus
 
 The current corpus contains nine small public/sample ASC X12 835 files:

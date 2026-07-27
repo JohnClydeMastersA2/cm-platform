@@ -97,6 +97,51 @@ services/healthcare-transform
 
 For early development, direct calls from `public-web` or local tools may be acceptable. Longer term, `svc-core` should remain the front door for authenticated platform access.
 
+## API Ownership And Proxy Boundary
+
+The healthcare-transform service owns the healthcare domain API. It should be
+the only service that understands healthcare document parsing, curated source
+document approval, artifact storage, archive status, parser versions, and
+healthcare-specific retrieval behavior.
+
+`apps/svc-core` may expose a platform-facing facade for selected
+healthcare-transform capabilities, but it must stay thin. Its job is to provide
+the public/platform entry point, apply platform concerns such as authentication,
+rate limiting, CSRF policy, and operational error mapping, and forward allowed
+requests to the Java service.
+
+This means:
+
+- `healthcare-transform` owns the domain behavior and internal API.
+- `svc-core` owns controlled platform access to selected internal API calls.
+- `svc-core` should not parse X12, duplicate healthcare archive rules, store
+  healthcare artifacts, or become the owner of healthcare document state.
+- Raw EDI retrieval can remain internal-only while the platform exposes safer
+  curated catalog, processing, metadata, and JSON retrieval routes.
+
+Current controlled platform facade:
+
+```text
+apps/public-web or other platform client
+  -> apps/svc-core /healthcare/...
+    -> services/healthcare-transform /api/...
+```
+
+Current proxied routes:
+
+```text
+GET  /healthcare/source-documents
+GET  /healthcare/source-documents/{sourceId}
+POST /healthcare/source-documents/{sourceId}/process
+GET  /healthcare/documents/{documentId}
+GET  /healthcare/documents/{documentId}/json
+```
+
+The proxy does not change the microservice boundary. It is closer to an API
+gateway or backend-for-frontend pattern: the Java service still owns the
+healthcare domain, while `svc-core` controls which internal capabilities are
+made available to the broader platform.
+
 ## Container Platform Fit
 
 The current container platform can support this service.
