@@ -47,6 +47,16 @@ jobs:
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           MONGODB_DATABASE: CMPlatformDocuments
+          MONGODB_REQUIRE_READ_WRITE: "true"
+          MONGODB_DENIED_DATABASE: healthcare_transform
+        run: npm run mongodb:check
+
+      - name: Verify healthcare-transform MongoDB Atlas connection
+        env:
+          MONGODB_URI: ${{ secrets.HEALTHCARE_TRANSFORM_MONGODB_URI }}
+          MONGODB_DATABASE: healthcare_transform
+          MONGODB_REQUIRE_READ_WRITE: "true"
+          MONGODB_DENIED_DATABASE: CMPlatformDocuments
         run: npm run mongodb:check
 
       - name: Record MongoDB summary
@@ -57,6 +67,10 @@ jobs:
             echo ""
             echo "- Connected with the GitHub production MONGODB_URI secret"
             echo "- Ran a MongoDB ping command against CMPlatformDocuments"
+            echo "- Verified read/write access to CMPlatformDocuments and denial from healthcare_transform"
+            echo "- Connected with the dedicated GitHub production HEALTHCARE_TRANSFORM_MONGODB_URI secret"
+            echo "- Ran a MongoDB ping command against healthcare_transform"
+            echo "- Verified read/write access to healthcare_transform and denial from CMPlatformDocuments"
             echo "- Printed no connection string or password"
             echo "- Deployed no Azure resources"
           } >> "${GITHUB_STEP_SUMMARY}"

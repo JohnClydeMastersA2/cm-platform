@@ -23,17 +23,29 @@ documents and archive JSON retrieval. The Java service remains internal-only.
 
 ## Local Development
 
-This service uses Maven through the project-local Maven wrapper.
-
-From this directory:
+Start the shared local infrastructure first:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+npm run infra:up
 ```
 
-Run tests with:
+Then start the service from the repository root:
 
 ```powershell
+npm run healthcare-transform:dev
+```
+
+The startup script loads the dedicated authenticated
+`HEALTHCARE_TRANSFORM_MONGODB_URI` setting from the ignored
+`packages/secrets/cm-platform.env` file. The healthcare-transform identity has
+access only to the `healthcare_transform` database and is separate from the
+MongoDB identity used by other CM Platform services. The script does not print
+the connection string or credentials.
+
+Run tests from the service directory with:
+
+```powershell
+Set-Location services/healthcare-transform
 .\mvnw.cmd test
 ```
 
@@ -43,8 +55,9 @@ The service defaults to:
 http://localhost:8081
 ```
 
-The service expects MongoDB at `mongodb://localhost:27017` and uses the standalone
-`healthcare_transform` database by default. Override either value with:
+The standard local startup command expects MongoDB at `localhost:27017` and uses
+the dedicated authenticated application connection configured for
+`healthcare_transform`. Direct Maven startup can override either value with:
 
 ```text
 HEALTHCARE_TRANSFORM_MONGODB_URI
@@ -52,6 +65,11 @@ HEALTHCARE_TRANSFORM_MONGODB_DATABASE
 ```
 
 Do not commit an Atlas connection string or password to the repository.
+
+Production uses a separate GitHub environment secret named
+`HEALTHCARE_TRANSFORM_MONGODB_URI`. The corresponding Atlas database user must
+have access only to `healthcare_transform`; it must not reuse the
+`MONGODB_URI` identity used by `svc-core`.
 
 ## Maven Commands
 

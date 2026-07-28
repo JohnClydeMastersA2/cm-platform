@@ -71,6 +71,7 @@ jobs:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          HEALTHCARE_TRANSFORM_MONGODB_URI: ${{ secrets.HEALTHCARE_TRANSFORM_MONGODB_URI }}
           EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
           EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
           RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
@@ -82,6 +83,7 @@ jobs:
           [[ -z "${ADMIN_KEY}" ]] && missing+=("ADMIN_KEY")
           [[ -z "${RABBITMQ_URL}" ]] && missing+=("RABBITMQ_URL")
           [[ -z "${MONGODB_URI}" ]] && missing+=("MONGODB_URI")
+          [[ -z "${HEALTHCARE_TRANSFORM_MONGODB_URI}" ]] && missing+=("HEALTHCARE_TRANSFORM_MONGODB_URI")
           [[ -z "${EMAIL_SMTP_USER}" ]] && missing+=("EMAIL_SMTP_USER")
           [[ -z "${EMAIL_SMTP_PASS}" ]] && missing+=("EMAIL_SMTP_PASS")
           [[ -z "${RESEND_WEBHOOK_SECRET}" ]] && missing+=("RESEND_WEBHOOK_SECRET")
@@ -103,6 +105,7 @@ jobs:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          HEALTHCARE_TRANSFORM_MONGODB_URI: ${{ secrets.HEALTHCARE_TRANSFORM_MONGODB_URI }}
           EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
           EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
           RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}
@@ -120,6 +123,7 @@ jobs:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          HEALTHCARE_TRANSFORM_MONGODB_URI: ${{ secrets.HEALTHCARE_TRANSFORM_MONGODB_URI }}
           EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
           EMAIL_SMTP_PASS: ${{ secrets.EMAIL_SMTP_PASS }}
           RESEND_WEBHOOK_SECRET: ${{ secrets.RESEND_WEBHOOK_SECRET }}

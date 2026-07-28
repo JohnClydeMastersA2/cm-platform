@@ -41,6 +41,10 @@ param rabbitMqUrl string
 param mongoDbUri string
 
 @secure()
+@description('Healthcare-transform MongoDB connection URI.')
+param healthcareTransformMongoDbUri string
+
+@secure()
 @description('SMTP user for Resend email delivery.')
 param emailSmtpUser string
 
@@ -54,6 +58,9 @@ param resendWebhookSecret string
 
 @description('MongoDB database name.')
 param mongoDbDatabase string = 'CMPlatformDocuments'
+
+@description('Healthcare-transform MongoDB database name.')
+param healthcareTransformMongoDbDatabase string = 'healthcare_transform'
 
 @description('Public base URL.')
 param publicBaseUrl string = 'https://cmplatform.dev'
@@ -331,8 +338,8 @@ resource healthcareTransformApp 'Microsoft.App/containerApps@2024-03-01' = {
       }
       secrets: [
         {
-          name: 'mongodb-uri'
-          value: mongoDbUri
+          name: 'healthcare-mongodb-uri'
+          value: healthcareTransformMongoDbUri
         }
       ]
     }
@@ -352,11 +359,11 @@ resource healthcareTransformApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'HEALTHCARE_TRANSFORM_MONGODB_URI'
-              secretRef: 'mongodb-uri'
+              secretRef: 'healthcare-mongodb-uri'
             }
             {
               name: 'HEALTHCARE_TRANSFORM_MONGODB_DATABASE'
-              value: mongoDbDatabase
+              value: healthcareTransformMongoDbDatabase
             }
           ]
           resources: {

@@ -40,7 +40,10 @@ $mongoRootUsername = Get-DevEnvValue -Name "MONGODB_ROOT_USERNAME"
 $mongoRootPassword = Get-DevEnvValue -Name "MONGODB_ROOT_PASSWORD"
 $mongoAppUsername = Get-DevEnvValue -Name "MONGODB_APP_USERNAME"
 $mongoAppPassword = Get-DevEnvValue -Name "MONGODB_APP_PASSWORD"
+$healthcareMongoAppUsername = Get-DevEnvValue -Name "HEALTHCARE_TRANSFORM_MONGODB_APP_USERNAME"
+$healthcareMongoAppPassword = Get-DevEnvValue -Name "HEALTHCARE_TRANSFORM_MONGODB_APP_PASSWORD"
 $mongoDatabaseName = "CMPlatformDocuments"
+$healthcareMongoDatabaseName = "healthcare_transform"
 
 function Invoke-SqlServerCommand {
     param(
@@ -267,6 +270,37 @@ if (appDb.getUser(username)) {
     Write-Host "MongoDB application user is available for $mongoDatabaseName."
 }
 
+function Ensure-HealthcareTransformMongoAppUser {
+    $escapedUsername = $healthcareMongoAppUsername.Replace("\", "\\").Replace("'", "\'")
+    $escapedPassword = $healthcareMongoAppPassword.Replace("\", "\\").Replace("'", "\'")
+    $escapedDatabaseName = $healthcareMongoDatabaseName.Replace("\", "\\").Replace("'", "\'")
+    $script = @"
+const appDb = db.getSiblingDB('$escapedDatabaseName');
+const username = '$escapedUsername';
+const password = '$escapedPassword';
+const roles = [{ role: 'readWrite', db: '$escapedDatabaseName' }];
+
+if (appDb.getUser(username)) {
+    appDb.updateUser(username, { pwd: password, roles });
+} else {
+    appDb.createUser({ user: username, pwd: password, roles });
+}
+"@
+
+    docker exec $mongoContainerName mongosh `
+        --quiet `
+        --username $mongoRootUsername `
+        --password $mongoRootPassword `
+        --authenticationDatabase admin `
+        --eval $script | Out-Null
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to ensure the healthcare-transform MongoDB application user."
+    }
+
+    Write-Host "MongoDB application user is available for $healthcareMongoDatabaseName."
+}
+
 $existingVolume = docker volume ls --quiet --filter "name=^$volumeName$"
 
 if (-not $existingVolume) {
@@ -284,6 +318,7 @@ Wait-ForSqlServer
 Wait-ForRabbitMq
 Wait-ForMongoDb
 Ensure-MongoAppUser
+Ensure-HealthcareTransformMongoAppUser
 Ensure-DevDatabases
 Ensure-SqlAppLogin
 

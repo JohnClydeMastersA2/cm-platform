@@ -40,6 +40,7 @@
     "mongodb:check": "npm --workspace apps/svc-core run mongodb:check",
     "api:test:internal": "powershell -ExecutionPolicy Bypass -File scripts/api/test-internal-api.ps1",
     "email-webhooks:tunnel": "powershell -ExecutionPolicy Bypass -File scripts/webhooks/start-email-events-tunnel.ps1",
+    "healthcare-transform:dev": "powershell -ExecutionPolicy Bypass -File scripts/healthcare/start-healthcare-transform.ps1",
 
     "email-dispatcher:dev": "npm run email-dispatcher:deps:build && npm --workspace services/email-dispatcher run dev",
     "email-dispatcher:build": "npm --workspace services/email-dispatcher run build",
