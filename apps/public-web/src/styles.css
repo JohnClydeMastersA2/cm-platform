@@ -121,6 +121,62 @@ body {
   white-space: pre-wrap;
 }
 
+.healthcare-panel .platform-lede code {
+  white-space: normal;
+}
+
+.healthcare-panel .platform-hero .platform-lede + .platform-lede {
+  margin-top: 1rem;
+}
+
+.healthcare-source-table {
+  font-size: 0.9rem;
+  min-width: 68rem;
+}
+
+.healthcare-source-table th,
+.healthcare-source-table td {
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.healthcare-source-table th {
+  white-space: nowrap;
+}
+
+.healthcare-result-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+
+.healthcare-result-field {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+}
+
+.healthcare-result-field span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.healthcare-result-field strong,
+.healthcare-result-field code {
+  overflow-wrap: anywhere;
+}
+
+.healthcare-json {
+  max-height: 32rem;
+}
+
 .rabbitmq-demo-copy {
   min-width: 0;
 }

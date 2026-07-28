@@ -121,9 +121,26 @@ public class X12835ParsingService {
     static X12Delimiters from(String content) {
       char elementSeparator = content.length() > 3 ? content.charAt(3) : '*';
       char segmentTerminator = '~';
-      if (content.startsWith("ISA") && content.length() > 105) {
-        segmentTerminator = content.charAt(105);
+
+      if (content.startsWith("ISA")) {
+        int functionalGroupIndex = content.indexOf(
+            "GS" + elementSeparator,
+            4);
+
+        if (functionalGroupIndex > 0) {
+          int terminatorIndex = functionalGroupIndex - 1;
+          while (terminatorIndex >= 0 && Character.isWhitespace(content.charAt(terminatorIndex))) {
+            terminatorIndex--;
+          }
+
+          if (terminatorIndex >= 0) {
+            segmentTerminator = content.charAt(terminatorIndex);
+          }
+        } else if (content.length() > 105) {
+          segmentTerminator = content.charAt(105);
+        }
       }
+
       return new X12Delimiters(elementSeparator, segmentTerminator);
     }
   }

@@ -235,6 +235,7 @@ class DocumentWorkflowServiceTests {
     byte[] content = new ClassPathResource("x12/835/minimal-835.edi").getContentAsByteArray();
     SourceDocument sourceDocument = new SourceDocument(
         "sample-source",
+        "Sample 1",
         "Sample Source",
         "minimal-835.edi",
         "X12_835",
@@ -260,7 +261,7 @@ class DocumentWorkflowServiceTests {
     assertThat(result.getStatus()).isEqualTo(SubmissionStatus.COMPLETED);
     assertThat(result.getSourceDocumentId()).isEqualTo("sample-source");
     assertThat(result.getSourceSha256()).isEqualTo(sourceDocument.sha256());
-    assertThat(result.getParserVersion()).isEqualTo("x12-835-parser-v1");
+    assertThat(result.getParserVersion()).isEqualTo("x12-835-parser-v2");
     verify(artifactRepository, times(2)).save(any(Artifact.class));
   }
 
@@ -269,6 +270,7 @@ class DocumentWorkflowServiceTests {
     byte[] content = new ClassPathResource("x12/835/minimal-835.edi").getContentAsByteArray();
     SourceDocument sourceDocument = new SourceDocument(
         "sample-source",
+        "Sample 1",
         "Sample Source",
         "minimal-835.edi",
         "X12_835",
@@ -286,7 +288,7 @@ class DocumentWorkflowServiceTests {
         .findFirstBySourceDocumentIdAndSourceSha256AndParserVersionAndStatusOrderByCreatedAtAsc(
             "sample-source",
             sourceDocument.sha256(),
-            "x12-835-parser-v1",
+            "x12-835-parser-v2",
             SubmissionStatus.COMPLETED))
         .thenReturn(Optional.of(existing));
 
@@ -304,7 +306,7 @@ class DocumentWorkflowServiceTests {
         "X12_835",
         null,
         null,
-        "x12-835-parser-v1",
+        "x12-835-parser-v2",
         SubmissionStatus.COMPLETED,
         "original",
         "transformed",

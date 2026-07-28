@@ -3,6 +3,7 @@ import { Account } from "./pages/Account";
 import { Cicd } from "./pages/Cicd";
 import { CompetingConsumers } from "./pages/CompetingConsumers";
 import { Home } from "./pages/Home";
+import { Healthcare } from "./pages/Healthcare";
 import { Iam } from "./pages/Iam";
 import { Infrastructure } from "./pages/Infrastructure";
 import { Login } from "./pages/Login";
@@ -104,6 +105,11 @@ export const routes: AppRoute[] = [
     path: "/priority-queue",
     label: "Priority Queue",
     Component: PriorityQueue
+  },
+  {
+    path: "/transform-healthcare",
+    label: "Healthcare Transform",
+    Component: Healthcare
   }
 ];
 
@@ -143,6 +149,11 @@ export const routeGroups: AppRouteGroup[] = [
       { path: "/topic-routing", label: "Topic Routing" },
       { path: "/priority-queue", label: "Priority Queue" }
     ]
+  },
+  {
+    id: "healthcare-transform",
+    label: "Healthcare Transform Microservice",
+    items: [{ path: "/transform-healthcare", label: "Healthcare Transform" }]
   },
   {
     id: "my-account",

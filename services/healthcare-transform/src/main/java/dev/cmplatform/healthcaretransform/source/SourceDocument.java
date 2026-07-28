@@ -2,6 +2,7 @@ package dev.cmplatform.healthcaretransform.source;
 
 public record SourceDocument(
     String sourceId,
+    String displayName,
     String title,
     String filename,
     String documentType,

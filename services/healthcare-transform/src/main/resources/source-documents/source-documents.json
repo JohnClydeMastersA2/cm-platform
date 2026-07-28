@@ -2,6 +2,7 @@
   "documents": [
     {
       "sourceId": "emedny-835-inpatient-drg-retro",
+      "displayName": "Sample 1",
       "title": "eMedNY 835 Inpatient DRG Retro",
       "filename": "emedny_835_inpatient_drg_retro.edi",
       "documentType": "X12_835",
@@ -15,6 +16,7 @@
     },
     {
       "sourceId": "emedny-835-institutional-claims-only",
+      "displayName": "Sample 2",
       "title": "eMedNY 835 Institutional Claims Only",
       "filename": "emedny_835_institutional_claims_only.edi",
       "documentType": "X12_835",
@@ -28,6 +30,7 @@
     },
     {
       "sourceId": "emedny-835-outpatient-retro",
+      "displayName": "Sample 3",
       "title": "eMedNY 835 Outpatient Retro",
       "filename": "emedny_835_outpatient_retro.edi",
       "documentType": "X12_835",
@@ -41,6 +44,7 @@
     },
     {
       "sourceId": "emedny-835-pharmacy",
+      "displayName": "Sample 4",
       "title": "eMedNY 835 Pharmacy",
       "filename": "emedny_835_pharmacy.edi",
       "documentType": "X12_835",
@@ -54,6 +58,7 @@
     },
     {
       "sourceId": "emedny-835-professional-no-payment",
+      "displayName": "Sample 5",
       "title": "eMedNY 835 Professional No Payment",
       "filename": "emedny_835_professional_no_payment.edi",
       "documentType": "X12_835",
@@ -67,6 +72,7 @@
     },
     {
       "sourceId": "emedny-835-professional-with-payment",
+      "displayName": "Sample 6",
       "title": "eMedNY 835 Professional With Payment",
       "filename": "emedny_835_professional_with_payment.edi",
       "documentType": "X12_835",
@@ -80,6 +86,7 @@
     },
     {
       "sourceId": "healthcare-data-insight-835-all-fields",
+      "displayName": "Sample 7",
       "title": "Healthcare Data Insight 835 All Fields",
       "filename": "healthcare_data_insight_835_all_fields.edi",
       "documentType": "X12_835",
@@ -93,6 +100,7 @@
     },
     {
       "sourceId": "healthcare-data-insight-835-denial",
+      "displayName": "Sample 8",
       "title": "Healthcare Data Insight 835 Denial",
       "filename": "healthcare_data_insight_835_denial.edi",
       "documentType": "X12_835",
@@ -106,6 +114,7 @@
     },
     {
       "sourceId": "nevada-medicaid-sample-835-extracted",
+      "displayName": "Sample 9",
       "title": "Nevada Medicaid Sample 835 Extracted",
       "filename": "nevada_medicaid_sample_835_extracted.edi",
       "documentType": "X12_835",

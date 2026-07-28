@@ -14,6 +14,8 @@ class SourceDocumentCatalogTests {
     var catalog = new SourceDocumentCatalog(new ObjectMapper());
 
     assertThat(catalog.list()).hasSize(9);
+    assertThat(catalog.get("emedny-835-inpatient-drg-retro").displayName())
+        .isEqualTo("Sample 1");
     assertThat(catalog.get("emedny-835-professional-with-payment").documentType())
         .isEqualTo("X12_835");
   }

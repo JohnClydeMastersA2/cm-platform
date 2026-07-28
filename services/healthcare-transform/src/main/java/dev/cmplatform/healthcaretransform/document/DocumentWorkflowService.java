@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class DocumentWorkflowService {
-  private static final String PARSER_VERSION = "x12-835-parser-v1";
+  private static final String PARSER_VERSION = "x12-835-parser-v2";
 
   private final ArtifactRepository artifactRepository;
   private final SubmissionRepository submissionRepository;

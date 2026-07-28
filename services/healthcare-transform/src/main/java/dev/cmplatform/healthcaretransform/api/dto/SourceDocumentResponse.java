@@ -4,6 +4,7 @@ import dev.cmplatform.healthcaretransform.source.SourceDocument;
 
 public record SourceDocumentResponse(
     String sourceId,
+    String displayName,
     String title,
     String filename,
     String documentType,
@@ -17,6 +18,7 @@ public record SourceDocumentResponse(
   public static SourceDocumentResponse from(SourceDocument document) {
     return new SourceDocumentResponse(
         document.sourceId(),
+        document.displayName(),
         document.title(),
         document.filename(),
         document.documentType(),
