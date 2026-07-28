@@ -42,8 +42,14 @@ if (!mongoUri) {
           typeof error === "object" && error !== null && "code" in error
             ? Number(error.code)
             : undefined;
+        const errorMessage =
+          error instanceof Error ? error.message.toLowerCase() : "";
+        const isAuthorizationDenied =
+          errorCode === 13 ||
+          (errorCode === 8000 &&
+            errorMessage.includes("not allowed to do action"));
 
-        if (errorCode !== 13) {
+        if (!isAuthorizationDenied) {
           throw error;
         }
       }
