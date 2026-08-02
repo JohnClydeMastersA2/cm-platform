@@ -177,6 +177,116 @@ body {
   max-height: 32rem;
 }
 
+.healthcare-ready-alert {
+  margin-bottom: 0;
+}
+
+.healthcare-wake-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.healthcare-wake-modal {
+  width: min(100%, 38rem);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.22);
+}
+
+.healthcare-wake-header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.healthcare-wake-header p {
+  line-height: 1.5;
+}
+
+.healthcare-wake-steps {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 1.25rem;
+  list-style: none;
+}
+
+.healthcare-wake-step {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.healthcare-wake-status {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.healthcare-wake-step.active .healthcare-wake-status {
+  border-color: #4f46e5;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.healthcare-wake-step.complete .healthcare-wake-status {
+  border-color: #15803d;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.healthcare-wake-step.failed .healthcare-wake-status {
+  border-color: #b91c1c;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.healthcare-wake-step strong,
+.healthcare-wake-step small {
+  display: block;
+}
+
+.healthcare-wake-step small {
+  margin-top: 0.15rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.healthcare-wake-footer {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+.healthcare-wake-footer strong {
+  white-space: nowrap;
+}
+
 .rabbitmq-demo-copy {
   min-width: 0;
 }
