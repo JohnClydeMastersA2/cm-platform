@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "../lib/router";
 import { StatusMessage } from "../components/StatusMessage";
 import { formatDate } from "../lib/date";
 import { csrfFetch, readError } from "../lib/http";

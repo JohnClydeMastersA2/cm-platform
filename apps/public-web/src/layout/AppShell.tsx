@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "../lib/router";
 import { routeGroups } from "../routes";
 
 type OpenGroups = Record<string, boolean>;

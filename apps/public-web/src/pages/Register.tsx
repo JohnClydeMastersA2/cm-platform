@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "../lib/router";
 import { StatusMessage } from "../components/StatusMessage";
 import { readError } from "../lib/http";
 import type { FormState } from "../types/forms";

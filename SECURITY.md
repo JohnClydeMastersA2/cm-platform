@@ -21,8 +21,23 @@ The project currently demonstrates:
 - Signature verification for production email webhooks
 - Environment-based secret handling for local and deployed environments
 - Automated builds, container validation, and CodeQL analysis in GitHub Actions
+- Production deployment gates for known high and critical dependency vulnerabilities
 - Review and documented disposition of scanner findings that are already covered by runtime controls
 - Non-destructive public endpoint checks and a reproducible [OWASP ZAP baseline scan](security/zap.yaml)
+
+## Production Vulnerability Policy
+
+CM Platform should not be promoted to production with known open high or
+critical dependency vulnerabilities.
+
+The GitHub Actions build runs `npm audit --audit-level=high` after dependency
+installation. The protected Container Apps deployment workflow also checks open
+Dependabot alerts before Azure deployment begins and fails when any high or
+critical alert is still open.
+
+Dependabot remains useful as the discovery and remediation mechanism: it raises
+alerts and update PRs. The deployment workflow is the enforcement mechanism that
+prevents those alerts from being ignored during production release.
 
 CodeQL does not currently recognize the Fastify rate-limiting patterns used around four authorization-related handlers. Those findings were reviewed and dismissed as false positives because the handlers remain protected by the application-wide request ceiling and explicit route-level limits. The disposition records a scanner-model limitation rather than adding code solely to satisfy static analysis.
 
