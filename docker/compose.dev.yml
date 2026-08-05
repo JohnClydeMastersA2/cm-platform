@@ -37,6 +37,22 @@ services:
       - mongodb_data:/data/db
     restart: unless-stopped
 
+  healthcare-transform:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.healthcare-transform
+    image: cm-platform/healthcare-transform:dev
+    container_name: cm-platform-healthcare-transform
+    depends_on:
+      - mongodb
+    environment:
+      SERVER_PORT: "8081"
+      HEALTHCARE_TRANSFORM_MONGODB_URI: ${HEALTHCARE_TRANSFORM_MONGODB_URI_CONTAINER:?Set HEALTHCARE_TRANSFORM_MONGODB_URI_CONTAINER in packages/secrets/cm-platform.env}
+      HEALTHCARE_TRANSFORM_MONGODB_DATABASE: ${HEALTHCARE_TRANSFORM_MONGODB_DATABASE:-healthcare_transform}
+    ports:
+      - "${HEALTHCARE_TRANSFORM_HOST_PORT:-8081}:8081"
+    restart: unless-stopped
+
   email-dispatcher:
     build:
       context: ..

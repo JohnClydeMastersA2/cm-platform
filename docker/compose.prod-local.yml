@@ -49,6 +49,7 @@ services:
       - db
       - rabbitmq
       - mongodb
+      - healthcare-transform
     restart: unless-stopped
 
   svc-core:
@@ -63,6 +64,7 @@ services:
       - db
       - rabbitmq
       - mongodb
+      - healthcare-transform
     environment:
       NODE_ENV: production
       LOG_LEVEL: info
@@ -78,10 +80,25 @@ services:
       ADMIN_KEY: ${ADMIN_KEY:?Set ADMIN_KEY in packages/secrets/cm-platform.env}
       AUTH_API_BASE_URL: http://localhost:8080
       PUBLIC_WEB_BASE_URL: http://localhost:8080
+      HEALTHCARE_TRANSFORM_BASE_URL: http://healthcare-transform:8081
       RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
       MONGODB_URI: ${MONGODB_URI_CONTAINER:?Set MONGODB_URI_CONTAINER in packages/secrets/cm-platform.env}
       MONGODB_DATABASE: CMPlatformDocuments
       RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET:-}
+    restart: unless-stopped
+
+  healthcare-transform:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.healthcare-transform
+    image: cm-platform/healthcare-transform:prod-local
+    container_name: cm-platform-healthcare-transform-prod-local
+    depends_on:
+      - mongodb
+    environment:
+      SERVER_PORT: "8081"
+      HEALTHCARE_TRANSFORM_MONGODB_URI: ${HEALTHCARE_TRANSFORM_MONGODB_URI_CONTAINER:?Set HEALTHCARE_TRANSFORM_MONGODB_URI_CONTAINER in packages/secrets/cm-platform.env}
+      HEALTHCARE_TRANSFORM_MONGODB_DATABASE: ${HEALTHCARE_TRANSFORM_MONGODB_DATABASE:-healthcare_transform}
     restart: unless-stopped
 
   email-dispatcher:

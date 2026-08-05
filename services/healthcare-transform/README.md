@@ -42,6 +42,29 @@ access only to the `healthcare_transform` database and is separate from the
 MongoDB identity used by other CM Platform services. The script does not print
 the connection string or credentials.
 
+To run the service as a local Docker container instead:
+
+```powershell
+npm run infra:up
+npm run healthcare-transform:docker:build
+npm run healthcare-transform:docker:up
+```
+
+The containerized local service also listens on:
+
+```text
+http://localhost:8081
+```
+
+If another local process is already using port `8081`, set
+`HEALTHCARE_TRANSFORM_HOST_PORT` in `packages/secrets/cm-platform.env` before
+starting the container.
+
+This path uses `docker/Dockerfile.healthcare-transform` and the
+`HEALTHCARE_TRANSFORM_MONGODB_URI_CONTAINER` setting from
+`packages/secrets/cm-platform.env`, so MongoDB is reached through the Docker
+Compose service name instead of `localhost`.
+
 Run tests from the service directory with:
 
 ```powershell

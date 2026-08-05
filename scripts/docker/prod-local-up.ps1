@@ -18,5 +18,5 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-docker compose --env-file $envFile -f $composeFile up -d public-web svc-core email-dispatcher widget-consumer-fast widget-consumer-slow
+docker compose --env-file $envFile -f $composeFile up -d public-web svc-core healthcare-transform email-dispatcher widget-consumer-fast widget-consumer-slow
 exit $LASTEXITCODE

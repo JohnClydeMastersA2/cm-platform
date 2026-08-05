@@ -7,6 +7,7 @@ $envFile = Join-Path $repoRoot "packages\secrets\cm-platform.env"
 $services = @(
     "svc-core",
     "public-web",
+    "healthcare-transform",
     "email-dispatcher",
     "widget-consumer-fast",
     "widget-consumer-slow"

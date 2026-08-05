@@ -199,7 +199,19 @@ RabbitMQ supports queued email delivery and the competing-consumer, topic-routin
 
 ### Healthcare transformation
 
-`services/healthcare-transform` is an internal Java 21/Spring Boot service. Its current slice provides health, readiness, capability discovery, and initial ASC X12 835 parsing. It is not yet wired into `svc-core` or the public web application. See [its service README](services/healthcare-transform/README.md).
+`services/healthcare-transform` is an internal Java 21/Spring Boot service. Its current slice provides health, readiness, capability discovery, curated ASC X12 835 processing, MongoDB-backed archive persistence, and read-only JSON retrieval through the `svc-core` platform facade. See [its service README](services/healthcare-transform/README.md).
+
+For local container testing, the healthcare-transform service can also run from
+Docker Compose:
+
+```powershell
+npm run infra:up
+npm run healthcare-transform:docker:build
+npm run healthcare-transform:docker:up
+```
+
+The production-like local Compose stack includes healthcare-transform as an
+internal service and points `svc-core` at it.
 
 ### Email webhooks
 

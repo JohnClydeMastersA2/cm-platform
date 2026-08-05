@@ -32,6 +32,7 @@ In a second terminal:
 npm run public:dev
 
 npm run healthcare-transform:dev
+npm run healthcare-transform:docker:up
 
 You only need the Cloudflare tunnel if you want to test Resend webhooks:
 npm run email-webhooks:tunnel
