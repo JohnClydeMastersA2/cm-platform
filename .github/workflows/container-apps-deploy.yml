@@ -46,21 +46,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Block open high or critical Dependabot alerts
+      - name: Block open Dependabot alerts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          alerts="$(gh api "/repos/${GITHUB_REPOSITORY}/dependabot/alerts?state=open&severity=high,critical&per_page=100")"
+          alerts="$(gh api "/repos/${GITHUB_REPOSITORY}/dependabot/alerts?state=open&per_page=100")"
 
           count="$(jq 'length' <<< "${alerts}")"
 
           if [[ "${count}" != "0" ]]; then
-            echo "Production deployment is blocked by ${count} open high/critical Dependabot alert(s)."
+            echo "Production deployment is blocked by ${count} open Dependabot alert(s)."
             jq -r '.[] | "- \(.security_advisory.severity): \(.security_advisory.summary) (\(.html_url))"' <<< "${alerts}"
             exit 1
           fi
 
-          echo "No open high/critical Dependabot alerts found."
+          echo "No open Dependabot alerts found."
 
       - name: Azure login
         uses: azure/login@v3

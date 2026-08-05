@@ -40,7 +40,7 @@ jobs:
         run: npm ci
 
       - name: Audit npm dependencies
-        run: npm audit --audit-level=high
+        run: npm audit
 
       - name: Build source
         run: npm run build

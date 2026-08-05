@@ -235,11 +235,11 @@ RabbitMQ and MongoDB also use persistent Docker volumes, named `cm_platform_rabb
 
 ## CI/CD and Cloud Infrastructure
 
-GitHub Actions build the Node and Java components, run an npm high-severity audit, test the healthcare service, build deployable container images, publish images to GitHub Container Registry on supported events, run CodeQL analysis, and validate or deploy Azure infrastructure.
+GitHub Actions build the Node and Java components, run npm vulnerability audit, test the healthcare service, build deployable container images, publish images to GitHub Container Registry on supported events, run CodeQL analysis, and validate or deploy Azure infrastructure.
 
-Production Container Apps deployment is blocked when open high or critical
-Dependabot alerts are present. Dependabot provides the alert/update workflow;
-the deployment workflow enforces the release policy.
+Production Container Apps deployment is blocked when any open Dependabot alert
+is present. Dependabot provides the alert/update workflow; the deployment
+workflow enforces the release policy.
 
 Azure resources are defined under `infra/bicep`. Infrastructure and deployment workflows require repository environments, identities, permissions, and secrets that are not part of the basic local setup.
 
