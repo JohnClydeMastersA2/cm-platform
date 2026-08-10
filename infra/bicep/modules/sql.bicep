@@ -37,21 +37,15 @@ resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01' = {
   location: location
   tags: tags
   sku: {
-    name: 'GP_S_Gen5_2'
-    tier: 'GeneralPurpose'
-    family: 'Gen5'
-    capacity: 2
+    name: 'Basic'
+    tier: 'Basic'
+    capacity: 5
   }
   properties: {
-    autoPauseDelay: 60
     createMode: 'Default'
-    freeLimitExhaustionBehavior: 'AutoPause'
-    licenseType: 'LicenseIncluded'
-    maxSizeBytes: 34359738368
-    minCapacity: json('0.5')
+    maxSizeBytes: 2147483648
     readScale: 'Disabled'
     requestedBackupStorageRedundancy: 'Local'
-    useFreeLimit: true
     zoneRedundant: false
   }
 }

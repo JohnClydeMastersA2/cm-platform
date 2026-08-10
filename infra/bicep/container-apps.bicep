@@ -281,6 +281,26 @@ resource emailDispatcherApp 'Microsoft.App/containerApps@2024-03-01' = {
       scale: {
         minReplicas: 0
         maxReplicas: 1
+        rules: [
+          {
+            name: 'email-dispatch-queue'
+            custom: {
+              type: 'rabbitmq'
+              metadata: {
+                queueName: 'cm.email.dispatch'
+                mode: 'QueueLength'
+                value: '1'
+                protocol: 'auto'
+              }
+              auth: [
+                {
+                  secretRef: 'rabbitmq-url'
+                  triggerParameter: 'host'
+                }
+              ]
+            }
+          }
+        ]
       }
       containers: [
         {
@@ -399,6 +419,26 @@ resource widgetConsumerFastApp 'Microsoft.App/containerApps@2024-03-01' = {
       scale: {
         minReplicas: 0
         maxReplicas: 1
+        rules: [
+          {
+            name: 'widget-processing-queue'
+            custom: {
+              type: 'rabbitmq'
+              metadata: {
+                queueName: 'cm.widget.consumer-demo.processing'
+                mode: 'QueueLength'
+                value: '1'
+                protocol: 'auto'
+              }
+              auth: [
+                {
+                  secretRef: 'rabbitmq-url'
+                  triggerParameter: 'host'
+                }
+              ]
+            }
+          }
+        ]
       }
       containers: [
         {
@@ -487,6 +527,26 @@ resource widgetConsumerSlowApp 'Microsoft.App/containerApps@2024-03-01' = {
       scale: {
         minReplicas: 0
         maxReplicas: 1
+        rules: [
+          {
+            name: 'widget-processing-queue'
+            custom: {
+              type: 'rabbitmq'
+              metadata: {
+                queueName: 'cm.widget.consumer-demo.processing'
+                mode: 'QueueLength'
+                value: '1'
+                protocol: 'auto'
+              }
+              auth: [
+                {
+                  secretRef: 'rabbitmq-url'
+                  triggerParameter: 'host'
+                }
+              ]
+            }
+          }
+        ]
       }
       containers: [
         {

@@ -103,21 +103,17 @@ jobs:
             echo "database_id=${database_id}"
           } >> "${GITHUB_OUTPUT}"
 
-      - name: Verify free-offer safety settings
+      - name: Verify SQL cost-control settings
         env:
           SERVER_NAME: ${{ steps.deploy.outputs.server_name }}
           DATABASE_NAME: ${{ steps.deploy.outputs.database_name }}
           DATABASE_ID: ${{ steps.deploy.outputs.database_id }}
         run: |
-          use_free_limit=$(az resource show \
-            --ids "${DATABASE_ID}" \
-            --api-version 2023-08-01 \
-            --query properties.useFreeLimit \
-            --output tsv)
-          exhaustion_behavior=$(az resource show \
-            --ids "${DATABASE_ID}" \
-            --api-version 2023-08-01 \
-            --query properties.freeLimitExhaustionBehavior \
+          database_sku=$(az sql db show \
+            --name "${DATABASE_NAME}" \
+            --server "${SERVER_NAME}" \
+            --resource-group "${AZURE_RESOURCE_GROUP}" \
+            --query sku.name \
             --output tsv)
           minimum_tls=$(az sql server show \
             --name "${SERVER_NAME}" \
@@ -131,13 +127,8 @@ jobs:
             --query status \
             --output tsv)
 
-          if [[ "${use_free_limit,,}" != "true" ]]; then
-            echo "Azure SQL free-offer verification failed: useFreeLimit=${use_free_limit}"
-            exit 1
-          fi
-
-          if [[ "${exhaustion_behavior}" != "AutoPause" ]]; then
-            echo "Azure SQL cost-control verification failed: freeLimitExhaustionBehavior=${exhaustion_behavior}"
+          if [[ "${database_sku}" != "Basic" ]]; then
+            echo "Azure SQL cost-control verification failed: sku=${database_sku}"
             exit 1
           fi
 
@@ -153,8 +144,7 @@ jobs:
             echo "- Server: ${SERVER_NAME}"
             echo "- Database: ${DATABASE_NAME}"
             echo "- Database status: ${database_status}"
-            echo "- Free monthly allowance: enabled"
-            echo "- Free-limit behavior: ${exhaustion_behavior}"
+            echo "- SQL SKU: ${database_sku}"
             echo "- Minimum TLS: ${minimum_tls}"
             echo "- Firewall rules and schema migrations: not included"
           } >> "${GITHUB_STEP_SUMMARY}"

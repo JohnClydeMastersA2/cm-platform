@@ -90,7 +90,6 @@ jobs:
             echo "## Azure SQL Bicep Validation"
             echo ""
             echo "- Validated the SQL logical server and CMPlatform database"
-            echo "- Requested the Azure SQL free monthly allowance"
-            echo "- Configured AutoPause when the free allowance is exhausted"
+            echo "- Configured the database on the Basic cost-control tier"
             echo "- No Azure SQL resources were deployed"
           } >> "${GITHUB_STEP_SUMMARY}"
