@@ -4,6 +4,7 @@ import { Cicd } from "./pages/Cicd";
 import { CompetingConsumers } from "./pages/CompetingConsumers";
 import { Home } from "./pages/Home";
 import { Healthcare } from "./pages/Healthcare";
+import { HealthcareDocuments } from "./pages/HealthcareDocuments";
 import { Iam } from "./pages/Iam";
 import { Infrastructure } from "./pages/Infrastructure";
 import { Login } from "./pages/Login";
@@ -110,6 +111,11 @@ export const routes: AppRoute[] = [
     path: "/transform-healthcare",
     label: "Healthcare Transform",
     Component: Healthcare
+  },
+  {
+    path: "/healthcare-documents",
+    label: "Healthcare Documents",
+    Component: HealthcareDocuments
   }
 ];
 
@@ -153,7 +159,10 @@ export const routeGroups: AppRouteGroup[] = [
   {
     id: "healthcare-transform",
     label: "Healthcare Transform Microservice",
-    items: [{ path: "/transform-healthcare", label: "Healthcare Transform" }]
+    items: [
+      { path: "/transform-healthcare", label: "Healthcare Transform" },
+      { path: "/healthcare-documents", label: "Healthcare Documents" }
+    ]
   },
   {
     id: "my-account",
