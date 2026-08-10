@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { BackToTop } from "../components/BackToTop";
-import { MetricCard } from "../components/MetricCard";
 import { StatusMessage } from "../components/StatusMessage";
 import { formatDate } from "../lib/date";
 import { csrfFetch, readError } from "../lib/http";
@@ -47,6 +46,7 @@ const emptyPriorityQueueState: PriorityQueueState = {
 export function PriorityQueue() {
   const [priorityQueueState, setPriorityQueueState] = useState<PriorityQueueState>(emptyPriorityQueueState);
   const [formState, setFormState] = useState<FormState>({ status: "idle" });
+  const [priorityRun, setPriorityRun] = useState<PriorityRunState | null>(null);
 
   useEffect(() => {
     void loadPriorityQueue();
@@ -54,7 +54,7 @@ export function PriorityQueue() {
 
   const isSubmitting = formState.status === "submitting";
 
-  async function loadPriorityQueue() {
+  async function loadPriorityQueue(): Promise<PriorityQueueState | null> {
     try {
       const response = await fetch("/priority-queue");
 
@@ -62,12 +62,16 @@ export function PriorityQueue() {
         throw new Error(await readError(response, "Unable to load priority queue demo"));
       }
 
-      setPriorityQueueState((await response.json()) as PriorityQueueState);
+      const nextState = (await response.json()) as PriorityQueueState;
+      setPriorityQueueState(nextState);
+      updatePriorityRun(nextState);
+      return nextState;
     } catch (err) {
       setFormState({
         status: "error",
         message: err instanceof Error ? err.message : "Unable to load priority queue demo."
       });
+      return null;
     }
   }
 
@@ -85,7 +89,18 @@ export function PriorityQueue() {
         throw new Error(await readError(response, "Unable to publish priority queue job"));
       }
 
-      setPriorityQueueState((await response.json()) as PriorityQueueState);
+      const nextState = (await response.json()) as PriorityQueueState;
+      const publishedMessage = findLatestPublishedMessage(nextState);
+
+      setPriorityQueueState(nextState);
+      setPriorityRun({
+        kind: "published",
+        messageId: publishedMessage?.messageId ?? null,
+        jobName: publishedMessage?.jobName ?? `Priority ${priority} job`,
+        priority,
+        submittedAt: new Date().toISOString(),
+        status: "waiting"
+      });
       setFormState({
         status: "success",
         message: `Published priority ${priority} job.`
@@ -114,6 +129,7 @@ export function PriorityQueue() {
 
       const body = (await response.json()) as PriorityQueueState & { processedCount: number };
       setPriorityQueueState(body);
+      updatePriorityRun(body, body.processedCount);
       setFormState({
         status: "success",
         message: `Processed ${body.processedCount} priority queue job${body.processedCount === 1 ? "" : "s"}.`
@@ -143,6 +159,7 @@ export function PriorityQueue() {
       }
 
       setPriorityQueueState((await response.json()) as PriorityQueueState);
+      setPriorityRun(null);
       setFormState({
         status: "success",
         message: "Purged priority queue and cleared processed history."
@@ -153,6 +170,33 @@ export function PriorityQueue() {
         message: err instanceof Error ? err.message : "Unable to purge priority queue."
       });
     }
+  }
+
+  function updatePriorityRun(nextState: PriorityQueueState, processedCount?: number) {
+    setPriorityRun((current) => {
+      if (!current?.messageId) {
+        return current;
+      }
+
+      const processedMessage = nextState.processedMessages.find((message) => message.messageId === current.messageId);
+
+      if (processedMessage) {
+        return {
+          ...current,
+          status: "processed",
+          processedSequence: processedMessage.processedSequence
+        };
+      }
+
+      if (typeof processedCount === "number" && processedCount > 0) {
+        return {
+          ...current,
+          status: "waiting"
+        };
+      }
+
+      return current;
+    });
   }
 
   return (
@@ -195,12 +239,7 @@ export function PriorityQueue() {
       </div>
 
       <StatusMessage state={formState} />
-
-      <div className="row g-3 mb-4">
-        <MetricCard label="Waiting messages" value={priorityQueueState.queue.messageCount} />
-        <MetricCard label="Published history" value={priorityQueueState.publishedMessages.length} />
-        <MetricCard label="Processed history" value={priorityQueueState.processedMessages.length} />
-      </div>
+      <PriorityRunPanel priorityRun={priorityRun} queueState={priorityQueueState} />
 
       <div className="d-flex flex-wrap gap-2 mb-4">
         <div className="d-flex flex-wrap gap-2">
@@ -305,6 +344,97 @@ export function PriorityQueue() {
 
       <BackToTop />
     </div>
+  );
+}
+
+type PriorityRunState = {
+  kind: "published";
+  messageId: string | null;
+  jobName: string;
+  priority: number;
+  submittedAt: string;
+  status: "waiting" | "processed";
+  processedSequence?: number;
+};
+
+function PriorityRunPanel({
+  priorityRun,
+  queueState
+}: {
+  priorityRun: PriorityRunState | null;
+  queueState: PriorityQueueState;
+}) {
+  if (!priorityRun) {
+    return null;
+  }
+
+  const waitingMessages = queueState.queue.messageCount;
+  const isProcessed = priorityRun.status === "processed";
+  const messageLabel = priorityRun.messageId ? priorityRun.messageId.slice(0, 8) : "latest";
+
+  const steps: PriorityRunStep[] = [
+    {
+      label: "Published",
+      detail: `${priorityRun.jobName} (${messageLabel}) entered the priority queue.`,
+      status: "complete"
+    },
+    {
+      label: "Waiting",
+      detail: `${waitingMessages} message${waitingMessages === 1 ? "" : "s"} currently waiting. Higher priorities are selected first. Use the Process buttons to advance the message processing.`,
+      status: isProcessed ? "complete" : "active"
+    },
+    {
+      label: "Selected",
+      detail: isProcessed
+        ? `RabbitMQ delivered this job as processed #${priorityRun.processedSequence}.`
+        : "Click a Process button to let RabbitMQ choose the next waiting job.",
+      status: isProcessed ? "complete" : "pending"
+    },
+    {
+      label: "Compare order",
+      detail: "Use the Published Order and Processed Order tables to see priority outrank publish order.",
+      status: isProcessed ? "complete" : "pending"
+    }
+  ];
+
+  return (
+    <section className="worker-run-panel mb-4" aria-label="Priority queue progress">
+      <div className="worker-run-summary">
+        <div>
+          <h2 className="h6 mb-1">Priority queue status</h2>
+          <p className="text-muted mb-0">
+            Priority affects messages still waiting in RabbitMQ. A lower-priority job can wait while newer urgent work is selected first.
+          </p>
+        </div>
+        <span className={`worker-run-state ${isProcessed ? "complete" : "active"}`}>
+          {isProcessed ? "Processed" : "Waiting"}
+        </span>
+      </div>
+      <ol className="worker-run-steps">
+        {steps.map((step) => (
+          <li className={`worker-run-step ${step.status}`} key={step.label}>
+            <span className="worker-run-dot" aria-hidden="true" />
+            <span>
+              <strong>{step.label}</strong>
+              <small>{step.detail}</small>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+type PriorityRunStep = {
+  label: string;
+  detail: string;
+  status: "pending" | "active" | "complete";
+};
+
+function findLatestPublishedMessage(state: PriorityQueueState): PriorityQueueMessage | null {
+  return state.publishedMessages.reduce<PriorityQueueMessage | null>(
+    (latest, message) => !latest || message.publishSequence > latest.publishSequence ? message : latest,
+    null
   );
 }
 

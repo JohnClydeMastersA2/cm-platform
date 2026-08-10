@@ -22,27 +22,63 @@ type PlatformStatus = {
 
 type LoadState = "idle" | "submitting" | "success" | "error";
 
+type EmailDispatchRun = {
+  messageId: string | null;
+  recipientCount: number | null;
+  submittedAt: string;
+  status: "queued" | "active" | "complete" | "failed";
+};
+
 export function Infrastructure() {
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [message, setMessage] = useState<string | undefined>();
   const [emailTestState, setEmailTestState] = useState<LoadState>("idle");
   const [emailTestMessage, setEmailTestMessage] = useState<string | undefined>();
+  const [emailDispatchRun, setEmailDispatchRun] = useState<EmailDispatchRun | null>(null);
 
   useEffect(() => {
     void loadStatus();
   }, []);
 
-  const isRefreshing = loadState === "submitting";
-  const checkedAt = platformStatus?.checkedAt ? formatDateWithSeconds(platformStatus.checkedAt) : "Not checked yet";
-
-  async function loadStatus() {
-    if (isRefreshing) {
+  useEffect(() => {
+    if (!emailDispatchRun || emailDispatchRun.status === "complete" || emailDispatchRun.status === "failed") {
       return;
     }
 
-    setLoadState("submitting");
-    setMessage(undefined);
+    const emailWebhook = platformStatus?.requirements.find((requirement) => requirement.key === "email-webhook");
+
+    const lastWebhookEventAt = extractLastWebhookEventAt(emailWebhook?.evidence);
+    const hasWebhookEventForRun = Boolean(
+      lastWebhookEventAt && new Date(lastWebhookEventAt).getTime() >= new Date(emailDispatchRun.submittedAt).getTime()
+    );
+
+    if (hasWebhookEventForRun) {
+      setEmailDispatchRun((current) => current ? { ...current, status: "complete" } : current);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void loadStatus({ silent: true });
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [emailDispatchRun, platformStatus]);
+
+  const isRefreshing = loadState === "submitting";
+  const checkedAt = platformStatus?.checkedAt ? formatDateWithSeconds(platformStatus.checkedAt) : "Not checked yet";
+
+  async function loadStatus(options?: { silent?: boolean }) {
+    const isSilent = options?.silent ?? false;
+
+    if (!isSilent && isRefreshing) {
+      return;
+    }
+
+    if (!isSilent) {
+      setLoadState("submitting");
+      setMessage(undefined);
+    }
 
     try {
       const response = await fetch(`/platform/status?ts=${Date.now()}`, {
@@ -56,7 +92,10 @@ export function Infrastructure() {
       const nextStatus = (await response.json()) as PlatformStatus;
 
       setPlatformStatus(nextStatus);
-      setLoadState("success");
+
+      if (!isSilent) {
+        setLoadState("success");
+      }
 
       if (
         emailTestState === "success"
@@ -68,13 +107,15 @@ export function Infrastructure() {
         setEmailTestMessage(undefined);
       }
     } catch (err) {
-      setPlatformStatus(buildUnavailablePlatformStatus(err));
-      setLoadState("error");
-      setMessage(
-        `Live platform status is unavailable; showing expected requirements instead. ${
-          err instanceof Error ? err.message : "Unable to load platform infrastructure status."
-        }`
-      );
+      if (!isSilent) {
+        setPlatformStatus(buildUnavailablePlatformStatus(err));
+        setLoadState("error");
+        setMessage(
+          `Live platform status is unavailable; showing expected requirements instead. ${
+            err instanceof Error ? err.message : "Unable to load platform infrastructure status."
+          }`
+        );
+      }
     }
   }
 
@@ -85,6 +126,12 @@ export function Infrastructure() {
 
     setEmailTestState("submitting");
     setEmailTestMessage(undefined);
+    setEmailDispatchRun({
+      messageId: null,
+      recipientCount: null,
+      submittedAt: new Date().toISOString(),
+      status: "queued"
+    });
 
     try {
       const response = await csrfFetch("/platform/status/email-webhook-test", {
@@ -95,17 +142,24 @@ export function Infrastructure() {
         throw new Error(await readError(response, "Unable to queue the test email"));
       }
 
-      const result = (await response.json()) as { recipientCount?: number };
+      const result = (await response.json()) as { messageId?: string; recipientCount?: number };
       const recipientText =
         typeof result.recipientCount === "number"
           ? ` for ${result.recipientCount} monitor recipient${result.recipientCount === 1 ? "" : "s"}`
           : "";
 
+      setEmailDispatchRun((current) => ({
+        messageId: result.messageId ?? current?.messageId ?? null,
+        recipientCount: result.recipientCount ?? current?.recipientCount ?? null,
+        submittedAt: current?.submittedAt ?? new Date().toISOString(),
+        status: "active"
+      }));
       setEmailTestState("success");
-      setEmailTestMessage(`Test email queued${recipientText}. Refresh status after the webhook event arrives.`);
+      setEmailTestMessage(`Test email queued${recipientText}. The dispatch status below will refresh while the email worker starts.`);
     } catch (err) {
       setEmailTestState("error");
       setEmailTestMessage(err instanceof Error ? err.message : "Unable to queue the test email.");
+      setEmailDispatchRun((current) => current ? { ...current, status: "failed" } : current);
     }
   }
 
@@ -208,6 +262,10 @@ export function Infrastructure() {
                               {emailTestMessage}
                             </div>
                           ) : null}
+                          <EmailDispatchPanel
+                            emailDispatchRun={emailDispatchRun}
+                            platformStatus={platformStatus}
+                          />
                         </>
                       ) : null}
                     </td>
@@ -249,6 +307,106 @@ function InfrastructureBadge({ disposition }: { disposition: InfrastructureDispo
           : "text-bg-secondary";
 
   return <span className={`badge ${badgeClass}`}>{disposition}</span>;
+}
+
+function EmailDispatchPanel({
+  emailDispatchRun,
+  platformStatus
+}: {
+  emailDispatchRun: EmailDispatchRun | null;
+  platformStatus: PlatformStatus | null;
+}) {
+  if (!emailDispatchRun) {
+    return null;
+  }
+
+  const emailDispatcher = platformStatus?.requirements.find((requirement) => requirement.key === "rabbitmq-email-dispatcher");
+  const emailWebhook = platformStatus?.requirements.find((requirement) => requirement.key === "email-webhook");
+  const hasDispatcher = emailDispatcher?.disposition === "online";
+  const lastWebhookEventAt = extractLastWebhookEventAt(emailWebhook?.evidence);
+  const hasWebhookEventForRun = Boolean(
+    lastWebhookEventAt && new Date(lastWebhookEventAt).getTime() >= new Date(emailDispatchRun.submittedAt).getTime()
+  );
+  const isComplete = emailDispatchRun.status === "complete" || hasWebhookEventForRun;
+  const isFailed = emailDispatchRun.status === "failed";
+  const recipientText =
+    typeof emailDispatchRun.recipientCount === "number"
+      ? `${emailDispatchRun.recipientCount} recipient${emailDispatchRun.recipientCount === 1 ? "" : "s"}`
+      : "monitor recipients";
+
+  const steps: EmailDispatchStep[] = [
+    {
+      label: "Queued",
+      detail: emailDispatchRun.messageId
+        ? `Message ${emailDispatchRun.messageId.slice(0, 8)} accepted for ${recipientText}.`
+        : `Email request accepted for ${recipientText}.`,
+      status: emailDispatchRun.messageId ? "complete" : "active"
+    },
+    {
+      label: "Starting dispatcher",
+      detail: hasDispatcher
+        ? "RabbitMQ shows an attached email dispatcher consumer."
+        : "Low-cost mode may need a short moment to start the idle email worker.",
+      status: hasDispatcher || hasWebhookEventForRun ? "complete" : "active"
+    },
+    {
+      label: "Sending email",
+      detail: hasWebhookEventForRun
+        ? "A provider webhook event arrived after this test email was queued."
+        : emailDispatcher?.evidence ?? "Waiting for the dispatcher to drain the email queue.",
+      status: hasWebhookEventForRun ? "complete" : hasDispatcher ? "active" : "pending"
+    },
+    {
+      label: "Webhook observed",
+      detail: hasWebhookEventForRun
+        ? emailWebhook?.evidence ?? "Provider webhook event observed."
+        : "Waiting for a new provider webhook event from this test email.",
+      status: isFailed ? "failed" : isComplete ? "complete" : "pending"
+    }
+  ];
+
+  return (
+    <section className="worker-run-panel infrastructure-worker-run mt-3" aria-label="Email dispatcher progress">
+      <div className="worker-run-summary">
+        <div>
+          <h3 className="h6 mb-1">Email dispatcher status</h3>
+          <p className="text-muted mb-0">
+            This path uses a scaled-to-zero worker. The email is safely queued while Azure starts the dispatcher.
+          </p>
+        </div>
+        <span className={`worker-run-state ${isComplete ? "complete" : isFailed ? "failed" : "active"}`}>
+          {isComplete ? "Complete" : isFailed ? "Needs attention" : "In progress"}
+        </span>
+      </div>
+      <ol className="worker-run-steps">
+        {steps.map((step) => (
+          <li className={`worker-run-step ${step.status}`} key={step.label}>
+            <span className="worker-run-dot" aria-hidden="true" />
+            <span>
+              <strong>{step.label}</strong>
+              <small>{step.detail}</small>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+type EmailDispatchStep = {
+  label: string;
+  detail: string;
+  status: "pending" | "active" | "complete" | "failed";
+};
+
+function extractLastWebhookEventAt(evidence: string | undefined): string | null {
+  const match = evidence?.match(/Last event: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)/);
+
+  if (!match?.[1]) {
+    return null;
+  }
+
+  return Number.isNaN(new Date(match[1]).getTime()) ? null : match[1];
 }
 
 function buildUnavailablePlatformStatus(err: unknown): PlatformStatus {

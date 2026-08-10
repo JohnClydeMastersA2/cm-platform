@@ -28,12 +28,24 @@ export function Register() {
         throw new Error(await readError(response, "Unable to create account"));
       }
 
+      const result = (await response.json()) as {
+        verificationEmail?: {
+          messageId?: string;
+          recipientCount?: number;
+        };
+      };
+
       setEmailAddress("");
       setPassword("");
       navigate("/login", {
         state: {
           message:
-            "Complete the verification process by checking your email and clicking on the Verify link. Clicking on the verification link will open a new page in your browser and you may continue to work in that session. You may close this browser window."
+            "Complete the verification process by checking your email and clicking on the Verify link. Clicking on the verification link will open a new page in your browser and you may continue to work in that session. You may close this browser window.",
+          emailDispatch: {
+            messageId: result.verificationEmail?.messageId ?? null,
+            recipientCount: result.verificationEmail?.recipientCount ?? 1,
+            submittedAt: new Date().toISOString()
+          }
         }
       });
     } catch (err) {

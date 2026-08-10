@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { BackToTop } from "../components/BackToTop";
-import { MetricCard } from "../components/MetricCard";
 import { StatusMessage } from "../components/StatusMessage";
 import { formatDate } from "../lib/date";
 import { csrfFetch, readError } from "../lib/http";
@@ -55,11 +54,6 @@ export function Widgets() {
   }, []);
 
   const isSubmitting = formState.status === "submitting";
-  const queuedCount = queueState.widgets.filter((widget) => widget.status === "queued").length;
-  const retryingCount = queueState.widgets.filter((widget) => widget.status === "retrying").length;
-  const processedCount = queueState.widgets.filter((widget) => widget.status === "processed").length;
-  const failedCount = queueState.widgets.filter((widget) => widget.status === "failed").length;
-
   async function loadWidgets() {
     try {
       const response = await fetch("/widgets");
@@ -209,39 +203,11 @@ export function Widgets() {
             time, one visitor may see or process messages created by another visitor. This behavior is
             known and accepted for this portfolio demo.
           </li>
-          <li>Start with an empty queue. Use the Delete All Widgets button if necessary.</li>
-          <li>Note the five metrics displayed; they all begin at zero.</li>
-          <li>Use the Create 5 button to publish five messages to the queue.</li>
-          <li>
-            Use the Process All button, and then immediately begin clicking the Refresh button about once
-            every second for about 10 seconds. As you click Refresh, note the values of the five metrics.
-            This will help you see and understand the retry capabilities of the queue.
-          </li>
-          <li>Note there are no rows in the DLQ at this time.</li>
-          <li>
-            Use the Process All button to retry any failures. Because this demo supports a single retry,
-            this time the failures will land in the DLQ.
-          </li>
-          <li>
-            Looking at the DLQ, you can choose Replay followed by the Process All button, which will
-            publish the same broken message. This action does not qualify the message for another retry.
-          </li>
-          <li>
-            Returning to the DLQ, you can also choose Repair followed by the Process All button. This
-            allows the message to be processed successfully.
-          </li>
         </ol>
       </div>
 
       <StatusMessage state={formState} />
-
-      <div className="row g-3 mb-4">
-        <MetricCard label="RabbitMQ messages" value={queueState.rabbitMqMessageCount} />
-        <MetricCard label="Retry messages" value={queueState.rabbitMqRetryMessageCount} />
-        <MetricCard label="DLQ messages" value={queueState.rabbitMqDeadLetterMessageCount} />
-        <MetricCard label="Queued / Retrying" value={`${queuedCount} / ${retryingCount}`} />
-        <MetricCard label="Processed / Failed" value={`${processedCount} / ${failedCount}`} />
-      </div>
+      <WidgetQueueGuide queueState={queueState} />
 
       <div className="d-flex flex-wrap gap-2 mb-4">
         <div className="d-flex flex-wrap gap-2">
@@ -371,6 +337,91 @@ export function Widgets() {
     </div>
   );
 }
+
+function WidgetQueueGuide({ queueState }: { queueState: WidgetQueueState }) {
+  const queuedCount = queueState.widgets.filter((widget) => widget.status === "queued").length;
+  const retryingCount = queueState.widgets.filter((widget) => widget.status === "retrying").length;
+  const processedCount = queueState.widgets.filter((widget) => widget.status === "processed").length;
+  const failedCount = queueState.widgets.filter((widget) => widget.status === "failed").length;
+  const waitingCount = queueState.rabbitMqMessageCount;
+  const retryMessageCount = queueState.rabbitMqRetryMessageCount;
+  const deadLetterCount = queueState.rabbitMqDeadLetterMessageCount;
+  const hasWidgets = queueState.widgets.length > 0;
+  const hasDeadLetters = deadLetterCount > 0 || queueState.deadLetterMessages.length > 0;
+  const hasRetryWork = retryingCount > 0 || retryMessageCount > 0;
+  const hasWaitingWork = waitingCount > 0 || queuedCount > 0;
+
+  const stateLabel = hasDeadLetters
+    ? "DLQ ready"
+    : hasRetryWork
+      ? "Retry delay"
+      : hasWaitingWork
+        ? "Ready to process"
+        : hasWidgets
+          ? "Run complete"
+          : "Start here";
+  const stateClass = hasDeadLetters || failedCount > 0 ? "failed" : hasWidgets && !hasWaitingWork && !hasRetryWork ? "complete" : "active";
+
+  const steps: WidgetGuideStep[] = [
+    {
+      label: "Create work",
+      detail: hasWidgets
+        ? `${queueState.widgets.length} widget${queueState.widgets.length === 1 ? "" : "s"} in the demo table.`
+        : "Use Create 5 to publish durable messages into RabbitMQ.",
+      status: hasWidgets ? "complete" : "active"
+    },
+    {
+      label: "Process queue",
+      detail: `${waitingCount} RabbitMQ message${waitingCount === 1 ? "" : "s"} waiting. Use the Process buttons to advance message processing.`,
+      status: hasWaitingWork ? "active" : hasWidgets ? "complete" : "pending"
+    },
+    {
+      label: "Retry delay",
+      detail: hasRetryWork
+        ? `${retryMessageCount} delayed retry message${retryMessageCount === 1 ? "" : "s"} waiting to return. Refresh after about 10 seconds, then process again.`
+        : "Demo failures schedule one delayed retry before they can move to the DLQ.",
+      status: hasRetryWork ? "active" : !hasWaitingWork && (processedCount > 0 || failedCount > 0 || hasDeadLetters) ? "complete" : "pending"
+    },
+    {
+      label: "DLQ recovery",
+      detail: hasDeadLetters
+        ? `${deadLetterCount} DLQ message${deadLetterCount === 1 ? "" : "s"} available. Use Repair (in the DLQ) for a successful replay, or Replay to resend the same broken message.`
+        : "Messages that fail after retry appear in the Dead Letter Queue for replay or repair.",
+      status: hasDeadLetters ? "active" : !hasWaitingWork && !hasRetryWork && failedCount > 0 ? "complete" : "pending"
+    }
+  ];
+
+  return (
+    <section className="worker-run-panel mb-4" aria-label="Queue basics progress">
+      <div className="worker-run-summary">
+        <div>
+          <h2 className="h6 mb-1">Queue workflow status</h2>
+          <p className="text-muted mb-0">
+            Follow the work from publish, to processing, to delayed retry, and finally to DLQ recovery when a demo failure repeats.
+          </p>
+        </div>
+        <span className={`worker-run-state ${stateClass}`}>{stateLabel}</span>
+      </div>
+      <ol className="worker-run-steps">
+        {steps.map((step) => (
+          <li className={`worker-run-step ${step.status}`} key={step.label}>
+            <span className="worker-run-dot" aria-hidden="true" />
+            <span>
+              <strong>{step.label}</strong>
+              <small>{step.detail}</small>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+type WidgetGuideStep = {
+  label: string;
+  detail: string;
+  status: "pending" | "active" | "complete";
+};
 
 function StatusBadge({ status }: { status: WidgetStatus }) {
   const badgeClass =

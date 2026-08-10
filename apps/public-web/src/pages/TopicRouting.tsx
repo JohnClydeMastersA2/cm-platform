@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { BackToTop } from "../components/BackToTop";
-import { MetricCard } from "../components/MetricCard";
 import { StatusMessage } from "../components/StatusMessage";
 import { formatDate } from "../lib/date";
 import { csrfFetch, readError } from "../lib/http";
@@ -52,8 +51,6 @@ export function TopicRouting() {
   }, []);
 
   const isSubmitting = formState.status === "submitting";
-  const totalMessages = topicRoutingState.queues.reduce((sum, queue) => sum + queue.messageCount, 0);
-  const activeQueues = topicRoutingState.queues.filter((queue) => queue.messageCount > 0).length;
   const routingKeys = topicRoutingState.sampleRoutingKeys.length
     ? topicRoutingState.sampleRoutingKeys
     : fallbackTopicRoutingSampleKeys;
@@ -179,12 +176,7 @@ export function TopicRouting() {
       </div>
 
       <StatusMessage state={formState} />
-
-      <div className="row g-3 mb-4">
-        <MetricCard label="Total queued copies" value={totalMessages} />
-        <MetricCard label="Queues with messages" value={activeQueues} />
-        <MetricCard label="Bindings" value={topicRoutingState.queues.length} />
-      </div>
+      <TopicRoutingGuide topicRoutingState={topicRoutingState} />
 
       <form className="row g-2 align-items-end mb-4" onSubmit={(event) => void publishTopicRoutingEvent(event)}>
         <div className="col-12 col-lg">
@@ -227,6 +219,88 @@ export function TopicRouting() {
       <BackToTop />
     </div>
   );
+}
+
+function TopicRoutingGuide({ topicRoutingState }: { topicRoutingState: TopicRoutingState }) {
+  const latestMessage = findLatestTopicRoutingMessage(topicRoutingState);
+  const matchedQueues = latestMessage
+    ? topicRoutingState.queues.filter((queue) => queue.messages.some((message) => message.messageId === latestMessage.messageId))
+    : [];
+  const totalQueuedCopies = topicRoutingState.queues.reduce((sum, queue) => sum + queue.messageCount, 0);
+  const activeQueueCount = topicRoutingState.queues.filter((queue) => queue.messageCount > 0).length;
+  const hasQueues = topicRoutingState.queues.length > 0;
+  const hasPublishedEvent = Boolean(latestMessage);
+
+  const steps: TopicRoutingStep[] = [
+    {
+      label: "Choose key",
+      detail: "Pick a routing key that describes the event, not a destination queue.",
+      status: hasPublishedEvent ? "complete" : "active"
+    },
+    {
+      label: "Publish event",
+      detail: latestMessage
+        ? `${latestMessage.routingKey} was published to the cm.topic-demo exchange.`
+        : "Use Publish Event to send one durable message to the topic exchange.",
+      status: hasPublishedEvent ? "complete" : "pending"
+    },
+    {
+      label: "Match bindings",
+      detail: hasPublishedEvent
+        ? `${matchedQueues.length} binding${matchedQueues.length === 1 ? "" : "s"} matched: ${matchedQueues.map((queue) => queue.key).join(", ") || "none"}.`
+        : `${hasQueues ? topicRoutingState.queues.length : 0} binding${topicRoutingState.queues.length === 1 ? "" : "s"} are ready to evaluate the routing key.`,
+      status: hasPublishedEvent ? "complete" : hasQueues ? "pending" : "active"
+    },
+    {
+      label: "Inspect copies",
+      detail: hasPublishedEvent
+        ? `${totalQueuedCopies} queued cop${totalQueuedCopies === 1 ? "y" : "ies"} across ${activeQueueCount} queue${activeQueueCount === 1 ? "" : "s"}. Review the matching queue cards below.`
+        : "Matching queues will show their own copy of the published message.",
+      status: hasPublishedEvent ? "complete" : "pending"
+    }
+  ];
+
+  return (
+    <section className="worker-run-panel mb-4" aria-label="Topic routing progress">
+      <div className="worker-run-summary">
+        <div>
+          <h2 className="h6 mb-1">Topic routing status</h2>
+          <p className="text-muted mb-0">
+            Topic exchanges route by pattern. The publisher names the event, and queue bindings decide who receives a copy.
+          </p>
+        </div>
+        <span className={`worker-run-state ${hasPublishedEvent ? "complete" : "active"}`}>
+          {hasPublishedEvent ? "Routed" : "Ready"}
+        </span>
+      </div>
+      <ol className="worker-run-steps">
+        {steps.map((step) => (
+          <li className={`worker-run-step ${step.status}`} key={step.label}>
+            <span className="worker-run-dot" aria-hidden="true" />
+            <span>
+              <strong>{step.label}</strong>
+              <small>{step.detail}</small>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+type TopicRoutingStep = {
+  label: string;
+  detail: string;
+  status: "pending" | "active" | "complete";
+};
+
+function findLatestTopicRoutingMessage(state: TopicRoutingState): TopicRoutingDemoMessage | null {
+  return state.queues
+    .flatMap((queue) => queue.messages)
+    .reduce<TopicRoutingDemoMessage | null>(
+      (latest, message) => !latest || message.requestedAt > latest.requestedAt ? message : latest,
+      null
+    );
 }
 
 function TopicRoutingQueueCard({ queue }: { queue: TopicRoutingQueueOverview }) {

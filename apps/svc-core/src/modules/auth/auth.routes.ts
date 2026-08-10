@@ -66,9 +66,9 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
     try {
       const account = await registerAccount(app.db, parsed.data);
       const verificationToken = await createEmailVerificationChallenge(app.db, account.accountId);
-      await queueVerificationEmail(app, account, verificationToken, authApiBaseUrl);
+      const verificationEmail = await queueVerificationEmail(app, account, verificationToken, authApiBaseUrl);
 
-      reply.code(201).send({ account });
+      reply.code(201).send({ account, verificationEmail });
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
 
@@ -194,7 +194,7 @@ async function queueVerificationEmail(
   account: AuthAccount,
   verificationToken: string,
   authApiBaseUrl: string,
-): Promise<void> {
+): Promise<{ messageId: string; recipientCount: number }> {
   const verificationUrl = `${authApiBaseUrl}/auth/verify-email?token=${encodeURIComponent(verificationToken)}`;
 
   const message: EmailVerificationRequestedMessage = {
@@ -224,6 +224,10 @@ async function queueVerificationEmail(
   };
 
   await app.messaging.publishEmailVerificationRequested(message);
+  return {
+    messageId: message.messageId,
+    recipientCount: 1,
+  };
 }
 
 function trimTrailingSlash(value: string): string {
