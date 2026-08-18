@@ -32,6 +32,8 @@ const EnvBoolean = z.preprocess((value) => {
   return value;
 }, z.boolean());
 
+const DateString = z.iso.date();
+
 const EnvSchema = z.object({
   DATABASE_URL: z.url(),
   PGSSLMODE: z.string().min(1).default("require"),
@@ -46,7 +48,8 @@ const EnvSchema = z.object({
   DEMO_MAINTENANCE_RETENTION_HOURS: z.coerce.number().positive().default(24),
   COST_REPORTING_ENABLED: EnvBoolean.default(false),
   COST_REPORTING_RETENTION_DAYS: z.coerce.number().int().positive().default(60),
-  COST_REPORTING_LOOKBACK_DAYS: z.coerce.number().int().positive().max(60).default(60),
+  COST_REPORTING_FROM_DATE: DateString.optional(),
+  COST_REPORTING_TO_DATE: DateString.optional(),
   AZURE_SUBSCRIPTION_ID: z.string().min(1).optional(),
   AZURE_RESOURCE_GROUP_NAME: z.string().min(1).default("rg-cm-platform-prod"),
 });

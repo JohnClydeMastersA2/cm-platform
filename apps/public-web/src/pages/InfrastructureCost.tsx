@@ -20,24 +20,24 @@ type PlatformCosts = {
 type LoadState = "idle" | "submitting" | "success" | "error";
 
 export function InfrastructureCost() {
+  const yesterday = toDateInputValue(addDays(new Date(), -1));
   const [platformCosts, setPlatformCosts] = useState<PlatformCosts | null>(null);
   const [costLoadState, setCostLoadState] = useState<LoadState>("idle");
   const [costMessage, setCostMessage] = useState<string | undefined>();
+  const [fromDate, setFromDate] = useState(yesterday);
+  const [toDate, setToDate] = useState(yesterday);
 
   useEffect(() => {
-    void loadCosts();
-  }, []);
+    void loadCosts(fromDate, toDate);
+  }, [fromDate, toDate]);
 
-  async function loadCosts() {
-    if (costLoadState === "submitting") {
-      return;
-    }
-
+  async function loadCosts(from: string, to: string) {
     setCostLoadState("submitting");
     setCostMessage(undefined);
 
     try {
-      const response = await fetch(`/platform/costs?ts=${Date.now()}`, {
+      const params = new URLSearchParams({ from, to });
+      const response = await fetch(`/platform/costs?${params.toString()}`, {
         cache: "no-store"
       });
 
@@ -51,6 +51,23 @@ export function InfrastructureCost() {
       setCostLoadState("error");
       setCostMessage(err instanceof Error ? err.message : "Unable to load Azure cost snapshots.");
     }
+  }
+
+  function showYesterday() {
+    setRange(yesterday, yesterday);
+  }
+
+  function showLastDays(days: number) {
+    setRange(toDateInputValue(addDays(new Date(`${yesterday}T00:00:00Z`), -days + 1)), yesterday);
+  }
+
+  function showAllRetained() {
+    showLastDays(60);
+  }
+
+  function setRange(from: string, to: string) {
+    setFromDate(from);
+    setToDate(to);
   }
 
   return (
@@ -67,16 +84,6 @@ export function InfrastructureCost() {
             This keeps cost inquiry separate from live infrastructure probing, so reviewing the report
             reads Postgres only and does not wake the healthcare-transform demo service.
           </p>
-          <div className="platform-hero-actions">
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={() => void loadCosts()}
-              disabled={costLoadState === "submitting"}
-            >
-              {costLoadState === "submitting" ? "Loading..." : "Refresh Costs"}
-            </button>
-          </div>
         </div>
         <div className="platform-stack" aria-label="Cost reporting summary">
           <StackRow label="First Source" value="Azure Cost Management daily snapshot" />
@@ -90,20 +97,74 @@ export function InfrastructureCost() {
           {costMessage}
         </div>
       ) : null}
+      {costLoadState === "submitting" ? (
+        <div className="alert alert-secondary" role="status">
+          Loading cached infrastructure costs...
+        </div>
+      ) : null}
 
       <section className="platform-section platform-section-block">
         <div>
           <h2>Automated Cost Snapshots</h2>
           <p>
-            Automated rows are grouped by provider resource type. Azure may revise recent usage as
-            billing data settles, so the scheduled job refreshes the whole retained window each day.
+            Automated rows are grouped by provider resource type. The scheduled job captures yesterday
+            once per day, and retained snapshots can be reviewed by date range.
           </p>
+        </div>
+        <div className="cost-filter-bar" aria-label="Cost date range">
+          <div className="cost-filter-presets">
+            <button className="btn btn-sm btn-outline-secondary" type="button" onClick={showYesterday}>
+              Yesterday
+            </button>
+            <button className="btn btn-sm btn-outline-secondary" type="button" onClick={() => showLastDays(7)}>
+              Last 7
+            </button>
+            <button className="btn btn-sm btn-outline-secondary" type="button" onClick={() => showLastDays(30)}>
+              Last 30
+            </button>
+            <button className="btn btn-sm btn-outline-secondary" type="button" onClick={showAllRetained}>
+              All Retained
+            </button>
+          </div>
+          <div className="cost-date-controls">
+            <label>
+              <span>From</span>
+              <input
+                className="form-control form-control-sm"
+                type="date"
+                value={fromDate}
+                max={toDate}
+                onChange={(event) => setFromDate(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>To</span>
+              <input
+                className="form-control form-control-sm"
+                type="date"
+                value={toDate}
+                min={fromDate}
+                max={toDateInputValue(new Date())}
+                onChange={(event) => setToDate(event.target.value)}
+              />
+            </label>
+          </div>
         </div>
         <CostSnapshotTable platformCosts={platformCosts} />
       </section>
       <BackToTop />
     </section>
   );
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function toDateInputValue(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
 function StackRow({ label, value }: { label: string; value: string }) {

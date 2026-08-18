@@ -37,13 +37,12 @@ export async function captureAzureCostSnapshots(env: Env): Promise<CostSnapshotS
     throw new Error("AZURE_SUBSCRIPTION_ID is required when cost reporting is enabled");
   }
 
-  const to = toDateOnly(new Date());
-  const from = toDateOnly(addDays(new Date(`${to}T00:00:00Z`), -env.COST_REPORTING_LOOKBACK_DAYS + 1));
+  const range = getCostReportingRange(env);
   const rows = await queryAzureCosts({
     subscriptionId: env.AZURE_SUBSCRIPTION_ID,
     resourceGroupName: env.AZURE_RESOURCE_GROUP_NAME,
-    from,
-    to,
+    from: range.from,
+    to: range.to,
   });
 
   const pool = new Pool({
@@ -64,11 +63,23 @@ export async function captureAzureCostSnapshots(env: Env): Promise<CostSnapshotS
   return {
     enabled: true,
     rowsStored: rows.length,
-    from,
-    to,
+    from: range.from,
+    to: range.to,
     totalCost: rows.reduce((total, row) => total + row.pretaxCost, 0),
     currency: rows[0]?.currency ?? null,
   };
+}
+
+function getCostReportingRange(env: Env): { from: string; to: string } {
+  const yesterday = toDateOnly(addDays(new Date(), -1));
+  const from = env.COST_REPORTING_FROM_DATE ?? env.COST_REPORTING_TO_DATE ?? yesterday;
+  const to = env.COST_REPORTING_TO_DATE ?? env.COST_REPORTING_FROM_DATE ?? yesterday;
+
+  if (from > to) {
+    throw new Error("COST_REPORTING_FROM_DATE must be on or before COST_REPORTING_TO_DATE");
+  }
+
+  return { from, to };
 }
 
 type AzureCostRow = {

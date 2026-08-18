@@ -1,7 +1,6 @@
 import type { Pool } from "pg";
 import type { PlatformCostDailyRow, PlatformCostQuery } from "./platform_cost.schema.js";
 
-const defaultRangeDays = 30;
 const maxRangeDays = 60;
 
 export async function queryPlatformCosts(
@@ -12,9 +11,18 @@ export async function queryPlatformCosts(
   to: string;
   rows: PlatformCostDailyRow[];
 }> {
-  const to = query.to ?? toDateOnly(new Date());
-  const from = query.from ?? toDateOnly(addDays(new Date(`${to}T00:00:00Z`), -defaultRangeDays + 1));
+  const yesterday = toDateOnly(addDays(new Date(), -1));
+  const to = query.to ?? query.from ?? yesterday;
+  const from = query.from ?? query.to ?? yesterday;
   const boundedFrom = boundFromDate(from, to);
+
+  if (boundedFrom > to) {
+    return {
+      from: boundedFrom,
+      to,
+      rows: [],
+    };
+  }
 
   const result = await db.query<{
     usageDate: Date;

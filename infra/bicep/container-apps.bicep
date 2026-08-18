@@ -63,16 +63,13 @@ param demoMaintenanceMonitors string
 param demoMaintenanceRetentionHours int = 24
 
 @description('UTC cron expression for the demo maintenance scheduled job.')
-param demoMaintenanceCronExpression string = '0 5 * * *'
+param demoMaintenanceCronExpression string = '0 14 * * *'
 
 @description('Whether the demo maintenance job captures cached Azure cost snapshots.')
 param costReportingEnabled bool = true
 
 @description('Number of days of Azure cost snapshots to retain in Postgres.')
 param costReportingRetentionDays int = 60
-
-@description('Number of days to refresh from Azure Cost Management on each scheduled run.')
-param costReportingLookbackDays int = 60
 
 @description('Optional custom domain for the public web Container App.')
 param publicCustomDomainName string = ''
@@ -654,10 +651,6 @@ resource demoMaintenanceJob 'Microsoft.App/jobs@2024-03-01' = {
             {
               name: 'COST_REPORTING_RETENTION_DAYS'
               value: string(costReportingRetentionDays)
-            }
-            {
-              name: 'COST_REPORTING_LOOKBACK_DAYS'
-              value: string(costReportingLookbackDays)
             }
             {
               name: 'AZURE_SUBSCRIPTION_ID'
