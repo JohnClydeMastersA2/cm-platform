@@ -17,6 +17,10 @@ export default defineConfig({
         target: "http://localhost:3000",
         changeOrigin: true
       },
+      "/platform/costs": {
+        target: "http://localhost:3000",
+        changeOrigin: true
+      },
       "/healthcare": {
         target: "http://localhost:3000",
         changeOrigin: true

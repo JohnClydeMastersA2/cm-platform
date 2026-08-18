@@ -20,20 +20,6 @@ type PlatformStatus = {
   notes: string[];
 };
 
-type PlatformCostRow = {
-  usageDate: string;
-  resourceType: string;
-  currency: string;
-  pretaxCost: number;
-  fetchedAt: string;
-};
-
-type PlatformCosts = {
-  from: string;
-  to: string;
-  rows: PlatformCostRow[];
-};
-
 type LoadState = "idle" | "submitting" | "success" | "error";
 
 type EmailDispatchRun = {
@@ -50,13 +36,9 @@ export function Infrastructure() {
   const [emailTestState, setEmailTestState] = useState<LoadState>("idle");
   const [emailTestMessage, setEmailTestMessage] = useState<string | undefined>();
   const [emailDispatchRun, setEmailDispatchRun] = useState<EmailDispatchRun | null>(null);
-  const [platformCosts, setPlatformCosts] = useState<PlatformCosts | null>(null);
-  const [costLoadState, setCostLoadState] = useState<LoadState>("idle");
-  const [costMessage, setCostMessage] = useState<string | undefined>();
 
   useEffect(() => {
     void loadStatus();
-    void loadCosts();
   }, []);
 
   useEffect(() => {
@@ -134,31 +116,6 @@ export function Infrastructure() {
           }`
         );
       }
-    }
-  }
-
-  async function loadCosts() {
-    if (costLoadState === "submitting") {
-      return;
-    }
-
-    setCostLoadState("submitting");
-    setCostMessage(undefined);
-
-    try {
-      const response = await fetch(`/platform/costs?ts=${Date.now()}`, {
-        cache: "no-store"
-      });
-
-      if (!response.ok) {
-        throw new Error(await readError(response, "Unable to load Azure cost snapshots"));
-      }
-
-      setPlatformCosts(await response.json() as PlatformCosts);
-      setCostLoadState("success");
-    } catch (err) {
-      setCostLoadState("error");
-      setCostMessage(err instanceof Error ? err.message : "Unable to load Azure cost snapshots.");
     }
   }
 
@@ -252,32 +209,6 @@ export function Infrastructure() {
           Refreshing live infrastructure status. Existing rows remain visible until the new check completes.
         </div>
       ) : null}
-
-      <section className="platform-section platform-section-block">
-        <div>
-          <h2>Azure Cost Snapshot</h2>
-          <p>
-            Cached daily Azure costs for this production resource group. The page reads Postgres only;
-            Azure Cost Management is queried by the scheduled maintenance job.
-          </p>
-          <div className="platform-card-actions">
-            <button
-              className="btn btn-outline-primary"
-              type="button"
-              onClick={() => void loadCosts()}
-              disabled={costLoadState === "submitting"}
-            >
-              {costLoadState === "submitting" ? "Loading..." : "Refresh Costs"}
-            </button>
-          </div>
-          {costMessage ? (
-            <div className="alert alert-danger mt-3" role="alert">
-              {costMessage}
-            </div>
-          ) : null}
-        </div>
-        <CostSnapshotTable platformCosts={platformCosts} />
-      </section>
 
       <section className="platform-section platform-section-block">
         <div>
@@ -378,72 +309,6 @@ function InfrastructureBadge({ disposition }: { disposition: InfrastructureDispo
   return <span className={`badge ${badgeClass}`}>{disposition}</span>;
 }
 
-function CostSnapshotTable({ platformCosts }: { platformCosts: PlatformCosts | null }) {
-  if (!platformCosts?.rows.length) {
-    return (
-      <div className="infrastructure-table-wrap">
-        <table className="table table-sm infrastructure-table">
-          <tbody>
-            <tr>
-              <td className="text-muted">
-                No cached Azure cost snapshots are available yet.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-
-  const latestFetchedAt = platformCosts.rows
-    .map((row) => row.fetchedAt)
-    .sort()
-    .at(-1);
-  const totalCost = platformCosts.rows.reduce((total, row) => total + row.pretaxCost, 0);
-  const currency = platformCosts.rows[0]?.currency ?? "USD";
-
-  return (
-    <div className="infrastructure-table-wrap">
-      <table className="table table-sm infrastructure-table">
-        <thead>
-          <tr>
-            <th>Period</th>
-            <th>Total</th>
-            <th>Latest Snapshot</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              {platformCosts.from} to {platformCosts.to}
-            </td>
-            <td>{formatCurrency(totalCost, currency)}</td>
-            <td>{latestFetchedAt ? formatDateWithSeconds(latestFetchedAt) : "Not captured yet"}</td>
-          </tr>
-        </tbody>
-      </table>
-      <table className="table table-sm infrastructure-table mt-3">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Resource Type</th>
-            <th>Cost</th>
-          </tr>
-        </thead>
-        <tbody>
-          {platformCosts.rows.map((row) => (
-            <tr key={`${row.usageDate}-${row.resourceType}-${row.currency}`}>
-              <td>{row.usageDate}</td>
-              <td>{row.resourceType}</td>
-              <td>{formatCurrency(row.pretaxCost, row.currency)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function EmailDispatchPanel({
   emailDispatchRun,
   platformStatus
@@ -542,15 +407,6 @@ function extractLastWebhookEventAt(evidence: string | undefined): string | null 
   }
 
   return Number.isNaN(new Date(match[1]).getTime()) ? null : match[1];
-}
-
-function formatCurrency(value: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4
-  }).format(value);
 }
 
 function buildUnavailablePlatformStatus(err: unknown): PlatformStatus {

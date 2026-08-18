@@ -7,6 +7,7 @@ import { Healthcare } from "./pages/Healthcare";
 import { HealthcareDocuments } from "./pages/HealthcareDocuments";
 import { Iam } from "./pages/Iam";
 import { Infrastructure } from "./pages/Infrastructure";
+import { InfrastructureCost } from "./pages/InfrastructureCost";
 import { Login } from "./pages/Login";
 import { Mongodb } from "./pages/Mongodb";
 import { PriorityQueue } from "./pages/PriorityQueue";
@@ -51,6 +52,11 @@ export const routes: AppRoute[] = [
     path: "/infrastructure",
     label: "Infrastructure Status",
     Component: Infrastructure
+  },
+  {
+    path: "/infrastructure-cost",
+    label: "Infrastructure Cost",
+    Component: InfrastructureCost
   },
   {
     path: "/security",
@@ -127,6 +133,7 @@ export const routeGroups: AppRouteGroup[] = [
       { path: "/", label: "Overview" },
       { path: "/architectural-decisions", label: "Architectural Decisions" },
       { path: "/infrastructure", label: "Infrastructure Status" },
+      { path: "/infrastructure-cost", label: "Infrastructure Cost" },
       { path: "/cicd", label: "CI/CD and Azure" },
       { path: "/security", label: "Security Review" },
       { path: "/secrets", label: "Configuration & Secrets" }
