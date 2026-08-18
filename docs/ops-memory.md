@@ -87,6 +87,11 @@ system-assigned managed identity, stores daily resource-type costs in
 Postgres, and prunes rows beyond 60 days. The public web app reads the cached
 `/platform/costs` API only.
 
+The job identity needs the built-in `Cost Management Reader` role on
+`rg-cm-platform-prod`. The GitHub deployment identity intentionally does not
+own `Microsoft.Authorization/roleAssignments/write`, so assign that role from
+an owner/admin Azure login after the job identity is deployed.
+
 The Infrastructure status page should not call healthcare-transform `/health`
 as part of its default refresh. Healthcare-transform is a scale-to-zero demo
 service, so active checks should only happen when a user opens the Healthcare
