@@ -431,6 +431,18 @@ function buildUnavailablePlatformStatus(err: unknown): PlatformStatus {
       detail: "Database status cannot be checked until the API service is running."
     },
     {
+      key: "document-database",
+      name: "MongoDB",
+      disposition: "unknown",
+      detail: "Document database status cannot be checked until the API service is running."
+    },
+    {
+      key: "healthcare-transform",
+      name: "Healthcare Transform",
+      disposition: "unknown",
+      detail: "Healthcare-transform status cannot be checked until the API service is running."
+    },
+    {
       key: "rabbitmq-email-dispatcher",
       name: "RabbitMQ - Email Dispatcher",
       disposition: "unknown",

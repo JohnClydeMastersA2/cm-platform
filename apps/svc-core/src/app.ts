@@ -130,6 +130,7 @@ export function buildApp(opts: BuildAppOptions) {
   app.register(priorityQueueRoutes, { prefix: "/priority-queue" });
   app.register(platformStatusRoutes, {
     prefix: "/platform/status",
+    healthcareTransformBaseUrl: opts.healthcareTransformBaseUrl,
     monitorEmails: opts.monitorEmails,
   });
   app.register(healthcareRoutes, {

@@ -126,9 +126,6 @@ export function Home() {
             <a className="platform-small-link" href={sourceCodeUrl} target="_blank" rel="noreferrer">
               GitHub
             </a>
-            <a className="platform-secondary-link" href="/john_clyde_masters_resume.pdf" download>
-              Download Resume
-            </a>
           </div>
         </div>
         <div className="platform-credential-list" aria-label="Technical credentials demonstrated by this project">
