@@ -4,6 +4,7 @@ import type { Env } from "./config/env.js";
 const azureManagementResource = "https://management.azure.com/";
 const containerAppsIdentityApiVersion = "2019-08-01";
 const costManagementApiVersion = "2025-03-01";
+const costManagementMaxAttempts = 4;
 
 type CostManagementResponse = {
   properties?: {
@@ -90,36 +91,31 @@ async function queryAzureCosts(opts: {
   );
   url.searchParams.set("api-version", costManagementApiVersion);
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+  const request = {
+    type: "Usage",
+    timeframe: "Custom",
+    timePeriod: {
+      from: `${opts.from}T00:00:00Z`,
+      to: `${opts.to}T23:59:59Z`,
     },
-    body: JSON.stringify({
-      type: "Usage",
-      timeframe: "Custom",
-      timePeriod: {
-        from: `${opts.from}T00:00:00Z`,
-        to: `${opts.to}T23:59:59Z`,
-      },
-      dataset: {
-        granularity: "Daily",
-        aggregation: {
-          totalCost: {
-            name: "PreTaxCost",
-            function: "Sum",
-          },
+    dataset: {
+      granularity: "Daily",
+      aggregation: {
+        totalCost: {
+          name: "PreTaxCost",
+          function: "Sum",
         },
-        grouping: [
-          {
-            type: "Dimension",
-            name: "ResourceType",
-          },
-        ],
       },
-    }),
-  });
+      grouping: [
+        {
+          type: "Dimension",
+          name: "ResourceType",
+        },
+      ],
+    },
+  };
+
+  const response = await fetchCostManagementWithRetry(url, token, request);
 
   if (!response.ok) {
     throw new Error(`Azure Cost Management query failed with ${response.status}: ${await response.text()}`);
@@ -137,6 +133,50 @@ async function queryAzureCosts(opts: {
     resourceType: row[2],
     currency: row[3],
   }));
+}
+
+async function fetchCostManagementWithRetry(url: URL, token: string, request: unknown): Promise<Response> {
+  let lastStatus = 0;
+  let lastBody = "";
+
+  for (let attempt = 1; attempt <= costManagementMaxAttempts; attempt += 1) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (response.ok || !isRetryableCostResponse(response.status) || attempt === costManagementMaxAttempts) {
+      return response;
+    }
+
+    lastStatus = response.status;
+    lastBody = await response.text();
+    await sleep(getRetryDelayMillis(response, attempt));
+  }
+
+  throw new Error(`Azure Cost Management query failed with ${lastStatus}: ${lastBody}`);
+}
+
+function isRetryableCostResponse(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+function getRetryDelayMillis(response: Response, attempt: number): number {
+  const retryAfterSeconds = Number(response.headers.get("retry-after"));
+
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return retryAfterSeconds * 1_000;
+  }
+
+  return attempt * 10_000;
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 async function getManagedIdentityToken(): Promise<string> {
