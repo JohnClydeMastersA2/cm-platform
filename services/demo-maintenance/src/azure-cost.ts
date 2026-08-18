@@ -2,7 +2,7 @@ import { Pool } from "pg";
 import type { Env } from "./config/env.js";
 
 const azureManagementResource = "https://management.azure.com/";
-const imdsApiVersion = "2018-02-01";
+const containerAppsIdentityApiVersion = "2019-08-01";
 const costManagementApiVersion = "2025-03-01";
 
 type CostManagementResponse = {
@@ -140,13 +140,20 @@ async function queryAzureCosts(opts: {
 }
 
 async function getManagedIdentityToken(): Promise<string> {
-  const url = new URL("http://169.254.169.254/metadata/identity/oauth2/token");
-  url.searchParams.set("api-version", imdsApiVersion);
+  const identityEndpoint = process.env.IDENTITY_ENDPOINT;
+  const identityHeader = process.env.IDENTITY_HEADER;
+
+  if (!identityEndpoint || !identityHeader) {
+    throw new Error("Container Apps managed identity endpoint is unavailable");
+  }
+
+  const url = new URL(identityEndpoint);
+  url.searchParams.set("api-version", containerAppsIdentityApiVersion);
   url.searchParams.set("resource", azureManagementResource);
 
   const response = await fetch(url, {
     headers: {
-      Metadata: "true",
+      "X-IDENTITY-HEADER": identityHeader,
     },
   });
 
