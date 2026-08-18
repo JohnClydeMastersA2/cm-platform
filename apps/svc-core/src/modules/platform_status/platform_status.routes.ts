@@ -26,7 +26,6 @@ type EmailWebhookSummary = {
 };
 
 type PlatformStatusRoutesOptions = {
-  healthcareTransformBaseUrl: string;
   monitorEmails: string[];
 };
 
@@ -48,7 +47,7 @@ export async function platformStatusRoutes(
       getApiRequirement(app, checkedAt),
       getDatabaseRequirement(app, checkedAt),
       getDocumentDatabaseRequirement(app, checkedAt),
-      getHealthcareTransformRequirement(opts.healthcareTransformBaseUrl, checkedAt),
+      getHealthcareTransformRequirement(checkedAt),
       getEmailDispatcherRequirement(app, checkedAt),
       getWidgetConsumerRequirements(app, checkedAt),
       getEmailWebhookRequirement(app, checkedAt),
@@ -173,48 +172,16 @@ async function queryDatabaseName(app: FastifyInstance): Promise<string> {
 }
 
 async function getHealthcareTransformRequirement(
-  baseUrl: string,
   checkedAt: string,
 ): Promise<InfrastructureRequirement> {
-  try {
-    const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/health`, {
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      return {
-        key: "healthcare-transform",
-        name: "Healthcare Transform",
-        disposition: "degraded",
-        detail: "The healthcare-transform service responded, but its health check was not OK.",
-        evidence: `GET /health returned ${response.status}.`,
-        checkedAt,
-      };
-    }
-
-    const health = await response.json() as { service?: string; status?: string };
-    const status = health.status ?? "unknown";
-    const service = health.service ?? "healthcare-transform";
-
-    return {
-      key: "healthcare-transform",
-      name: "Healthcare Transform",
-      disposition: status.toUpperCase() === "UP" ? "online" : "degraded",
-      detail: "The Java healthcare-transform microservice accepted a direct health check.",
-      evidence: `${service} reported ${status}.`,
-      checkedAt,
-    };
-  } catch (err) {
-    return failedRequirement(
-      "healthcare-transform",
-      "Healthcare Transform",
-      "Unable to reach the healthcare-transform health endpoint.",
-      err,
-      checkedAt,
-    );
-  }
+  return {
+    key: "healthcare-transform",
+    name: "Healthcare Transform",
+    disposition: "unknown",
+    detail: "Configured as a scale-to-zero service; live health checks are intentionally skipped here.",
+    evidence: "Open the Healthcare page to wake and verify the service only when the demo needs it.",
+    checkedAt,
+  };
 }
 
 async function getDocumentDatabaseRequirement(

@@ -15,6 +15,7 @@ import type { Channel, ChannelModel } from "amqplib";
 import http from "node:http";
 import https from "node:https";
 import { Pool } from "pg";
+import { captureAzureCostSnapshots, type CostSnapshotSummary } from "./azure-cost.js";
 import { loadEnv } from "./config/env.js";
 
 const env = loadEnv();
@@ -46,6 +47,7 @@ type MaintenanceSummary = {
   database: DatabaseCleanupResult[];
   rabbitMq: QueueCleanupResult[];
   api: ApiCleanupResult[];
+  azureCosts: CostSnapshotSummary;
 };
 
 async function main(): Promise<void> {
@@ -62,6 +64,7 @@ async function main(): Promise<void> {
   const databaseResults = await cleanupDatabaseDemoRows();
   const rabbitMqResults = await cleanupRabbitMqQueues();
   const apiResults = await cleanupApiState();
+  const azureCostSummary = await captureCostsWithoutFailingMaintenance();
   const completedAt = new Date();
 
   const summary: MaintenanceSummary = {
@@ -71,10 +74,29 @@ async function main(): Promise<void> {
     database: databaseResults,
     rabbitMq: rabbitMqResults,
     api: apiResults,
+    azureCosts: azureCostSummary,
   };
 
   logger.info(summary, "Demo maintenance completed");
   await sendMaintenanceEmail(summary);
+}
+
+async function captureCostsWithoutFailingMaintenance(): Promise<CostSnapshotSummary> {
+  try {
+    const summary = await captureAzureCostSnapshots(env);
+    logger.info(summary, "Azure cost snapshot completed");
+    return summary;
+  } catch (err) {
+    logger.error({ err }, "Azure cost snapshot failed");
+    return {
+      enabled: env.COST_REPORTING_ENABLED,
+      rowsStored: 0,
+      from: null,
+      to: null,
+      totalCost: 0,
+      currency: null,
+    };
+  }
 }
 
 async function cleanupDatabaseDemoRows(): Promise<DatabaseCleanupResult[]> {
@@ -220,6 +242,12 @@ async function sendMaintenanceEmail(summary: MaintenanceSummary): Promise<void> 
       "",
       "API state cleanup:",
       ...summary.api.map((item) => `- ${item.target}: ${item.ok ? "ok" : "failed"}`),
+      "",
+      "Azure cost snapshot:",
+      `- Enabled: ${summary.azureCosts.enabled}`,
+      `- Rows stored: ${summary.azureCosts.rowsStored}`,
+      `- Range: ${summary.azureCosts.from ?? "n/a"} through ${summary.azureCosts.to ?? "n/a"}`,
+      `- Total: ${summary.azureCosts.currency ?? "USD"} ${summary.azureCosts.totalCost.toFixed(4)}`,
     ].join("\n"),
     html: [
       "<h1>CM Platform demo maintenance completed</h1>",
@@ -239,6 +267,13 @@ async function sendMaintenanceEmail(summary: MaintenanceSummary): Promise<void> 
       "<h2>API state cleanup</h2>",
       "<ul>",
       ...summary.api.map((item) => `<li>${escapeHtml(item.target)}: ${item.ok ? "ok" : "failed"}</li>`),
+      "</ul>",
+      "<h2>Azure cost snapshot</h2>",
+      "<ul>",
+      `<li>Enabled: ${summary.azureCosts.enabled}</li>`,
+      `<li>Rows stored: ${summary.azureCosts.rowsStored}</li>`,
+      `<li>Range: ${escapeHtml(summary.azureCosts.from ?? "n/a")} through ${escapeHtml(summary.azureCosts.to ?? "n/a")}</li>`,
+      `<li>Total: ${escapeHtml(summary.azureCosts.currency ?? "USD")} ${summary.azureCosts.totalCost.toFixed(4)}</li>`,
       "</ul>",
     ].join("\n"),
   });

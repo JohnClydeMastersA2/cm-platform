@@ -65,6 +65,15 @@ param demoMaintenanceRetentionHours int = 24
 @description('UTC cron expression for the demo maintenance scheduled job.')
 param demoMaintenanceCronExpression string = '0 5 * * *'
 
+@description('Whether the demo maintenance job captures cached Azure cost snapshots.')
+param costReportingEnabled bool = true
+
+@description('Number of days of Azure cost snapshots to retain in Postgres.')
+param costReportingRetentionDays int = 60
+
+@description('Number of days to refresh from Azure Cost Management on each scheduled run.')
+param costReportingLookbackDays int = 60
+
 @description('Optional custom domain for the public web Container App.')
 param publicCustomDomainName string = ''
 
@@ -86,6 +95,7 @@ var emailDispatcherImage = '${imagePrefix}/email-dispatcher:${imageTag}'
 var widgetConsumerImage = '${imagePrefix}/widget-consumer:${imageTag}'
 var demoMaintenanceImage = '${imagePrefix}/demo-maintenance:${imageTag}'
 var healthcareTransformImage = '${imagePrefix}/healthcare-transform:${imageTag}'
+var costManagementReaderRoleDefinitionId = '72fafb9e-0641-4937-9268-a91bfd8191a3'
 var publicCustomDomains = !empty(publicCustomDomainName) && !empty(publicCustomDomainCertificateId) ? [
   {
     name: publicCustomDomainName
@@ -547,6 +557,9 @@ resource demoMaintenanceJob 'Microsoft.App/jobs@2024-03-01' = {
   name: 'job-cmp-demo-maint-${environmentName}'
   location: location
   tags: commonTags
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     environmentId: containerAppsEnvironment.id
     configuration: {
@@ -635,6 +648,26 @@ resource demoMaintenanceJob 'Microsoft.App/jobs@2024-03-01' = {
               name: 'DEMO_MAINTENANCE_API_HOST_HEADER'
               value: publicCustomDomainName
             }
+            {
+              name: 'COST_REPORTING_ENABLED'
+              value: string(costReportingEnabled)
+            }
+            {
+              name: 'COST_REPORTING_RETENTION_DAYS'
+              value: string(costReportingRetentionDays)
+            }
+            {
+              name: 'COST_REPORTING_LOOKBACK_DAYS'
+              value: string(costReportingLookbackDays)
+            }
+            {
+              name: 'AZURE_SUBSCRIPTION_ID'
+              value: subscription().subscriptionId
+            }
+            {
+              name: 'AZURE_RESOURCE_GROUP_NAME'
+              value: resourceGroup().name
+            }
           ]
           resources: {
             cpu: json('0.25')
@@ -643,6 +676,16 @@ resource demoMaintenanceJob 'Microsoft.App/jobs@2024-03-01' = {
         }
       ]
     }
+  }
+}
+
+resource demoMaintenanceCostReaderRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, demoMaintenanceJob.name, costManagementReaderRoleDefinitionId)
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', costManagementReaderRoleDefinitionId)
+    principalId: demoMaintenanceJob.identity.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 

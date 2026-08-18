@@ -10,6 +10,7 @@ import { authRoutes } from "./modules/auth/auth.routes.js";
 import { platformStatusRoutes } from "./modules/platform_status/platform_status.routes.js";
 import { emailEventsWebhookRoutes } from "./routes/webhooks/email_events.js";
 import { priorityQueueRoutes } from "./modules/priority_queue/priority_queue.routes.js";
+import { platformCostRoutes } from "./modules/platform_cost/platform_cost.routes.js";
 import { topicRoutingRoutes } from "./modules/topic_routing/topic_routing.routes.js";
 import { internalSurface } from "./surfaces/internal.surface.js";
 import { widgetRoutes } from "./modules/widget/widget.routes.js";
@@ -128,9 +129,9 @@ export function buildApp(opts: BuildAppOptions) {
   app.register(widgetConsumerRoutes, { prefix: "/consumer-widgets" });
   app.register(topicRoutingRoutes, { prefix: "/topic-routing" });
   app.register(priorityQueueRoutes, { prefix: "/priority-queue" });
+  app.register(platformCostRoutes, { prefix: "/platform/costs" });
   app.register(platformStatusRoutes, {
     prefix: "/platform/status",
-    healthcareTransformBaseUrl: opts.healthcareTransformBaseUrl,
     monitorEmails: opts.monitorEmails,
   });
   app.register(healthcareRoutes, {

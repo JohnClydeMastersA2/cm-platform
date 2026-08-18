@@ -14,6 +14,24 @@ const MonitorList = z.preprocess((value) => {
     .filter(Boolean);
 }, z.array(z.email()).min(1));
 
+const EnvBoolean = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "true" || normalized === "1") {
+    return true;
+  }
+
+  if (normalized === "false" || normalized === "0") {
+    return false;
+  }
+
+  return value;
+}, z.boolean());
+
 const EnvSchema = z.object({
   DATABASE_URL: z.url(),
   PGSSLMODE: z.string().min(1).default("require"),
@@ -26,6 +44,11 @@ const EnvSchema = z.object({
   DEMO_MAINTENANCE_API_HOST_HEADER: z.string().min(1).optional(),
   CM_PLATFORM_MONITORS: MonitorList,
   DEMO_MAINTENANCE_RETENTION_HOURS: z.coerce.number().positive().default(24),
+  COST_REPORTING_ENABLED: EnvBoolean.default(false),
+  COST_REPORTING_RETENTION_DAYS: z.coerce.number().int().positive().default(60),
+  COST_REPORTING_LOOKBACK_DAYS: z.coerce.number().int().positive().max(60).default(60),
+  AZURE_SUBSCRIPTION_ID: z.string().min(1).optional(),
+  AZURE_RESOURCE_GROUP_NAME: z.string().min(1).default("rg-cm-platform-prod"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

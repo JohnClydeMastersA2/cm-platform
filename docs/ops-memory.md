@@ -78,6 +78,20 @@ forgot password -> reset password directly for approved active account
 
 Approval/rejection is still an admin workflow to build later. For now, local testing can approve a publisher row by setting `registration_status = 'approved'` and `is_active = true`.
 
+## Azure cost snapshots
+
+Production Azure cost reporting is intentionally cached to avoid turning public
+page views into live Azure or service health probes. The daily
+`demo-maintenance` Container Apps job queries Azure Cost Management with its
+system-assigned managed identity, stores daily resource-type costs in
+Postgres, and prunes rows beyond 60 days. The public web app reads the cached
+`/platform/costs` API only.
+
+The Infrastructure status page should not call healthcare-transform `/health`
+as part of its default refresh. Healthcare-transform is a scale-to-zero demo
+service, so active checks should only happen when a user opens the Healthcare
+page or chooses an explicit live-check workflow.
+
 See [publisher-login-strategy.md](publisher-login-strategy.md) for the full current login strategy and future direction.
 
 ## Verification
