@@ -14,32 +14,9 @@ const MonitorList = z.preprocess((value) => {
     .filter(Boolean);
 }, z.array(z.email()).min(1));
 
-const EnvBoolean = z.preprocess((value) => {
-  if (typeof value !== "string") {
-    return value;
-  }
-
-  const normalized = value.trim().toLowerCase();
-
-  if (normalized === "true" || normalized === "1") {
-    return true;
-  }
-
-  if (normalized === "false" || normalized === "0") {
-    return false;
-  }
-
-  return value;
-}, z.boolean());
-
 const EnvSchema = z.object({
-  DB_SERVER: z.string().min(1),
-  DB_PORT: z.coerce.number().int().positive().default(1433),
-  DB_USER: z.string().min(1),
-  DB_PASSWORD: z.string().min(1),
-  DB_DATABASE: z.string().min(1),
-  DB_ENCRYPT: EnvBoolean.default(false),
-  DB_TRUST_SERVER_CERTIFICATE: EnvBoolean.default(true),
+  DATABASE_URL: z.url(),
+  PGSSLMODE: z.string().min(1).default("require"),
 
   ADMIN_KEY: z.string().min(1),
   LOG_LEVEL: z.string().default("info"),

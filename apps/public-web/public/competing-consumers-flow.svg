@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1180" height="790" viewBox="0 0 1180 790" role="img" aria-labelledby="title desc">
-  <title id="title">Competing Consumers SQL and RabbitMQ Flow</title>
-  <desc id="desc">A diagram showing the browser calling the API, SQL Server storing queued and processed widget state, RabbitMQ routing durable messages to one processing queue, and fast and slow workers consuming with prefetch one before acknowledging messages.</desc>
+  <title id="title">Competing Consumers Postgres and RabbitMQ Flow</title>
+  <desc id="desc">A diagram showing the browser calling the API, Postgres storing queued and processed widget state, RabbitMQ routing durable messages to one processing queue, and fast and slow workers consuming with prefetch one before acknowledging messages.</desc>
   <defs>
     <marker id="arrow-blue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#0d6efd"/>
@@ -25,8 +25,8 @@
   </defs>
 
   <rect width="1180" height="790" fill="#ffffff"/>
-  <text x="48" y="48" class="title" style="font-size:24px">Competing Consumers: SQL State and RabbitMQ Work Queue</text>
-  <text x="48" y="74" class="small">The API stores visible demo state in SQL Server, while RabbitMQ distributes durable work messages to whichever worker is ready.</text>
+  <text x="48" y="48" class="title" style="font-size:24px">Competing Consumers: Postgres State and RabbitMQ Work Queue</text>
+  <text x="48" y="74" class="small">The API stores visible demo state in Postgres, while RabbitMQ distributes durable work messages to whichever worker is ready.</text>
 
   <text x="55" y="126" class="label">Request path</text>
   <rect class="box client" x="48" y="145" width="190" height="76"/>
@@ -38,7 +38,7 @@
   <text x="326" y="198" class="small">POST /consumer-widgets</text>
 
   <rect class="box sql" x="552" y="114" width="230" height="98"/>
-  <text x="583" y="148" class="title">SQL Server</text>
+  <text x="583" y="148" class="title">Postgres</text>
   <text x="580" y="172" class="small">Insert widget row</text>
   <text x="580" y="194" class="small">Status: queued</text>
 
@@ -70,7 +70,7 @@
 
   <text x="55" y="560" class="label">State update path</text>
   <rect class="box sql" x="475" y="580" width="230" height="90"/>
-  <text x="522" y="613" class="title">SQL Updates</text>
+  <text x="522" y="613" class="title">Postgres Updates</text>
   <text x="522" y="638" class="small">Status: processed</text>
   <text x="518" y="660" class="small">processedBy + seconds</text>
 
@@ -89,7 +89,7 @@
   <rect class="box api" x="382" y="740" width="190" height="44"/>
   <text x="413" y="767" class="title">GET overview</text>
   <rect class="box sql" x="632" y="740" width="170" height="44"/>
-  <text x="666" y="767" class="title">Read SQL</text>
+  <text x="654" y="767" class="title">Read Postgres</text>
   <rect class="box rabbit" x="862" y="740" width="190" height="44"/>
   <text x="886" y="767" class="title">Read Queue Count</text>
   <path class="primary-line" d="M322 762 H372"/>

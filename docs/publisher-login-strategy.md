@@ -16,7 +16,7 @@ login -> email/password accepted
 forgot password -> reset password directly for approved active account
 ```
 
-Registration stores publisher profile and contact fields in `dbo.Publisher`:
+Registration stores publisher profile and contact fields in `publisher`:
 
 ```text
 PublisherName
@@ -30,16 +30,16 @@ RegistrationStatus
 New registrations are saved with:
 
 ```text
-RegistrationStatus = pending
-IsActive = 0
-PasswordHash = null
+registration_status = pending
+is_active = false
+password_hash = null
 ```
 
 An approved account must have both:
 
 ```text
-RegistrationStatus = approved
-IsActive = 1
+registration_status = approved
+is_active = true
 ```
 
 Only approved active accounts can set a password or log in.
@@ -51,9 +51,9 @@ Passwords are never stored as plaintext.
 The API hashes passwords with Node `scrypt` and stores the result in:
 
 ```text
-PasswordHash
-PasswordSetAt
-LastLoginAt
+password_hash
+password_set_at
+last_login_at
 ```
 
 `PasswordHash` is intentionally not returned to the browser. API responses expose only derived account state such as `hasPassword`, `passwordSetAt`, and `lastLoginAt`.

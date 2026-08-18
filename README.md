@@ -8,7 +8,7 @@ The repository is under active development. Some features are production-oriente
 
 - Node.js 24, TypeScript, Fastify, React, and Vite
 - Java 21 and Spring Boot
-- SQL Server, MongoDB, and RabbitMQ
+- Postgres, MongoDB, and RabbitMQ
 - Docker Compose for local infrastructure and production-like verification
 - Azure Bicep and GitHub Actions for cloud infrastructure and deployment
 - PowerShell as the primary local automation environment
@@ -18,7 +18,7 @@ The repository is under active development. Some features are production-oriente
 - **Frontend:** React 19, TypeScript, Vite, React Router, Bootstrap, account workflows, infrastructure status, and interactive messaging demonstrations
 - **API:** Node.js 24, Fastify 5, validation contracts, authentication, internal administration, webhooks, health checks, and platform-status endpoints
 - **Background processing:** RabbitMQ email delivery, competing consumers, retries, dead-letter queues, priority queues, topic routing, and scheduled demo maintenance
-- **Data:** SQL Server locally, Azure SQL in production, and MongoDB for webhook events and healthcare document artifacts
+- **Data:** Postgres locally, Neon Postgres in production, and MongoDB for webhook events and healthcare document artifacts
 - **Cloud and delivery:** Docker, Azure Container Apps, GitHub Actions, GHCR, Bicep, Azure OIDC, protected deployment workflows, Cloudflare, and managed production dependencies
 - **Healthcare:** Java 21 and Spring Boot service supporting curated 835 processing, document submission, MongoDB artifact persistence, archive retrieval, and initial ASC X12 835 parsing
 - **Security and operations:** CSRF protection, secure session cookies, rate limiting, webhook signature verification, CodeQL, npm audit, Dependabot deployment gates, OWASP ZAP baseline scanning, structured logging, readiness checks, and production smoke tests
@@ -39,9 +39,8 @@ services/email-dispatcher     queued email delivery worker
 services/widget-consumer      competing-consumer demonstration workers
 services/demo-maintenance     scheduled demo-data maintenance worker
 services/healthcare-transform Java/Spring healthcare document service
-tools/etl-csv-import          IIS log ETL utility
 tools/email-send-test         email integration test client
-tools/sql-migrate             SQL migration and identity utility
+tools/postgres-migrate        Postgres migration utility
 docker                        images and local Compose environments
 infra/bicep                   Azure infrastructure as code
 scripts                       PowerShell automation and smoke tests
@@ -77,13 +76,13 @@ Create the ignored local secrets file from the committed template:
 Copy-Item packages/secrets/cm-platform.env.example packages/secrets/cm-platform.env
 ```
 
-Replace every required placeholder in that file. It defines local SQL Server, RabbitMQ, MongoDB, API administration, SMTP, webhook, and maintenance settings. Development-only defaults such as unencrypted local database connections and trusted development certificates must not be copied into production configuration.
+Replace every required placeholder in that file. It defines local Postgres, RabbitMQ, MongoDB, API administration, SMTP, webhook, and maintenance settings. Development-only defaults such as unencrypted local database connections must not be copied into production configuration.
 
 Real `.env` files, credentials, recipient lists, and tokens must never be committed. See [SECURITY.md](SECURITY.md) for the project security policy.
 
 ## Quick Start
 
-Start Docker Desktop and wait for its engine to become ready. Then start SQL Server, MongoDB, and RabbitMQ:
+Start Docker Desktop and wait for its engine to become ready. Then start Postgres, MongoDB, and RabbitMQ:
 
 ```powershell
 npm run infra:up
@@ -114,7 +113,7 @@ Web:                 http://localhost:5173
 API:                 http://localhost:3000
 RabbitMQ management: http://localhost:15672
 MongoDB:             mongodb://localhost:27017
-SQL Server:          localhost:1433
+Postgres:            localhost:5432
 ```
 
 The root `npm run dev` command starts infrastructure and the API, but not the web application.
@@ -132,7 +131,7 @@ npm run clean                 # run the configured workspace cleanup scripts
 npm run all:rebuild           # clean and rebuild Node/TypeScript targets
 ```
 
-The root build covers the shared packages, API, Node background services, current React frontend, ETL tool, email test client, and SQL migration tool. The Java healthcare service has a separate Maven build and is tested separately in CI:
+The root build covers the shared packages, API, Node background services, current React frontend, email test client, and Postgres migration tool. The Java healthcare service has a separate Maven build and is tested separately in CI:
 
 ```powershell
 Set-Location services/healthcare-transform
@@ -155,14 +154,10 @@ npm run infra:down
 
 ### Database migrations
 
-Migration files live in `scripts/db/migrations` and are applied by `tools/sql-migrate`.
+Migration files live in `scripts/postgres/migrations` and are applied by `tools/postgres-migrate`.
 
 ```powershell
-npm run db:check
 npm run db:migrate
-npm run db:check:migration-permissions
-npm run db:check:app-permissions
-npm run db:verify:core-schema
 ```
 
 `npm run db:schema` remains as an alias for `npm run db:migrate`.
@@ -173,7 +168,7 @@ The production-like Compose environment builds and runs the React frontend, API,
 
 This environment is a final local confidence check before deployment. During normal development, Vite and the API run directly on the host with development tooling, live reload, and host-based network addresses. Production runs compiled applications inside separate containers, where startup commands, image contents, environment variables, service names, ports, reverse-proxy routing, and container-to-container networking are different. The production-like commands exercise those deployment conditions together and `prod-local:verify` confirms that the assembled system is reachable and healthy. You do not need to run this environment for every code change; use it after changing Dockerfiles, runtime configuration, networking, or multiple services, and before treating a release candidate as deployable.
 
-Despite the name, this environment does **not** connect to MongoDB Atlas, Azure SQL, a managed RabbitMQ service, or other cloud data services by default. It starts local Docker containers for MongoDB, SQL Server, and RabbitMQ, and the application containers address them by their Compose service names. The smoke test checks this entirely local system through `http://localhost:8080`. Building the environment may download base images and npm packages, and a deliberately exercised email workflow can contact the configured SMTP provider, but the normal startup and `prod-local:verify` checks do not send email or test managed cloud services. Pointing a container URL in the secrets file at an external service would change this behavior and should be treated as an explicit integration test, not the standard production-like local workflow.
+Despite the name, this environment does **not** connect to Neon, MongoDB Atlas, a managed RabbitMQ service, or other cloud data services by default. It starts local Docker containers for Postgres, MongoDB, and RabbitMQ, and the application containers address them by their Compose service names. The smoke test checks this entirely local system through `http://localhost:8080`. Building the environment may download base images and npm packages, and a deliberately exercised email workflow can contact the configured SMTP provider, but the normal startup and `prod-local:verify` checks do not send email or test managed cloud services. Pointing a container URL in the secrets file at an external service would change this behavior and should be treated as an explicit integration test, not the standard production-like local workflow.
 
 ```powershell
 npm run prod-local:build
@@ -195,7 +190,7 @@ Authentication uses HTTP-only, same-site session cookies. State-changing browser
 
 RabbitMQ supports queued email delivery and the competing-consumer, topic-routing, and priority-queue demonstrations. Shared message definitions live in `packages/messaging`; applications should use its qualified domain imports.
 
-`services/demo-maintenance` handles maintenance of demonstration data. `services/email-dispatcher` sends queued mail through `packages/email`, and `services/widget-consumer` processes widget work against shared SQL state.
+`services/demo-maintenance` handles maintenance of demonstration data. `services/email-dispatcher` sends queued mail through `packages/email`, and `services/widget-consumer` processes widget work against shared Postgres state.
 
 ### Healthcare transformation
 
@@ -227,7 +222,7 @@ Append `/webhooks/email-events` to the generated tunnel URL when configuring the
 
 ## Data Safety
 
-Local SQL Server files are stored in the external Docker volume `docker_mssql_data`. Normal `infra:down` and `infra:restart` operations do not delete it.
+Local Postgres files are stored in the Docker volume `cm_platform_postgres_data`. Normal `infra:down` and `infra:restart` operations do not delete it.
 
 Commands such as `docker compose down -v`, `docker volume rm`, `docker volume prune`, and `docker system prune --volumes` can destroy local developer data. Back up intentional data before performing destructive Docker maintenance.
 

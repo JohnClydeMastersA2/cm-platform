@@ -7,7 +7,7 @@ import {
   verifyPassword,
 } from "@cm/auth";
 import type { AuthLogin, AuthRegister } from "@cm/contracts";
-import sql from "mssql";
+import type { Pool } from "pg";
 import type { AuthAccount, AuthSession } from "./auth.schema.js";
 
 export const SESSION_COOKIE_NAME = "cm_session";
@@ -17,83 +17,75 @@ const EMAIL_VERIFICATION_TTL_MINUTES = 5;
 const EMAIL_VERIFICATION_CHALLENGE_TYPE = "email_verification";
 
 type AccountRow = {
-  AccountId: number;
-  EmailAddress: string;
-  PasswordHash: string;
-  EmailVerifiedAt: Date | null;
-  Status: string;
-  CreatedAt: Date;
-  LastLoginAt: Date | null;
+  account_id: number;
+  email_address: string;
+  password_hash: string;
+  email_verified_at: Date | null;
+  status: string;
+  created_at: Date;
+  last_login_at: Date | null;
 };
 
 type SessionRow = {
-  AuthSessionId: number;
-  CreatedAt: Date;
-  ExpiresAt: Date;
-  RevokedAt: Date | null;
+  auth_session_id: number;
+  created_at: Date;
+  expires_at: Date;
+  revoked_at: Date | null;
 };
 
 const accountSelectColumns = `
-  AccountId,
-  EmailAddress,
-  PasswordHash,
-  EmailVerifiedAt,
-  Status,
-  CreatedAt,
-  LastLoginAt
+  account_id,
+  email_address,
+  password_hash,
+  email_verified_at,
+  status,
+  created_at,
+  last_login_at
 `;
 
 function mapAccount(row: AccountRow): AuthAccount {
   return {
-    accountId: row.AccountId,
-    emailAddress: row.EmailAddress,
-    emailVerifiedAt: row.EmailVerifiedAt,
-    status: row.Status,
-    createdAt: row.CreatedAt,
-    lastLoginAt: row.LastLoginAt,
+    accountId: row.account_id,
+    emailAddress: row.email_address,
+    emailVerifiedAt: row.email_verified_at,
+    status: row.status,
+    createdAt: row.created_at,
+    lastLoginAt: row.last_login_at,
   };
 }
 
 function mapSession(row: SessionRow): AuthSession {
   return {
-    authSessionId: row.AuthSessionId,
-    createdAt: row.CreatedAt,
-    expiresAt: row.ExpiresAt,
-    revokedAt: row.RevokedAt,
+    authSessionId: row.auth_session_id,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    revokedAt: row.revoked_at,
   };
 }
 
 export async function registerAccount(
-  db: sql.ConnectionPool,
+  db: Pool,
   registration: AuthRegister,
 ): Promise<AuthAccount> {
   const emailAddress = registration.emailAddress.trim().toLowerCase();
   const passwordHash = await hashPassword(registration.password);
 
-  const result = await db
-    .request()
-    .input("emailAddress", sql.VarChar(320), emailAddress)
-    .input("passwordHash", sql.VarChar(500), passwordHash)
-    .query<AccountRow>(`
-      insert into dbo.Account (
-        EmailAddress,
-        PasswordHash
+  const result = await db.query<AccountRow>(
+    `
+      insert into account (
+        email_address,
+        password_hash
       )
-      output
-        inserted.AccountId,
-        inserted.EmailAddress,
-        inserted.PasswordHash,
-        inserted.EmailVerifiedAt,
-        inserted.Status,
-        inserted.CreatedAt,
-        inserted.LastLoginAt
       values (
-        @emailAddress,
-        @passwordHash
-      );
-    `);
+        $1,
+        $2
+      )
+      returning ${accountSelectColumns};
+    `,
+    [emailAddress, passwordHash],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
 
   if (!row) {
     throw new Error("Account insert did not return a row");
@@ -103,142 +95,175 @@ export async function registerAccount(
 }
 
 export async function createEmailVerificationChallenge(
-  db: sql.ConnectionPool,
+  db: Pool,
   accountId: number,
 ): Promise<string> {
   const verificationToken = createChallengeToken();
   const verificationTokenHash = hashChallengeToken(verificationToken);
+  const client = await db.connect();
 
-  await db
-    .request()
-    .input("accountId", sql.Int, accountId)
-    .input("challengeType", sql.VarChar(50), EMAIL_VERIFICATION_CHALLENGE_TYPE)
-    .input("codeHash", sql.VarChar(128), verificationTokenHash)
-    .input("ttlMinutes", sql.Int, EMAIL_VERIFICATION_TTL_MINUTES)
-    .query(`
-      update dbo.AuthChallenge
-      set UsedAt = coalesce(UsedAt, sysutcdatetime())
-      where AccountId = @accountId
-        and ChallengeType = @challengeType
-        and UsedAt is null;
-
-      insert into dbo.AuthChallenge (
-        AccountId,
-        ChallengeType,
-        CodeHash,
-        ExpiresAt
-      )
-      values (
-        @accountId,
-        @challengeType,
-        @codeHash,
-        dateadd(minute, @ttlMinutes, sysutcdatetime())
-      );
-    `);
+  try {
+    await client.query("begin");
+    await client.query(
+      `
+        update auth_challenge
+        set used_at = coalesce(used_at, now())
+        where account_id = $1
+          and challenge_type = $2
+          and used_at is null;
+      `,
+      [accountId, EMAIL_VERIFICATION_CHALLENGE_TYPE],
+    );
+    await client.query(
+      `
+        insert into auth_challenge (
+          account_id,
+          challenge_type,
+          code_hash,
+          expires_at
+        )
+        values (
+          $1,
+          $2,
+          $3,
+          now() + ($4 * interval '1 minute')
+        );
+      `,
+      [accountId, EMAIL_VERIFICATION_CHALLENGE_TYPE, verificationTokenHash, EMAIL_VERIFICATION_TTL_MINUTES],
+    );
+    await client.query("commit");
+  } catch (err) {
+    await client.query("rollback");
+    throw err;
+  } finally {
+    client.release();
+  }
 
   return verificationToken;
 }
 
 export async function verifyEmailChallenge(
-  db: sql.ConnectionPool,
+  db: Pool,
   verificationToken: string,
 ): Promise<AuthAccount | null> {
   const verificationTokenHash = hashChallengeToken(verificationToken);
+  const client = await db.connect();
 
-  const result = await db
-    .request()
-    .input("challengeType", sql.VarChar(50), EMAIL_VERIFICATION_CHALLENGE_TYPE)
-    .input("codeHash", sql.VarChar(128), verificationTokenHash)
-    .query<AccountRow>(`
-      declare @accountId int;
+  try {
+    await client.query("begin");
 
-      select top (1)
-        @accountId = AccountId
-      from dbo.AuthChallenge with (updlock, rowlock)
-      where ChallengeType = @challengeType
-        and CodeHash = @codeHash
-        and UsedAt is null
-        and ExpiresAt > sysutcdatetime()
-      order by AuthChallengeId desc;
+    const result = await client.query<AccountRow>(
+      `
+        with selected_challenge as (
+          select auth_challenge_id, account_id
+          from auth_challenge
+          where challenge_type = $1
+            and code_hash = $2
+            and used_at is null
+            and expires_at > now()
+          order by auth_challenge_id desc
+          limit 1
+          for update
+        ),
+        used_challenge as (
+          update auth_challenge c
+          set used_at = now()
+          from selected_challenge s
+          where c.auth_challenge_id = s.auth_challenge_id
+          returning s.account_id
+        )
+        update account a
+        set email_verified_at = coalesce(a.email_verified_at, now())
+        from used_challenge u
+        where a.account_id = u.account_id
+          and a.status = 'active'
+        returning
+          a.account_id,
+          a.email_address,
+          a.password_hash,
+          a.email_verified_at,
+          a.status,
+          a.created_at,
+          a.last_login_at;
+      `,
+      [EMAIL_VERIFICATION_CHALLENGE_TYPE, verificationTokenHash],
+    );
 
-      if @accountId is not null
-      begin
-        update dbo.AuthChallenge
-        set UsedAt = sysutcdatetime()
-        where ChallengeType = @challengeType
-          and CodeHash = @codeHash
-          and UsedAt is null;
+    await client.query("commit");
 
-        update dbo.Account
-        set EmailVerifiedAt = coalesce(EmailVerifiedAt, sysutcdatetime())
-        output
-          inserted.AccountId,
-          inserted.EmailAddress,
-          inserted.PasswordHash,
-          inserted.EmailVerifiedAt,
-          inserted.Status,
-          inserted.CreatedAt,
-          inserted.LastLoginAt
-        where AccountId = @accountId
-          and Status = 'active';
-      end
-    `);
-
-  const row = result.recordset?.[0];
-  return row ? mapAccount(row) : null;
+    const row = result.rows[0];
+    return row ? mapAccount(row) : null;
+  } catch (err) {
+    await client.query("rollback");
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 export async function loginAccount(
-  db: sql.ConnectionPool,
+  db: Pool,
   login: AuthLogin,
 ): Promise<{ account: AuthAccount; sessionToken: string } | null> {
   const emailAddress = login.emailAddress.trim().toLowerCase();
 
-  const result = await db
-    .request()
-    .input("emailAddress", sql.VarChar(320), emailAddress)
-    .query<AccountRow>(`
+  const result = await db.query<AccountRow>(
+    `
       select
         ${accountSelectColumns}
-      from dbo.Account
-      where EmailAddress = @emailAddress
-        and Status = 'active';
-    `);
+      from account
+      where email_address = $1
+        and status = 'active';
+    `,
+    [emailAddress],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
 
   if (!row) {
     return null;
   }
 
-  if (!(await verifyPassword(login.password, row.PasswordHash))) {
+  if (!(await verifyPassword(login.password, row.password_hash))) {
     return null;
   }
 
   const sessionToken = createSessionToken();
   const sessionTokenHash = hashSessionToken(sessionToken);
+  const client = await db.connect();
 
-  await db
-    .request()
-    .input("accountId", sql.Int, row.AccountId)
-    .input("sessionTokenHash", sql.VarChar(128), sessionTokenHash)
-    .input("sessionTtlDays", sql.Int, SESSION_TTL_DAYS)
-    .query(`
-      insert into dbo.AuthSession (
-        AccountId,
-        SessionTokenHash,
-        ExpiresAt
-      )
-      values (
-        @accountId,
-        @sessionTokenHash,
-        dateadd(day, @sessionTtlDays, sysutcdatetime())
-      );
-
-      update dbo.Account
-      set LastLoginAt = sysutcdatetime()
-      where AccountId = @accountId;
-    `);
+  try {
+    await client.query("begin");
+    await client.query(
+      `
+        insert into auth_session (
+          account_id,
+          session_token_hash,
+          expires_at
+        )
+        values (
+          $1,
+          $2,
+          now() + ($3 * interval '1 day')
+        );
+      `,
+      [row.account_id, sessionTokenHash, SESSION_TTL_DAYS],
+    );
+    await client.query(
+      `
+        update account
+        set last_login_at = now()
+        where account_id = $1;
+      `,
+      [row.account_id],
+    );
+    await client.query("commit");
+  } catch (err) {
+    await client.query("rollback");
+    throw err;
+  } finally {
+    client.release();
+  }
 
   return {
     account: {
@@ -250,84 +275,84 @@ export async function loginAccount(
 }
 
 export async function getAccountBySessionToken(
-  db: sql.ConnectionPool,
+  db: Pool,
   sessionToken: string,
 ): Promise<AuthAccount | null> {
   const sessionTokenHash = hashSessionToken(sessionToken);
 
-  const result = await db
-    .request()
-    .input("sessionTokenHash", sql.VarChar(128), sessionTokenHash)
-    .query<AccountRow>(`
+  const result = await db.query<AccountRow>(
+    `
       select
-        a.AccountId,
-        a.EmailAddress,
-        a.PasswordHash,
-        a.EmailVerifiedAt,
-        a.Status,
-        a.CreatedAt,
-        a.LastLoginAt
-      from dbo.AuthSession s
-      join dbo.Account a
-        on a.AccountId = s.AccountId
-      where s.SessionTokenHash = @sessionTokenHash
-        and s.RevokedAt is null
-        and s.ExpiresAt > sysutcdatetime()
-        and a.Status = 'active';
-    `);
+        a.account_id,
+        a.email_address,
+        a.password_hash,
+        a.email_verified_at,
+        a.status,
+        a.created_at,
+        a.last_login_at
+      from auth_session s
+      join account a
+        on a.account_id = s.account_id
+      where s.session_token_hash = $1
+        and s.revoked_at is null
+        and s.expires_at > now()
+        and a.status = 'active';
+    `,
+    [sessionTokenHash],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
   return row ? mapAccount(row) : null;
 }
 
 export async function getSessionByToken(
-  db: sql.ConnectionPool,
+  db: Pool,
   sessionToken: string,
 ): Promise<AuthSession | null> {
   const sessionTokenHash = hashSessionToken(sessionToken);
 
-  const result = await db
-    .request()
-    .input("sessionTokenHash", sql.VarChar(128), sessionTokenHash)
-    .query<SessionRow>(`
+  const result = await db.query<SessionRow>(
+    `
       select
-        AuthSessionId,
-        CreatedAt,
-        ExpiresAt,
-        RevokedAt
-      from dbo.AuthSession
-      where SessionTokenHash = @sessionTokenHash;
-    `);
+        auth_session_id,
+        created_at,
+        expires_at,
+        revoked_at
+      from auth_session
+      where session_token_hash = $1;
+    `,
+    [sessionTokenHash],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
   return row ? mapSession(row) : null;
 }
 
 export async function revokeSessionToken(
-  db: sql.ConnectionPool,
+  db: Pool,
   sessionToken: string,
 ): Promise<void> {
   const sessionTokenHash = hashSessionToken(sessionToken);
 
-  await db
-    .request()
-    .input("sessionTokenHash", sql.VarChar(128), sessionTokenHash)
-    .query(`
-      update dbo.AuthSession
-      set RevokedAt = coalesce(RevokedAt, sysutcdatetime())
-      where SessionTokenHash = @sessionTokenHash;
-    `);
+  await db.query(
+    `
+      update auth_session
+      set revoked_at = coalesce(revoked_at, now())
+      where session_token_hash = $1;
+    `,
+    [sessionTokenHash],
+  );
 }
 
 export async function deleteDemoAccount(
-  db: sql.ConnectionPool,
+  db: Pool,
   accountId: number,
 ): Promise<void> {
-  await db
-    .request()
-    .input("accountId", sql.Int, accountId)
-    .query(`
-      delete from dbo.Account
-      where AccountId = @accountId;
-    `);
+  await db.query(
+    `
+      delete from account
+      where account_id = $1;
+    `,
+    [accountId],
+  );
 }

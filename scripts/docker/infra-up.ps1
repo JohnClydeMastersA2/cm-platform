@@ -3,14 +3,10 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $composeFile = Join-Path $repoRoot "docker\compose.dev.yml"
 $envFile = Join-Path $repoRoot "packages\secrets\cm-platform.env"
-$volumeName = "docker_mssql_data"
+$volumeName = "cm_platform_postgres_data"
 $containerName = "cm-platform-db"
 $rabbitMqContainerName = "cm-platform-rabbitmq"
 $mongoContainerName = "cm-platform-mongodb"
-$devDatabaseNames = @("CMPlatform")
-$legacyDatabaseRenames = @{
-    "Sandbox" = "CMPlatform"
-}
 
 function Get-DevEnvValue {
     param(
@@ -33,9 +29,7 @@ function Get-DevEnvValue {
     return ($line -replace "^\s*$([regex]::Escape($Name))=", "").Trim()
 }
 
-$saPassword = Get-DevEnvValue -Name "MSSQL_SA_PASSWORD"
-$dbUser = Get-DevEnvValue -Name "DB_USER"
-$dbPassword = Get-DevEnvValue -Name "DB_PASSWORD"
+$postgresUser = Get-DevEnvValue -Name "POSTGRES_USER"
 $mongoRootUsername = Get-DevEnvValue -Name "MONGODB_ROOT_USERNAME"
 $mongoRootPassword = Get-DevEnvValue -Name "MONGODB_ROOT_PASSWORD"
 $mongoAppUsername = Get-DevEnvValue -Name "MONGODB_APP_USERNAME"
@@ -45,22 +39,7 @@ $healthcareMongoAppPassword = Get-DevEnvValue -Name "HEALTHCARE_TRANSFORM_MONGOD
 $mongoDatabaseName = "CMPlatformDocuments"
 $healthcareMongoDatabaseName = "healthcare_transform"
 
-function Invoke-SqlServerCommand {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Query
-    )
-
-    docker exec $containerName /opt/mssql-tools18/bin/sqlcmd `
-        -S localhost `
-        -U sa `
-        -P $saPassword `
-        -C `
-        -b `
-        -Q $Query
-}
-
-function Wait-ForSqlServer {
+function Wait-ForPostgres {
     $maxAttempts = 60
 
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
@@ -68,120 +47,21 @@ function Wait-ForSqlServer {
         $ErrorActionPreference = "Continue"
 
         try {
-            Invoke-SqlServerCommand -Query "select 1 as ok" *> $null
-            $sqlServerPingExitCode = $LASTEXITCODE
+            docker exec $containerName pg_isready -U $postgresUser *> $null
+            $postgresPingExitCode = $LASTEXITCODE
         } finally {
             $ErrorActionPreference = $previousErrorActionPreference
         }
 
-        if ($sqlServerPingExitCode -eq 0) {
-            Write-Host "SQL Server is ready."
+        if ($postgresPingExitCode -eq 0) {
+            Write-Host "Postgres is ready."
             return
         }
 
         Start-Sleep -Seconds 2
     }
 
-    throw "SQL Server did not become ready after $($maxAttempts * 2) seconds."
-}
-
-function Ensure-DevDatabases {
-    foreach ($legacyDatabaseName in $legacyDatabaseRenames.Keys) {
-        $targetDatabaseName = $legacyDatabaseRenames[$legacyDatabaseName]
-        $query = @"
-declare @legacyDatabaseName sysname = N'$legacyDatabaseName';
-declare @targetDatabaseName sysname = N'$targetDatabaseName';
-
-if DB_ID(@legacyDatabaseName) is not null
-   and DB_ID(@targetDatabaseName) is null
-begin
-    declare @sql nvarchar(max) =
-        N'alter database ' + QUOTENAME(@legacyDatabaseName) + N' set single_user with rollback immediate;' +
-        N'alter database ' + QUOTENAME(@legacyDatabaseName) + N' modify name = ' + QUOTENAME(@targetDatabaseName) + N';' +
-        N'alter database ' + QUOTENAME(@targetDatabaseName) + N' set multi_user;';
-    exec (@sql);
-end
-"@
-
-        Invoke-SqlServerCommand -Query $query | Out-Null
-
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to rename SQL Server database '$legacyDatabaseName' to '$targetDatabaseName'."
-        }
-    }
-
-    foreach ($databaseName in $devDatabaseNames) {
-        $query = @"
-declare @databaseName sysname = N'$databaseName';
-
-if DB_ID(@databaseName) is null
-begin
-    declare @sql nvarchar(max) = N'create database ' + QUOTENAME(@databaseName);
-    exec (@sql);
-end
-"@
-
-        Invoke-SqlServerCommand -Query $query | Out-Null
-
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to ensure SQL Server database '$databaseName'."
-        }
-
-        Write-Host "SQL Server database is available: $databaseName"
-    }
-}
-
-function Ensure-SqlAppLogin {
-    $escapedUser = $dbUser.Replace("'", "''")
-    $escapedPassword = $dbPassword.Replace("'", "''")
-    $query = @"
-declare @loginName sysname = N'$escapedUser';
-declare @password nvarchar(128) = N'$escapedPassword';
-declare @sql nvarchar(max);
-
-if not exists (select 1 from sys.server_principals where name = @loginName)
-begin
-    set @sql = N'create login ' + QUOTENAME(@loginName) +
-        N' with password = ' + QUOTENAME(@password, '''') +
-        N', check_policy = on;';
-    exec (@sql);
-end
-else
-begin
-    set @sql = N'alter login ' + QUOTENAME(@loginName) +
-        N' with password = ' + QUOTENAME(@password, '''') + N';';
-    exec (@sql);
-end
-
-use [CMPlatform];
-
-if not exists (select 1 from sys.database_principals where name = @loginName)
-begin
-    set @sql = N'create user ' + QUOTENAME(@loginName) +
-        N' for login ' + QUOTENAME(@loginName) + N';';
-    exec (@sql);
-end
-
-if IS_ROLEMEMBER(N'db_datareader', @loginName) <> 1
-begin
-    set @sql = N'alter role [db_datareader] add member ' + QUOTENAME(@loginName) + N';';
-    exec (@sql);
-end
-
-if IS_ROLEMEMBER(N'db_datawriter', @loginName) <> 1
-begin
-    set @sql = N'alter role [db_datawriter] add member ' + QUOTENAME(@loginName) + N';';
-    exec (@sql);
-end
-"@
-
-    Invoke-SqlServerCommand -Query $query | Out-Null
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to ensure the SQL Server application login."
-    }
-
-    Write-Host "SQL Server application login is available for CMPlatform."
+    throw "Postgres did not become ready after $($maxAttempts * 2) seconds."
 }
 
 function Wait-ForRabbitMq {
@@ -314,12 +194,10 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Wait-ForSqlServer
+Wait-ForPostgres
 Wait-ForRabbitMq
 Wait-ForMongoDb
 Ensure-MongoAppUser
 Ensure-HealthcareTransformMongoAppUser
-Ensure-DevDatabases
-Ensure-SqlAppLogin
 
 exit $LASTEXITCODE

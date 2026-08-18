@@ -1,69 +1,69 @@
-import sql from "mssql";
+import type { Pool } from "pg";
 import type { WidgetConsumerDemoItem, WidgetConsumerStatus } from "./widget_consumer.schema.js";
 
 type WidgetConsumerRow = {
-  WidgetId: number;
-  WidgetName: string;
-  Status: WidgetConsumerStatus;
-  CreatedAt: Date;
-  QueuedAt: Date | null;
-  ProcessingStartedAt: Date | null;
-  ProcessedAt: Date | null;
-  ProcessedBy: string | null;
-  ProcessingSeconds: number | null;
-  LastMessageId: string | null;
-  LastError: string | null;
+  widget_id: number;
+  widget_name: string;
+  status: WidgetConsumerStatus;
+  created_at: Date;
+  queued_at: Date | null;
+  processing_started_at: Date | null;
+  processed_at: Date | null;
+  processed_by: string | null;
+  processing_seconds: number | null;
+  last_message_id: string | null;
+  last_error: string | null;
 };
 
 function mapWidgetConsumerItem(row: WidgetConsumerRow): WidgetConsumerDemoItem {
   return {
-    widgetId: row.WidgetId,
-    widgetName: row.WidgetName,
-    status: row.Status,
-    createdAt: row.CreatedAt,
-    queuedAt: row.QueuedAt,
-    processingStartedAt: row.ProcessingStartedAt,
-    processedAt: row.ProcessedAt,
-    processedBy: row.ProcessedBy,
-    processingSeconds: row.ProcessingSeconds,
-    lastMessageId: row.LastMessageId,
-    lastError: row.LastError,
+    widgetId: row.widget_id,
+    widgetName: row.widget_name,
+    status: row.status,
+    createdAt: row.created_at,
+    queuedAt: row.queued_at,
+    processingStartedAt: row.processing_started_at,
+    processedAt: row.processed_at,
+    processedBy: row.processed_by,
+    processingSeconds: row.processing_seconds,
+    lastMessageId: row.last_message_id,
+    lastError: row.last_error,
   };
 }
 
 export async function createWidgetConsumerItem(
-  db: sql.ConnectionPool,
+  db: Pool,
   widgetName: string,
 ): Promise<WidgetConsumerDemoItem> {
-  const result = await db
-    .request()
-    .input("widgetName", sql.VarChar(200), widgetName)
-    .query<WidgetConsumerRow>(`
-      insert into dbo.WidgetConsumerDemo (
-        WidgetName,
-        Status,
-        QueuedAt
+  const result = await db.query<WidgetConsumerRow>(
+    `
+      insert into widget_consumer_demo (
+        widget_name,
+        status,
+        queued_at
       )
-      output
-        inserted.WidgetId,
-        inserted.WidgetName,
-        inserted.Status,
-        inserted.CreatedAt,
-        inserted.QueuedAt,
-        inserted.ProcessingStartedAt,
-        inserted.ProcessedAt,
-        inserted.ProcessedBy,
-        inserted.ProcessingSeconds,
-        inserted.LastMessageId,
-        inserted.LastError
       values (
-        @widgetName,
+        $1,
         'queued',
-        sysutcdatetime()
-      );
-    `);
+        now()
+      )
+      returning
+        widget_id,
+        widget_name,
+        status,
+        created_at,
+        queued_at,
+        processing_started_at,
+        processed_at,
+        processed_by,
+        processing_seconds,
+        last_message_id,
+        last_error;
+    `,
+    [widgetName],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
 
   if (!row) {
     throw new Error("Widget consumer demo insert did not return a row");
@@ -73,30 +73,31 @@ export async function createWidgetConsumerItem(
 }
 
 export async function listWidgetConsumerItems(
-  db: sql.ConnectionPool,
+  db: Pool,
 ): Promise<WidgetConsumerDemoItem[]> {
-  const result = await db.request().query<WidgetConsumerRow>(`
-    select top (200)
-      WidgetId,
-      WidgetName,
-      Status,
-      CreatedAt,
-      QueuedAt,
-      ProcessingStartedAt,
-      ProcessedAt,
-      ProcessedBy,
-      ProcessingSeconds,
-      LastMessageId,
-      LastError
-    from dbo.WidgetConsumerDemo
-    order by WidgetId desc;
+  const result = await db.query<WidgetConsumerRow>(`
+    select
+      widget_id,
+      widget_name,
+      status,
+      created_at,
+      queued_at,
+      processing_started_at,
+      processed_at,
+      processed_by,
+      processing_seconds,
+      last_message_id,
+      last_error
+    from widget_consumer_demo
+    order by widget_id desc
+    limit 200;
   `);
 
-  return result.recordset.map(mapWidgetConsumerItem);
+  return result.rows.map(mapWidgetConsumerItem);
 }
 
-export async function deleteAllWidgetConsumerItems(db: sql.ConnectionPool): Promise<void> {
-  await db.request().query(`
-    delete from dbo.WidgetConsumerDemo;
+export async function deleteAllWidgetConsumerItems(db: Pool): Promise<void> {
+  await db.query(`
+    delete from widget_consumer_demo;
   `);
 }

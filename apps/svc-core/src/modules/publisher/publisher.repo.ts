@@ -1,4 +1,5 @@
-import sql from "mssql";
+import { randomUUID } from "node:crypto";
+import type { Pool } from "pg";
 import type {
   Publisher,
   PublisherLogin,
@@ -8,149 +9,136 @@ import type {
 import { hashPassword, verifyPassword } from "./password.js";
 
 type PublisherRow = {
-  PublisherId: number;
-  PublisherName: string;
-  ExternalId: string | null;
-  IsActive: boolean;
-  CreatedAt: Date;
-  CreatedBy: string | null;
-  UpdatedAt: Date | null;
-  UpdatedBy: string | null;
-  ContactName: string | null;
-  ContactEmail: string | null;
-  WebsiteUrl: string | null;
-  RegistrationNotes: string | null;
-  RegistrationStatus: string;
-  PasswordHash: string | null;
-  PasswordSetAt: Date | null;
-  LastLoginAt: Date | null;
+  publisher_id: number;
+  publisher_name: string;
+  external_id: string | null;
+  is_active: boolean;
+  created_at: Date;
+  created_by: string | null;
+  updated_at: Date | null;
+  updated_by: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  website_url: string | null;
+  registration_notes: string | null;
+  registration_status: string;
+  password_hash: string | null;
+  password_set_at: Date | null;
+  last_login_at: Date | null;
 };
 
 function mapPublisher(row: PublisherRow): Publisher {
   return {
-    publisherId: row.PublisherId,
-    publisherName: row.PublisherName,
-    externalId: row.ExternalId,
-    isActive: row.IsActive,
-    createdAt: row.CreatedAt,
-    createdBy: row.CreatedBy,
-    updatedAt: row.UpdatedAt,
-    updatedBy: row.UpdatedBy,
-    contactName: row.ContactName,
-    contactEmail: row.ContactEmail,
-    websiteUrl: row.WebsiteUrl,
-    registrationNotes: row.RegistrationNotes,
-    registrationStatus: row.RegistrationStatus,
-    hasPassword: row.PasswordHash !== null,
-    passwordSetAt: row.PasswordSetAt,
-    lastLoginAt: row.LastLoginAt,
+    publisherId: row.publisher_id,
+    publisherName: row.publisher_name,
+    externalId: row.external_id,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    createdBy: row.created_by,
+    updatedAt: row.updated_at,
+    updatedBy: row.updated_by,
+    contactName: row.contact_name,
+    contactEmail: row.contact_email,
+    websiteUrl: row.website_url,
+    registrationNotes: row.registration_notes,
+    registrationStatus: row.registration_status,
+    hasPassword: row.password_hash !== null,
+    passwordSetAt: row.password_set_at,
+    lastLoginAt: row.last_login_at,
   };
 }
 
 const publisherSelectColumns = `
-  PublisherId,
-  PublisherName,
-  ExternalId,
-  IsActive,
-  CreatedAt,
-  CreatedBy,
-  UpdatedAt,
-  UpdatedBy,
-  ContactName,
-  ContactEmail,
-  WebsiteUrl,
-  RegistrationNotes,
-  RegistrationStatus,
-  PasswordHash,
-  PasswordSetAt,
-  LastLoginAt
+  publisher_id,
+  publisher_name,
+  external_id,
+  is_active,
+  created_at,
+  created_by,
+  updated_at,
+  updated_by,
+  contact_name,
+  contact_email,
+  website_url,
+  registration_notes,
+  registration_status,
+  password_hash,
+  password_set_at,
+  last_login_at
 `;
 
-export async function listPublishers(db: sql.ConnectionPool): Promise<Publisher[]> {
-  const result = await db.request().query<PublisherRow>(`
+export async function listPublishers(db: Pool): Promise<Publisher[]> {
+  const result = await db.query<PublisherRow>(`
     select
       ${publisherSelectColumns}
-    from dbo.Publisher
-    order by PublisherName;
+    from publisher
+    order by publisher_name;
   `);
 
-  return result.recordset.map(mapPublisher);
+  return result.rows.map(mapPublisher);
 }
 
 export async function getPublisherById(
-  db: sql.ConnectionPool,
+  db: Pool,
   publisherId: number,
 ): Promise<Publisher | null> {
-  const result = await db
-    .request()
-    .input("publisherId", sql.Int, publisherId)
-    .query<PublisherRow>(`
+  const result = await db.query<PublisherRow>(
+    `
       select
         ${publisherSelectColumns}
-      from dbo.Publisher
-      where PublisherId = @publisherId;
-    `);
+      from publisher
+      where publisher_id = $1;
+    `,
+    [publisherId],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
   return row ? mapPublisher(row) : null;
 }
 
 export async function createPublisherRegistration(
-  db: sql.ConnectionPool,
+  db: Pool,
   registration: PublisherRegistration,
 ): Promise<Publisher> {
   const notes = registration.registrationNotes?.trim() || null;
 
-  const result = await db
-    .request()
-    .input("publisherName", sql.VarChar(255), registration.publisherName)
-    .input("contactName", sql.VarChar(255), registration.contactName)
-    .input("contactEmail", sql.VarChar(255), registration.contactEmail)
-    .input("websiteUrl", sql.VarChar(500), registration.websiteUrl)
-    .input("registrationNotes", sql.VarChar(sql.MAX), notes)
-    .query<PublisherRow>(`
-      insert into dbo.Publisher (
-        PublisherName,
-        ExternalId,
-        IsActive,
-        CreatedBy,
-        ContactName,
-        ContactEmail,
-        WebsiteUrl,
-        RegistrationNotes,
-        RegistrationStatus
+  const result = await db.query<PublisherRow>(
+    `
+      insert into publisher (
+        publisher_name,
+        external_id,
+        is_active,
+        created_by,
+        contact_name,
+        contact_email,
+        website_url,
+        registration_notes,
+        registration_status
       )
-      output
-        inserted.PublisherId,
-        inserted.PublisherName,
-        inserted.ExternalId,
-        inserted.IsActive,
-        inserted.CreatedAt,
-        inserted.CreatedBy,
-        inserted.UpdatedAt,
-        inserted.UpdatedBy,
-        inserted.ContactName,
-        inserted.ContactEmail,
-        inserted.WebsiteUrl,
-        inserted.RegistrationNotes,
-        inserted.RegistrationStatus,
-        inserted.PasswordHash,
-        inserted.PasswordSetAt,
-        inserted.LastLoginAt
       values (
-        @publisherName,
-        concat('PUB-REG-', replace(convert(varchar(36), newid()), '-', '')),
-        0,
+        $1,
+        $2,
+        false,
         'publisher-registration',
-        @contactName,
-        @contactEmail,
-        @websiteUrl,
-        @registrationNotes,
+        $3,
+        $4,
+        $5,
+        $6,
         'pending'
-      );
-    `);
+      )
+      returning ${publisherSelectColumns};
+    `,
+    [
+      registration.publisherName,
+      `PUB-REG-${randomUUID().replaceAll("-", "")}`,
+      registration.contactName,
+      registration.contactEmail,
+      registration.websiteUrl,
+      notes,
+    ],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
 
   if (!row) {
     throw new Error("Publisher registration insert did not return a row");
@@ -160,105 +148,72 @@ export async function createPublisherRegistration(
 }
 
 export async function setPublisherPassword(
-  db: sql.ConnectionPool,
+  db: Pool,
   passwordSetup: PublisherPasswordSetup,
 ): Promise<Publisher | null> {
   const contactEmail = passwordSetup.contactEmail.toLowerCase();
   const passwordHash = await hashPassword(passwordSetup.password);
 
-  const result = await db
-    .request()
-    .input("contactEmail", sql.VarChar(255), contactEmail)
-    .input("passwordHash", sql.VarChar(500), passwordHash)
-    .query<PublisherRow>(`
-      update dbo.Publisher
+  const result = await db.query<PublisherRow>(
+    `
+      update publisher
       set
-        PasswordHash = @passwordHash,
-        PasswordSetAt = sysutcdatetime(),
-        UpdatedAt = sysutcdatetime(),
-        UpdatedBy = 'publisher-password-setup'
-      output
-        inserted.PublisherId,
-        inserted.PublisherName,
-        inserted.ExternalId,
-        inserted.IsActive,
-        inserted.CreatedAt,
-        inserted.CreatedBy,
-        inserted.UpdatedAt,
-        inserted.UpdatedBy,
-        inserted.ContactName,
-        inserted.ContactEmail,
-        inserted.WebsiteUrl,
-        inserted.RegistrationNotes,
-        inserted.RegistrationStatus,
-        inserted.PasswordHash,
-        inserted.PasswordSetAt,
-        inserted.LastLoginAt
-      where lower(ContactEmail) = @contactEmail
-        and RegistrationStatus = 'approved'
-        and IsActive = 1;
-    `);
+        password_hash = $2,
+        password_set_at = now(),
+        updated_at = now(),
+        updated_by = 'publisher-password-setup'
+      where lower(contact_email) = $1
+        and registration_status = 'approved'
+        and is_active = true
+      returning ${publisherSelectColumns};
+    `,
+    [contactEmail, passwordHash],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
   return row ? mapPublisher(row) : null;
 }
 
 export async function loginPublisher(
-  db: sql.ConnectionPool,
+  db: Pool,
   login: PublisherLogin,
 ): Promise<Publisher | null> {
   const contactEmail = login.contactEmail.toLowerCase();
 
-  const result = await db
-    .request()
-    .input("contactEmail", sql.VarChar(255), contactEmail)
-    .query<PublisherRow>(`
+  const result = await db.query<PublisherRow>(
+    `
       select
         ${publisherSelectColumns}
-      from dbo.Publisher
-      where lower(ContactEmail) = @contactEmail
-        and RegistrationStatus = 'approved'
-        and IsActive = 1;
-    `);
+      from publisher
+      where lower(contact_email) = $1
+        and registration_status = 'approved'
+        and is_active = true;
+    `,
+    [contactEmail],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
 
-  if (!row?.PasswordHash) {
+  if (!row?.password_hash) {
     return null;
   }
 
-  const passwordMatches = await verifyPassword(login.password, row.PasswordHash);
+  const passwordMatches = await verifyPassword(login.password, row.password_hash);
 
   if (!passwordMatches) {
     return null;
   }
 
-  const updateResult = await db
-    .request()
-    .input("publisherId", sql.Int, row.PublisherId)
-    .query<PublisherRow>(`
-      update dbo.Publisher
-      set LastLoginAt = sysutcdatetime()
-      output
-        inserted.PublisherId,
-        inserted.PublisherName,
-        inserted.ExternalId,
-        inserted.IsActive,
-        inserted.CreatedAt,
-        inserted.CreatedBy,
-        inserted.UpdatedAt,
-        inserted.UpdatedBy,
-        inserted.ContactName,
-        inserted.ContactEmail,
-        inserted.WebsiteUrl,
-        inserted.RegistrationNotes,
-        inserted.RegistrationStatus,
-        inserted.PasswordHash,
-        inserted.PasswordSetAt,
-        inserted.LastLoginAt
-      where PublisherId = @publisherId;
-    `);
+  const updateResult = await db.query<PublisherRow>(
+    `
+      update publisher
+      set last_login_at = now()
+      where publisher_id = $1
+      returning ${publisherSelectColumns};
+    `,
+    [row.publisher_id],
+  );
 
-  const updatedRow = updateResult.recordset[0];
+  const updatedRow = updateResult.rows[0];
   return updatedRow ? mapPublisher(updatedRow) : mapPublisher(row);
 }

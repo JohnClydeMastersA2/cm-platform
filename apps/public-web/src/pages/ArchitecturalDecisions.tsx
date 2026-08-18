@@ -17,14 +17,14 @@ const decisions = [
       "React was introduced to give the public website a more maintainable structure as the portfolio grew from static content into a collection of routed pages, account workflows, infrastructure status views, and interactive RabbitMQ and MongoDB demos. React keeps page behavior close to the page that owns it, supports reusable layout and UI components, and provides a market-relevant frontend model without replacing the existing Bootstrap visual foundation."
   },
   {
-    title: "Why SQL Server?",
+    title: "Why Postgres and Neon?",
     body:
-      "SQL Server remains the primary transactional database because it is a mature, highly capable relational platform with which I have extensive professional experience. The platform stores durable workflow state, configuration, and operational data where relational integrity, transactional consistency, and structured querying are important. Choosing SQL Server also demonstrates that modern application architecture can successfully combine established enterprise technologies with newer cloud-native components."
+      "Postgres is the primary transactional database because the platform still benefits from relational integrity, transactional consistency, and structured querying, while Neon provides a low-cost managed runtime that fits the portfolio's scale. The project previously used SQL Server, but the migration to Postgres reduces standing cost and keeps the architecture focused on technologies that add current portfolio value."
   },
   {
     title: "Why MongoDB?",
     body:
-      "MongoDB was introduced to demonstrate document-oriented persistence where preserving the original structure of externally supplied data is more valuable than forcing it into a relational model. Email webhook payloads provide a good example; storing them as documents allows the platform to retain complete provider responses for troubleshooting, auditing, and future analysis without requiring frequent schema changes. Using both SQL Server and MongoDB illustrates that different persistence technologies are appropriate for different workloads."
+      "MongoDB was introduced to demonstrate document-oriented persistence where preserving the original structure of externally supplied data is more valuable than forcing it into a relational model. Email webhook payloads provide a good example; storing them as documents allows the platform to retain complete provider responses for troubleshooting, auditing, and future analysis without requiring frequent schema changes. Using both Postgres and MongoDB illustrates that different persistence technologies are appropriate for different workloads."
   },
   {
     title: "Why RabbitMQ?",

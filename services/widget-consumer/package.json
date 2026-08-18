@@ -11,14 +11,14 @@
   "dependencies": {
     "@cm/logging": "*",
     "@cm/messaging": "*",
+    "@types/pg": "^8.23.1",
     "amqplib": "^0.10.9",
     "dotenv": "^17.2.3",
-    "mssql": "^12.5.0",
+    "pg": "^8.23.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.8",
-    "@types/mssql": "^12.3.0",
     "@types/node": "^25.2.0",
     "tsx": "^4.22.4",
     "typescript": "^5.9.3"

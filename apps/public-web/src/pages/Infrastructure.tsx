@@ -191,7 +191,7 @@ export function Infrastructure() {
         <div className="platform-stack" aria-label="Infrastructure status summary">
           <StackRow
             label="Status Source"
-            value="Fastify API readiness, SQL Server and MongoDB queries, RabbitMQ queue metadata, webhook event history"
+            value="Fastify API readiness, Postgres and MongoDB queries, RabbitMQ queue metadata, webhook event history"
           />
           <StackRow label="Purpose" value="Make required local services visible before running demos" />
           <StackRow label="Limit" value="RabbitMQ confirms attached consumers, not individual process names" />
@@ -426,7 +426,7 @@ function buildUnavailablePlatformStatus(err: unknown): PlatformStatus {
     },
     {
       key: "database",
-      name: "SQL Database",
+      name: "Postgres Database",
       disposition: "unknown",
       detail: "Database status cannot be checked until the API service is running."
     },

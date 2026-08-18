@@ -6,7 +6,7 @@ const credentials = [
   "API-first platform design",
   "TypeScript full-stack development",
   "Fastify service architecture",
-  "SQL Server workflow persistence",
+  "Postgres workflow persistence",
   "MongoDB document persistence",
   "RabbitMQ messaging patterns",
   "Background services and workers",
@@ -36,8 +36,8 @@ const platformCards = [
   {
     title: "Persistence",
     body:
-      "SQL Server stores visible workflow state and event history, while MongoDB stores document-shaped webhook events for provider payload inspection and delivery history.",
-    proof: "SQL Server workflow tables, MongoDB Atlas, /email-webhook-events"
+      "Postgres stores visible workflow state and account data, while MongoDB stores document-shaped webhook events for provider payload inspection and delivery history.",
+    proof: "Postgres workflow tables, MongoDB Atlas, /email-webhook-events"
   },
   {
     title: "React Frontend",
@@ -73,7 +73,7 @@ const platformCards = [
 
 const capabilities = [
   ["Backend Services & APIs", "Node.js, Fastify, TypeScript, REST APIs"],
-  ["Data & Persistence", "SQL Server, MongoDB, ETL Pipelines"],
+  ["Data & Persistence", "Postgres, MongoDB, RabbitMQ-backed workflow state"],
   ["Messaging & Background Processing", "RabbitMQ, Durable Messaging, Worker Services"],
   ["Frontend", "TypeScript, Vite, Bootstrap, React"],
   ["Cloud & DevOps", "Azure, Docker, GitHub Actions, Bicep, CI/CD"],

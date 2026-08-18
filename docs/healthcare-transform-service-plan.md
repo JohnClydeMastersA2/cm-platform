@@ -46,7 +46,7 @@ The service should have:
 - Its own health and readiness endpoints
 - A narrow domain boundary around healthcare document transformation, archive, search, and retrieval
 
-It should integrate with CM Platform through service boundaries such as HTTP, RabbitMQ, MongoDB, SQL Server, Docker images, and environment variables.
+It should integrate with CM Platform through service boundaries such as HTTP, RabbitMQ, MongoDB, Postgres, Docker images, and environment variables.
 
 ## Why It Belongs In CM Platform
 
@@ -57,7 +57,7 @@ This fits the existing project because CM Platform already has:
 - GHCR image publishing
 - MongoDB for document-oriented storage
 - RabbitMQ for asynchronous workflows
-- SQL Server for relational application data
+- Postgres for relational application data
 - A public web app that can host an archive/search interface
 - A core API service that can act as the platform front door
 
@@ -153,7 +153,7 @@ Expected additions:
 - local Compose service entry, if containerized local testing is useful
 - GHCR build/publish steps in `.github/workflows/build.yml`
 - Azure Container App resource in `infra/bicep/container-apps.bicep`
-- runtime environment variables for MongoDB, RabbitMQ, SQL Server, and service configuration as needed
+- runtime environment variables for MongoDB, RabbitMQ, Postgres, and service configuration as needed
 
 The service should be deployed as its own Azure Container App because it has a different runtime, dependency profile, and scaling pattern from the TypeScript services.
 
@@ -204,7 +204,7 @@ Conceptual document shape:
 }
 ```
 
-MongoDB is the natural first storage target because the archive stores raw documents, parsed JSON, and flexible transaction-specific metadata. SQL Server can be introduced later if relational reporting, audit workflow, or stronger operational querying becomes important.
+MongoDB is the natural first storage target because the archive stores raw documents, parsed JSON, and flexible transaction-specific metadata. Postgres can be introduced later if relational reporting, audit workflow, or stronger operational querying becomes important.
 
 ## Initial API Sketch
 
@@ -336,4 +336,4 @@ Phase 5:
 
 Build it inside CM Platform, but keep it clean enough to extract later.
 
-The Java service should avoid direct dependencies on TypeScript packages. Integration should happen through HTTP, RabbitMQ, MongoDB, SQL Server, Docker images, and environment variables.
+The Java service should avoid direct dependencies on TypeScript packages. Integration should happen through HTTP, RabbitMQ, MongoDB, Postgres, Docker images, and environment variables.

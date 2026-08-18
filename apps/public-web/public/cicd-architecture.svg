@@ -93,7 +93,7 @@
   <text x="160" y="682" text-anchor="middle" class="label">Cloudflare</text>
 
   <rect x="280" y="655" width="150" height="44" rx="9" class="managed"/>
-  <text x="355" y="682" text-anchor="middle" class="label">Azure SQL</text>
+  <text x="355" y="682" text-anchor="middle" class="label">Neon Postgres</text>
 
   <rect x="475" y="655" width="150" height="44" rx="9" class="managed"/>
   <text x="550" y="682" text-anchor="middle" class="label">MongoDB Atlas</text>

@@ -182,7 +182,7 @@ export function CompetingConsumers() {
           <h1 className="h3 mb-2">Competing Consumers</h1>
           <p className="text-muted mb-0">
             This demonstration uses one RabbitMQ queue and multiple worker instances to show competing
-            consumers. Creating widgets writes rows to SQL Server with a status of queued, then publishes
+            consumers. Creating widgets writes rows to Postgres with a status of queued, then publishes
             durable messages to the RabbitMQ processing queue. Each worker consumes from the same queue
             with prefetch set to 1, so RabbitMQ gives each message to only one available worker. A faster
             worker finishes and acknowledges messages sooner, making it available for more work while

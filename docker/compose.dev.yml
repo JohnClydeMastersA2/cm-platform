@@ -1,15 +1,15 @@
 services:
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: postgres:17-alpine
     container_name: cm-platform-db
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in packages/secrets/cm-platform.env}
-      MSSQL_PID: "Developer"
+      POSTGRES_USER: ${POSTGRES_USER:-cm_platform_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in packages/secrets/cm-platform.env}
+      POSTGRES_DB: ${POSTGRES_DB:-cm_platform}
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - mssql_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
   rabbitmq:
@@ -79,13 +79,8 @@ services:
       - db
       - rabbitmq
     environment:
-      DB_SERVER: db
-      DB_PORT: "1433"
-      DB_USER: ${DB_USER:-cm_platform_app}
-      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
-      DB_DATABASE: CMPlatform
-      DB_ENCRYPT: "false"
-      DB_TRUST_SERVER_CERTIFICATE: "true"
+      DATABASE_URL: ${DATABASE_URL_CONTAINER:?Set DATABASE_URL_CONTAINER in packages/secrets/cm-platform.env}
+      PGSSLMODE: disable
       LOG_LEVEL: info
       NODE_ENV: development
       RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
@@ -101,13 +96,8 @@ services:
       - db
       - rabbitmq
     environment:
-      DB_SERVER: db
-      DB_PORT: "1433"
-      DB_USER: ${DB_USER:-cm_platform_app}
-      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in packages/secrets/cm-platform.env}
-      DB_DATABASE: CMPlatform
-      DB_ENCRYPT: "false"
-      DB_TRUST_SERVER_CERTIFICATE: "true"
+      DATABASE_URL: ${DATABASE_URL_CONTAINER:?Set DATABASE_URL_CONTAINER in packages/secrets/cm-platform.env}
+      PGSSLMODE: disable
       LOG_LEVEL: info
       NODE_ENV: development
       RABBITMQ_URL: ${RABBITMQ_URL_CONTAINER:?Set RABBITMQ_URL_CONTAINER in packages/secrets/cm-platform.env}
@@ -116,9 +106,8 @@ services:
     restart: unless-stopped
 
 volumes:
-  mssql_data:
-    external: true
-    name: docker_mssql_data
+  postgres_data:
+    name: cm_platform_postgres_data
   rabbitmq_data:
     name: cm_platform_rabbitmq_data
   mongodb_data:

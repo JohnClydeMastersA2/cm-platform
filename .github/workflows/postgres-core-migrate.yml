@@ -1,0 +1,63 @@
+name: Postgres Core Migrate
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Type MIGRATE POSTGRES to apply pending Postgres migrations
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-postgres-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate-postgres:
+    name: Migrate Postgres
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Require explicit action confirmation
+        env:
+          REQUESTED_ACTION: ${{ inputs.action }}
+        run: |
+          if [[ "${REQUESTED_ACTION}" != "MIGRATE POSTGRES" ]]; then
+            echo "Action must be exactly MIGRATE POSTGRES."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build migration tool
+        run: npm run postgres-migrate:build
+
+      - name: Apply Postgres migrations
+        env:
+          DATABASE_URL: ${{ secrets.POSTGRES_DATABASE_URL }}
+          PGSSLMODE: require
+        run: npm run db:migrate
+
+      - name: Record migration summary
+        run: |
+          {
+            echo "## Postgres Core Migration"
+            echo ""
+            echo "- Migration runner: tools/postgres-migrate"
+            echo "- Migration directory: scripts/postgres/migrations"
+            echo "- Database URL was supplied through the protected production environment"
+          } >> "${GITHUB_STEP_SUMMARY}"

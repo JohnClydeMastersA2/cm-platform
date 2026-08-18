@@ -1,81 +1,81 @@
-import sql from "mssql";
+import type { Pool } from "pg";
 import type { Offer } from "./offer.schema.js";
 
 type OfferRow = {
-  OfferId: number;
-  AdvertiserId: number;
-  AdvertiserName: string;
-  OfferName: string;
-  ExternalId: string | null;
-  IsActive: boolean;
-  CreatedAt: Date;
-  CreatedBy: string | null;
-  UpdatedAt: Date | null;
-  UpdatedBy: string | null;
+  offer_id: number;
+  advertiser_id: number;
+  advertiser_name: string;
+  offer_name: string;
+  external_id: string | null;
+  is_active: boolean;
+  created_at: Date;
+  created_by: string | null;
+  updated_at: Date | null;
+  updated_by: string | null;
 };
 
 function mapOffer(row: OfferRow): Offer {
   return {
-    offerId: row.OfferId,
-    advertiserId: row.AdvertiserId,
-    advertiserName: row.AdvertiserName,
-    offerName: row.OfferName,
-    externalId: row.ExternalId,
-    isActive: row.IsActive,
-    createdAt: row.CreatedAt,
-    createdBy: row.CreatedBy,
-    updatedAt: row.UpdatedAt,
-    updatedBy: row.UpdatedBy,
+    offerId: row.offer_id,
+    advertiserId: row.advertiser_id,
+    advertiserName: row.advertiser_name,
+    offerName: row.offer_name,
+    externalId: row.external_id,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    createdBy: row.created_by,
+    updatedAt: row.updated_at,
+    updatedBy: row.updated_by,
   };
 }
 
-export async function listOffers(db: sql.ConnectionPool): Promise<Offer[]> {
-  const result = await db.request().query<OfferRow>(`
+export async function listOffers(db: Pool): Promise<Offer[]> {
+  const result = await db.query<OfferRow>(`
     select
-      o.OfferId,
-      o.AdvertiserId,
-      a.AdvertiserName,
-      o.OfferName,
-      o.ExternalId,
-      o.IsActive,
-      o.CreatedAt,
-      o.CreatedBy,
-      o.UpdatedAt,
-      o.UpdatedBy
-    from dbo.Offer o
-    join dbo.Advertiser a
-      on a.AdvertiserId = o.AdvertiserId
-    order by o.OfferName;
+      o.offer_id,
+      o.advertiser_id,
+      a.advertiser_name,
+      o.offer_name,
+      o.external_id,
+      o.is_active,
+      o.created_at,
+      o.created_by,
+      o.updated_at,
+      o.updated_by
+    from offer o
+    join advertiser a
+      on a.advertiser_id = o.advertiser_id
+    order by o.offer_name;
   `);
 
-  return result.recordset.map(mapOffer);
+  return result.rows.map(mapOffer);
 }
 
 export async function getOfferById(
-  db: sql.ConnectionPool,
+  db: Pool,
   offerId: number,
 ): Promise<Offer | null> {
-  const result = await db
-    .request()
-    .input("offerId", sql.Int, offerId)
-    .query<OfferRow>(`
+  const result = await db.query<OfferRow>(
+    `
       select
-        o.OfferId,
-        o.AdvertiserId,
-        a.AdvertiserName,
-        o.OfferName,
-        o.ExternalId,
-        o.IsActive,
-        o.CreatedAt,
-        o.CreatedBy,
-        o.UpdatedAt,
-        o.UpdatedBy
-      from dbo.Offer o
-      join dbo.Advertiser a
-        on a.AdvertiserId = o.AdvertiserId
-      where o.OfferId = @offerId;
-    `);
+        o.offer_id,
+        o.advertiser_id,
+        a.advertiser_name,
+        o.offer_name,
+        o.external_id,
+        o.is_active,
+        o.created_at,
+        o.created_by,
+        o.updated_at,
+        o.updated_by
+      from offer o
+      join advertiser a
+        on a.advertiser_id = o.advertiser_id
+      where o.offer_id = $1;
+    `,
+    [offerId],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
   return row ? mapOffer(row) : null;
 }

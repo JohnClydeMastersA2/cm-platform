@@ -70,9 +70,7 @@ export async function authRoutes(app: FastifyInstance, opts: AuthRoutesOptions):
 
       reply.code(201).send({ account, verificationEmail });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-
-      if (message.includes("UX_Account_EmailAddress")) {
+      if (isUniqueConstraintViolation(err, "ux_account_email_address")) {
         reply.code(409).send({ error: "Account already exists" });
         return;
       }
@@ -240,6 +238,11 @@ function setSessionCookie(reply: FastifyReply, sessionToken: string): void {
 
 function clearSessionCookie(reply: FastifyReply): void {
   reply.header("set-cookie", `${SESSION_COOKIE_NAME}=; ${expiredSessionCookie}`);
+}
+
+function isUniqueConstraintViolation(err: unknown, constraintName: string): boolean {
+  const pgError = err as { code?: string; constraint?: string };
+  return pgError.code === "23505" && pgError.constraint === constraintName;
 }
 
 function readCookie(request: FastifyRequest, name: string): string | undefined {

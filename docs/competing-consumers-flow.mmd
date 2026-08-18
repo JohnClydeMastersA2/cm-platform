@@ -1,22 +1,22 @@
 flowchart LR
   browser[Browser demo page] --> api[svc-core POST /consumer-widgets]
 
-  api --> sqlQueued[SQL Server row created with status queued]
+  api --> sqlQueued[Postgres row created with status queued]
   api --> exchange[RabbitMQ exchange routes work message]
   exchange --> queue[One durable processing queue]
 
   fast[fast-consumer prefetch 1]
   slow[slow-consumer prefetch 1]
 
-  fast --> sqlFast[SQL status processing then processed]
-  slow --> sqlSlow[SQL status processing then processed]
+  fast --> sqlFast[Postgres status processing then processed]
+  slow --> sqlSlow[Postgres status processing then processed]
 
   fast -. ack .-> queue
   slow -. ack .-> queue
 
   browser --> refresh[Refresh page]
   refresh --> overview[GET /consumer-widgets]
-  overview --> sqlRead[Read SQL rows]
+  overview --> sqlRead[Read Postgres rows]
   overview --> queueCount[Read RabbitMQ queue count]
 
   classDef client fill:#e7f1ff,stroke:#0d6efd,color:#084298;

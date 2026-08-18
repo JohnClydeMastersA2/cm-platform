@@ -34,7 +34,7 @@ const cicdCards: EvidenceCard[] = [
   {
     title: "Infrastructure as code",
     body:
-      "Azure resources are modeled with Bicep so foundation, SQL, and Container Apps changes can be reviewed, previewed with what-if, and deployed through the same protected workflow path.",
+      "Azure resources are modeled with Bicep so foundation and Container Apps changes can be reviewed, previewed with what-if, and deployed through the same protected workflow path.",
     proof: "infra/bicep and docs/deployment-plan.md"
   },
   {
@@ -55,7 +55,7 @@ const containerRuntimeCards: EvidenceCard[] = [
   {
     title: "Local infrastructure",
     body:
-      "Docker Compose owns SQL Server, MongoDB, and RabbitMQ locally so the platform can run repeatable dependencies without installing those services directly on the workstation.",
+      "Docker Compose owns Postgres, MongoDB, and RabbitMQ locally so the platform can run repeatable dependencies without installing those services directly on the workstation.",
     proof: "docker/compose.dev.yml"
   },
   {
@@ -73,7 +73,7 @@ const containerRuntimeCards: EvidenceCard[] = [
   {
     title: "Production-like local runtime",
     body:
-      "The production images can run together locally against SQL Server, MongoDB, and RabbitMQ with only the web gateway exposed, giving a final smoke test before cloud deployment.",
+      "The production images can run together locally against Postgres, MongoDB, and RabbitMQ with only the web gateway exposed, giving a final smoke test before cloud deployment.",
     proof: "npm run prod-local:up and npm run prod-local:verify"
   }
 ];
@@ -100,9 +100,9 @@ const azureRows: AzureRow[] = [
     value: "ca-cmp-email-prod, ca-cmp-widget-fast-prod, ca-cmp-widget-slow-prod"
   },
   {
-    resource: "Azure SQL Database",
-    purpose: "Hosts the relational production schema with encrypted transport and separate migration/runtime identities.",
-    value: "CMPlatform on Azure SQL"
+    resource: "Neon Postgres",
+    purpose: "Hosts the relational production schema with encrypted transport and serverless-friendly cost behavior.",
+    value: "Postgres production database"
   },
   {
     resource: "Log Analytics",
@@ -149,7 +149,7 @@ export function Cicd() {
         <div className="platform-stack" aria-label="CI/CD deployment summary">
           <StackRow label="Source" value="GitHub repository, protected production environment, GitHub Actions workflows" />
           <StackRow label="Artifacts" value="Docker images tagged by Git SHA and published to GitHub Container Registry" />
-          <StackRow label="Runtime" value="Azure Container Apps, Azure SQL, managed external MongoDB/RabbitMQ/Resend services" />
+          <StackRow label="Runtime" value="Azure Container Apps, Neon Postgres, managed external MongoDB/RabbitMQ/Resend services" />
         </div>
       </div>
 
@@ -185,9 +185,9 @@ export function Cicd() {
         <div>
           <h2>What Azure Runs</h2>
           <p>
-            Azure is the production host for the container runtime, relational database, deployment
-            identity, logs, budget controls, and custom-domain binding. MongoDB Atlas, CloudAMQP,
-            Cloudflare, Resend, and GHCR remain managed services outside Azure.
+            Azure is the production host for the container runtime, deployment identity, logs, budget
+            controls, and custom-domain binding. Neon Postgres, MongoDB Atlas, CloudAMQP, Cloudflare,
+            Resend, and GHCR remain managed services outside Azure.
           </p>
         </div>
         <div className="infrastructure-table-wrap">
@@ -226,7 +226,7 @@ export function Cicd() {
           <a href="/cicd-architecture.svg" target="_blank" rel="noreferrer">
             <img
               src="/cicd-architecture.svg"
-              alt="CM Platform CI/CD architecture showing GitHub Actions, GHCR, Azure Container Apps, Azure SQL, MongoDB Atlas, CloudAMQP, Resend, and Cloudflare"
+              alt="CM Platform CI/CD architecture showing GitHub Actions, GHCR, Azure Container Apps, Neon Postgres, MongoDB Atlas, CloudAMQP, Resend, and Cloudflare"
             />
           </a>
           <p>

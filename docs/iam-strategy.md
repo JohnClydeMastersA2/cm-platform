@@ -32,9 +32,9 @@ This is a reset capability for exercising the account lifecycle, not the final p
 
 ## Email Verification
 
-Account registration creates a five-minute `email_verification` challenge in `dbo.AuthChallenge`.
+Account registration creates a five-minute `email_verification` challenge in `auth_challenge`.
 
-The raw verification token is sent by email through `@cm/email`. The database stores only a SHA-256 hash of the token. When the user clicks the verification link, `svc-core` validates the token, marks the challenge used, sets `Account.EmailVerifiedAt`, and redirects back to the public web login page.
+The raw verification token is sent by email through `@cm/email`. The database stores only a SHA-256 hash of the token. When the user clicks the verification link, `svc-core` validates the token, marks the challenge used, sets `account.email_verified_at`, and redirects back to the public web login page.
 
 Verification links use two `svc-core` environment variables so local development and production can use different public URLs:
 

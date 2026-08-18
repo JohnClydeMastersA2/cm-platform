@@ -95,9 +95,9 @@ const completedChecks: CompletedCheck[] = [
   {
     title: "Azure Advisor security review",
     body:
-      "Azure Advisor was queried for subscription and resource-level security recommendations. Findings were grouped into governance items, paid Defender evaluations, and Azure SQL hardening choices.",
+      "Azure Advisor was queried for subscription and resource-level security recommendations. Findings were grouped into governance items, paid Defender evaluations, and managed database hardening choices.",
     proof:
-      "az advisor recommendation list returned 15 security recommendations across subscription governance, Defender plans, and Azure SQL configuration"
+      "az advisor recommendation list returned 15 security recommendations across subscription governance, Defender plans, and managed database configuration"
   }
 ];
 

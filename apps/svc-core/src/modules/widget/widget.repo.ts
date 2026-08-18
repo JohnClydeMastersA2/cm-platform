@@ -1,66 +1,66 @@
-import sql from "mssql";
+import type { Pool } from "pg";
 import type { Widget, WidgetStatus } from "./widget.schema.js";
 
 type WidgetRow = {
-  WidgetId: number;
-  WidgetName: string;
-  Status: WidgetStatus;
-  CreatedAt: Date;
-  QueuedAt: Date | null;
-  ProcessingStartedAt: Date | null;
-  ProcessedAt: Date | null;
-  ProcessCount: number;
-  LastMessageId: string | null;
-  LastError: string | null;
+  widget_id: number;
+  widget_name: string;
+  status: WidgetStatus;
+  created_at: Date;
+  queued_at: Date | null;
+  processing_started_at: Date | null;
+  processed_at: Date | null;
+  process_count: number;
+  last_message_id: string | null;
+  last_error: string | null;
 };
 
 function mapWidget(row: WidgetRow): Widget {
   return {
-    widgetId: row.WidgetId,
-    widgetName: row.WidgetName,
-    status: row.Status,
-    createdAt: row.CreatedAt,
-    queuedAt: row.QueuedAt,
-    processingStartedAt: row.ProcessingStartedAt,
-    processedAt: row.ProcessedAt,
-    processCount: row.ProcessCount,
-    lastMessageId: row.LastMessageId,
-    lastError: row.LastError,
+    widgetId: row.widget_id,
+    widgetName: row.widget_name,
+    status: row.status,
+    createdAt: row.created_at,
+    queuedAt: row.queued_at,
+    processingStartedAt: row.processing_started_at,
+    processedAt: row.processed_at,
+    processCount: row.process_count,
+    lastMessageId: row.last_message_id,
+    lastError: row.last_error,
   };
 }
 
 export async function createWidget(
-  db: sql.ConnectionPool,
+  db: Pool,
   widgetName: string,
 ): Promise<Widget> {
-  const result = await db
-    .request()
-    .input("widgetName", sql.VarChar(200), widgetName)
-    .query<WidgetRow>(`
-      insert into dbo.WidgetQueueDemo (
-        WidgetName,
-        Status,
-        QueuedAt
+  const result = await db.query<WidgetRow>(
+    `
+      insert into widget_queue_demo (
+        widget_name,
+        status,
+        queued_at
       )
-      output
-        inserted.WidgetId,
-        inserted.WidgetName,
-        inserted.Status,
-        inserted.CreatedAt,
-        inserted.QueuedAt,
-        inserted.ProcessingStartedAt,
-        inserted.ProcessedAt,
-        inserted.ProcessCount,
-        inserted.LastMessageId,
-        inserted.LastError
       values (
-        @widgetName,
+        $1,
         'queued',
-        sysutcdatetime()
-      );
-    `);
+        now()
+      )
+      returning
+        widget_id,
+        widget_name,
+        status,
+        created_at,
+        queued_at,
+        processing_started_at,
+        processed_at,
+        process_count,
+        last_message_id,
+        last_error;
+    `,
+    [widgetName],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
 
   if (!row) {
     throw new Error("Widget insert did not return a row");
@@ -69,116 +69,111 @@ export async function createWidget(
   return mapWidget(row);
 }
 
-export async function listWidgets(db: sql.ConnectionPool): Promise<Widget[]> {
-  const result = await db.request().query<WidgetRow>(`
-    select top (200)
-      WidgetId,
-      WidgetName,
-      Status,
-      CreatedAt,
-      QueuedAt,
-      ProcessingStartedAt,
-      ProcessedAt,
-      ProcessCount,
-      LastMessageId,
-      LastError
-    from dbo.WidgetQueueDemo
-    order by WidgetId desc;
+export async function listWidgets(db: Pool): Promise<Widget[]> {
+  const result = await db.query<WidgetRow>(`
+    select
+      widget_id,
+      widget_name,
+      status,
+      created_at,
+      queued_at,
+      processing_started_at,
+      processed_at,
+      process_count,
+      last_message_id,
+      last_error
+    from widget_queue_demo
+    order by widget_id desc
+    limit 200;
   `);
 
-  return result.recordset.map(mapWidget);
+  return result.rows.map(mapWidget);
 }
 
-export async function deleteAllWidgets(db: sql.ConnectionPool): Promise<void> {
-  await db.request().query(`
-    delete from dbo.WidgetQueueDemo;
+export async function deleteAllWidgets(db: Pool): Promise<void> {
+  await db.query(`
+    delete from widget_queue_demo;
   `);
 }
 
 export async function markWidgetProcessed(
-  db: sql.ConnectionPool,
+  db: Pool,
   widgetId: number,
   messageId: string,
 ): Promise<void> {
-  await db
-    .request()
-    .input("widgetId", sql.Int, widgetId)
-    .input("messageId", sql.VarChar(100), messageId)
-    .query(`
-      update dbo.WidgetQueueDemo
+  await db.query(
+    `
+      update widget_queue_demo
       set
-        Status = 'processed',
-        ProcessingStartedAt = coalesce(ProcessingStartedAt, sysutcdatetime()),
-        ProcessedAt = sysutcdatetime(),
-        ProcessCount = ProcessCount + 1,
-        LastMessageId = @messageId,
-        LastError = null
-      where WidgetId = @widgetId;
-    `);
+        status = 'processed',
+        processing_started_at = coalesce(processing_started_at, now()),
+        processed_at = now(),
+        process_count = process_count + 1,
+        last_message_id = $2,
+        last_error = null
+      where widget_id = $1;
+    `,
+    [widgetId, messageId],
+  );
 }
 
 export async function markWidgetQueued(
-  db: sql.ConnectionPool,
+  db: Pool,
   widgetId: number,
   messageId: string,
 ): Promise<void> {
-  await db
-    .request()
-    .input("widgetId", sql.Int, widgetId)
-    .input("messageId", sql.VarChar(100), messageId)
-    .query(`
-      update dbo.WidgetQueueDemo
+  await db.query(
+    `
+      update widget_queue_demo
       set
-        Status = 'queued',
-        QueuedAt = sysutcdatetime(),
-        ProcessingStartedAt = null,
-        ProcessedAt = null,
-        LastMessageId = @messageId,
-        LastError = null
-      where WidgetId = @widgetId;
-    `);
+        status = 'queued',
+        queued_at = now(),
+        processing_started_at = null,
+        processed_at = null,
+        last_message_id = $2,
+        last_error = null
+      where widget_id = $1;
+    `,
+    [widgetId, messageId],
+  );
 }
 
 export async function markWidgetRetrying(
-  db: sql.ConnectionPool,
+  db: Pool,
   widgetId: number,
   messageId: string,
   errorMessage: string,
 ): Promise<void> {
-  await db
-    .request()
-    .input("widgetId", sql.Int, widgetId)
-    .input("messageId", sql.VarChar(100), messageId)
-    .input("errorMessage", sql.VarChar(sql.MAX), errorMessage)
-    .query(`
-      update dbo.WidgetQueueDemo
+  await db.query(
+    `
+      update widget_queue_demo
       set
-        Status = 'retrying',
-        ProcessingStartedAt = coalesce(ProcessingStartedAt, sysutcdatetime()),
-        LastMessageId = @messageId,
-        LastError = @errorMessage
-      where WidgetId = @widgetId;
-    `);
+        status = 'retrying',
+        processing_started_at = coalesce(processing_started_at, now()),
+        last_message_id = $2,
+        last_error = $3
+      where widget_id = $1;
+    `,
+    [widgetId, messageId, errorMessage],
+  );
 }
 
 export async function markWidgetFailed(
-  db: sql.ConnectionPool,
+  db: Pool,
   widgetId: number,
   messageId: string | null,
   errorMessage: string,
 ): Promise<void> {
-  await db
-    .request()
-    .input("widgetId", sql.Int, widgetId)
-    .input("messageId", sql.VarChar(100), messageId)
-    .input("errorMessage", sql.VarChar(sql.MAX), errorMessage)
-    .query(`
-      update dbo.WidgetQueueDemo
+  await db.query(
+    `
+      update widget_queue_demo
       set
-        Status = 'failed',
-        ProcessingStartedAt = coalesce(ProcessingStartedAt, sysutcdatetime()),
-        LastMessageId = coalesce(@messageId, LastMessageId),
-        LastError = @errorMessage
-      where WidgetId = @widgetId;
-    `);
+        status = 'failed',
+        processing_started_at = coalesce(processing_started_at, now()),
+        last_message_id = coalesce($2, last_message_id),
+        last_error = $3
+      where widget_id = $1;
+    `,
+    [widgetId, messageId, errorMessage],
+  );
 }

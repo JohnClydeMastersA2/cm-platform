@@ -102,7 +102,7 @@ async function main(): Promise<void> {
     logger.info("Widget consumer shutting down");
     await channel.close();
     await connection.close();
-    await db.close();
+    await db.end();
   };
 
   process.once("SIGINT", () => {

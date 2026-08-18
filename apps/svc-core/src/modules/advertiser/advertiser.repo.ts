@@ -1,69 +1,69 @@
-import sql from "mssql";
+import type { Pool } from "pg";
 import type { Advertiser } from "./advertiser.schema.js";
 
 type AdvertiserRow = {
-  AdvertiserId: number;
-  AdvertiserName: string;
-  ExternalId: string | null;
-  IsActive: boolean;
-  CreatedAt: Date;
-  CreatedBy: string | null;
-  UpdatedAt: Date | null;
-  UpdatedBy: string | null;
+  advertiser_id: number;
+  advertiser_name: string;
+  external_id: string | null;
+  is_active: boolean;
+  created_at: Date;
+  created_by: string | null;
+  updated_at: Date | null;
+  updated_by: string | null;
 };
 
 function mapAdvertiser(row: AdvertiserRow): Advertiser {
   return {
-    advertiserId: row.AdvertiserId,
-    advertiserName: row.AdvertiserName,
-    externalId: row.ExternalId,
-    isActive: row.IsActive,
-    createdAt: row.CreatedAt,
-    createdBy: row.CreatedBy,
-    updatedAt: row.UpdatedAt,
-    updatedBy: row.UpdatedBy,
+    advertiserId: row.advertiser_id,
+    advertiserName: row.advertiser_name,
+    externalId: row.external_id,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    createdBy: row.created_by,
+    updatedAt: row.updated_at,
+    updatedBy: row.updated_by,
   };
 }
 
-export async function listAdvertisers(db: sql.ConnectionPool): Promise<Advertiser[]> {
-  const result = await db.request().query<AdvertiserRow>(`
+export async function listAdvertisers(db: Pool): Promise<Advertiser[]> {
+  const result = await db.query<AdvertiserRow>(`
     select
-      AdvertiserId,
-      AdvertiserName,
-      ExternalId,
-      IsActive,
-      CreatedAt,
-      CreatedBy,
-      UpdatedAt,
-      UpdatedBy
-    from dbo.Advertiser
-    order by AdvertiserName;
+      advertiser_id,
+      advertiser_name,
+      external_id,
+      is_active,
+      created_at,
+      created_by,
+      updated_at,
+      updated_by
+    from advertiser
+    order by advertiser_name;
   `);
 
-  return result.recordset.map(mapAdvertiser);
+  return result.rows.map(mapAdvertiser);
 }
 
 export async function getAdvertiserById(
-  db: sql.ConnectionPool,
+  db: Pool,
   advertiserId: number,
 ): Promise<Advertiser | null> {
-  const result = await db
-    .request()
-    .input("advertiserId", sql.Int, advertiserId)
-    .query<AdvertiserRow>(`
+  const result = await db.query<AdvertiserRow>(
+    `
       select
-        AdvertiserId,
-        AdvertiserName,
-        ExternalId,
-        IsActive,
-        CreatedAt,
-        CreatedBy,
-        UpdatedAt,
-        UpdatedBy
-      from dbo.Advertiser
-      where AdvertiserId = @advertiserId;
-    `);
+        advertiser_id,
+        advertiser_name,
+        external_id,
+        is_active,
+        created_at,
+        created_by,
+        updated_at,
+        updated_by
+      from advertiser
+      where advertiser_id = $1;
+    `,
+    [advertiserId],
+  );
 
-  const row = result.recordset[0];
+  const row = result.rows[0];
   return row ? mapAdvertiser(row) : null;
 }

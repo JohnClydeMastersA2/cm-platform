@@ -182,11 +182,11 @@ export function Widgets() {
           <p className="platform-kicker">Reliable Messaging with RabbitMQ</p>
           <h1 className="h3 mb-2">Queue Basics, Retry and DLQs</h1>
           <p className="text-muted mb-0">
-            This demonstration uses RabbitMQ as the work queue and SQL Server as the visible state store.
-            Creating widgets inserts rows into dbo.WidgetQueueDemo with a status of queued, then publishes
+            This demonstration uses RabbitMQ as the work queue and Postgres as the visible state store.
+            Creating widgets inserts rows with a status of queued, then publishes
             durable widget.processing_requested.v1 messages to the cm.widget exchange, which routes them
             into the cm.widget.processing queue. The process buttons pull messages from that queue,
-            validate the payload, update the matching SQL row, and ack successful messages so RabbitMQ
+            validate the payload, update the matching database row, and ack successful messages so RabbitMQ
             removes them. Failed messages move first to a delayed retry queue, where RabbitMQ holds them
             briefly before routing them back to the main processing queue. If a retried message fails
             again, it is rejected without requeueing and sent to cm.widget.processing.dlq, where it can be

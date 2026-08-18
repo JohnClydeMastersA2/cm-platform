@@ -15,18 +15,9 @@ param imageTag string
 @description('GHCR image prefix, for example ghcr.io/owner/cm-platform.')
 param imagePrefix string
 
-@description('Azure SQL server FQDN.')
-param sqlServerFqdn string
-
-@description('Azure SQL database name.')
-param sqlDatabaseName string = 'CMPlatform'
-
-@description('Azure SQL runtime application user.')
-param sqlApplicationUser string = 'cmplatform_app'
-
 @secure()
-@description('Azure SQL runtime application password.')
-param sqlApplicationPassword string
+@description('Postgres connection URL.')
+param databaseUrl string
 
 @secure()
 @description('Application admin key.')
@@ -124,8 +115,8 @@ resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
       }
       secrets: [
         {
-          name: 'sql-app-password'
-          value: sqlApplicationPassword
+          name: 'database-url'
+          value: databaseUrl
         }
         {
           name: 'admin-key'
@@ -180,32 +171,12 @@ resource publicApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: '3000'
             }
             {
-              name: 'DB_SERVER'
-              value: sqlServerFqdn
+              name: 'DATABASE_URL'
+              secretRef: 'database-url'
             }
             {
-              name: 'DB_PORT'
-              value: '1433'
-            }
-            {
-              name: 'DB_USER'
-              value: sqlApplicationUser
-            }
-            {
-              name: 'DB_PASSWORD'
-              secretRef: 'sql-app-password'
-            }
-            {
-              name: 'DB_DATABASE'
-              value: sqlDatabaseName
-            }
-            {
-              name: 'DB_ENCRYPT'
-              value: 'true'
-            }
-            {
-              name: 'DB_TRUST_SERVER_CERTIFICATE'
-              value: 'false'
+              name: 'PGSSLMODE'
+              value: 'require'
             }
             {
               name: 'ADMIN_KEY'
@@ -406,8 +377,8 @@ resource widgetConsumerFastApp 'Microsoft.App/containerApps@2024-03-01' = {
       activeRevisionsMode: 'Single'
       secrets: [
         {
-          name: 'sql-app-password'
-          value: sqlApplicationPassword
+          name: 'database-url'
+          value: databaseUrl
         }
         {
           name: 'rabbitmq-url'
@@ -454,32 +425,12 @@ resource widgetConsumerFastApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: 'info'
             }
             {
-              name: 'DB_SERVER'
-              value: sqlServerFqdn
+              name: 'DATABASE_URL'
+              secretRef: 'database-url'
             }
             {
-              name: 'DB_PORT'
-              value: '1433'
-            }
-            {
-              name: 'DB_USER'
-              value: sqlApplicationUser
-            }
-            {
-              name: 'DB_PASSWORD'
-              secretRef: 'sql-app-password'
-            }
-            {
-              name: 'DB_DATABASE'
-              value: sqlDatabaseName
-            }
-            {
-              name: 'DB_ENCRYPT'
-              value: 'true'
-            }
-            {
-              name: 'DB_TRUST_SERVER_CERTIFICATE'
-              value: 'false'
+              name: 'PGSSLMODE'
+              value: 'require'
             }
             {
               name: 'RABBITMQ_URL'
@@ -514,8 +465,8 @@ resource widgetConsumerSlowApp 'Microsoft.App/containerApps@2024-03-01' = {
       activeRevisionsMode: 'Single'
       secrets: [
         {
-          name: 'sql-app-password'
-          value: sqlApplicationPassword
+          name: 'database-url'
+          value: databaseUrl
         }
         {
           name: 'rabbitmq-url'
@@ -562,32 +513,12 @@ resource widgetConsumerSlowApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: 'info'
             }
             {
-              name: 'DB_SERVER'
-              value: sqlServerFqdn
+              name: 'DATABASE_URL'
+              secretRef: 'database-url'
             }
             {
-              name: 'DB_PORT'
-              value: '1433'
-            }
-            {
-              name: 'DB_USER'
-              value: sqlApplicationUser
-            }
-            {
-              name: 'DB_PASSWORD'
-              secretRef: 'sql-app-password'
-            }
-            {
-              name: 'DB_DATABASE'
-              value: sqlDatabaseName
-            }
-            {
-              name: 'DB_ENCRYPT'
-              value: 'true'
-            }
-            {
-              name: 'DB_TRUST_SERVER_CERTIFICATE'
-              value: 'false'
+              name: 'PGSSLMODE'
+              value: 'require'
             }
             {
               name: 'RABBITMQ_URL'
@@ -629,8 +560,8 @@ resource demoMaintenanceJob 'Microsoft.App/jobs@2024-03-01' = {
       }
       secrets: [
         {
-          name: 'sql-app-password'
-          value: sqlApplicationPassword
+          name: 'database-url'
+          value: databaseUrl
         }
         {
           name: 'admin-key'
@@ -665,32 +596,12 @@ resource demoMaintenanceJob 'Microsoft.App/jobs@2024-03-01' = {
               value: 'info'
             }
             {
-              name: 'DB_SERVER'
-              value: sqlServerFqdn
+              name: 'DATABASE_URL'
+              secretRef: 'database-url'
             }
             {
-              name: 'DB_PORT'
-              value: '1433'
-            }
-            {
-              name: 'DB_USER'
-              value: sqlApplicationUser
-            }
-            {
-              name: 'DB_PASSWORD'
-              secretRef: 'sql-app-password'
-            }
-            {
-              name: 'DB_DATABASE'
-              value: sqlDatabaseName
-            }
-            {
-              name: 'DB_ENCRYPT'
-              value: 'true'
-            }
-            {
-              name: 'DB_TRUST_SERVER_CERTIFICATE'
-              value: 'false'
+              name: 'PGSSLMODE'
+              value: 'require'
             }
             {
               name: 'ADMIN_KEY'

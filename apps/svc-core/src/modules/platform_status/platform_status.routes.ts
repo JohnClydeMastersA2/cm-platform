@@ -141,17 +141,17 @@ async function getDatabaseRequirement(
 
     return {
       key: "database",
-      name: "SQL Database",
+      name: "Postgres Database",
       disposition: "online",
-      detail: "SQL Server accepted a readiness query.",
+      detail: "Postgres accepted a readiness query.",
       evidence: `Connected to ${databaseName}.`,
       checkedAt,
     };
   } catch (err) {
     return failedRequirement(
       "database",
-      "SQL Database",
-      "SQL Server readiness query failed.",
+      "Postgres Database",
+      "Postgres readiness query failed.",
       err,
       checkedAt,
     );
@@ -159,13 +159,13 @@ async function getDatabaseRequirement(
 }
 
 async function queryDatabaseName(app: FastifyInstance): Promise<string> {
-  const result = await app.db.request().query<{ ok: number; databaseName: string }>(`
+  const result = await app.db.query<{ ok: number; databaseName: string }>(`
     select
       1 as ok,
-      db_name() as databaseName;
+      current_database() as "databaseName";
   `);
 
-  return result.recordset[0]?.databaseName ?? "unknown";
+  return result.rows[0]?.databaseName ?? "unknown";
 }
 
 async function getDocumentDatabaseRequirement(

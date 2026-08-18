@@ -14,7 +14,7 @@ import amqp from "amqplib";
 import type { Channel, ChannelModel } from "amqplib";
 import http from "node:http";
 import https from "node:https";
-import sql from "mssql";
+import { Pool } from "pg";
 import { loadEnv } from "./config/env.js";
 
 const env = loadEnv();
@@ -24,7 +24,7 @@ const logger = createLogger({
   env: env.NODE_ENV,
 });
 
-type SqlCleanupResult = {
+type DatabaseCleanupResult = {
   table: string;
   deletedRows: number;
 };
@@ -42,8 +42,8 @@ type ApiCleanupResult = {
 type MaintenanceSummary = {
   startedAt: string;
   completedAt: string;
-  sqlCleanupMode: "full-reset";
-  sql: SqlCleanupResult[];
+  databaseCleanupMode: "full-reset";
+  database: DatabaseCleanupResult[];
   rabbitMq: QueueCleanupResult[];
   api: ApiCleanupResult[];
 };
@@ -54,12 +54,12 @@ async function main(): Promise<void> {
   logger.info(
     {
       monitorCount: env.CM_PLATFORM_MONITORS.length,
-      sqlCleanupMode: "full-reset",
+      databaseCleanupMode: "full-reset",
     },
     "Demo maintenance started",
   );
 
-  const sqlResults = await cleanupSqlDemoRows();
+  const databaseResults = await cleanupDatabaseDemoRows();
   const rabbitMqResults = await cleanupRabbitMqQueues();
   const apiResults = await cleanupApiState();
   const completedAt = new Date();
@@ -67,8 +67,8 @@ async function main(): Promise<void> {
   const summary: MaintenanceSummary = {
     startedAt: startedAt.toISOString(),
     completedAt: completedAt.toISOString(),
-    sqlCleanupMode: "full-reset",
-    sql: sqlResults,
+    databaseCleanupMode: "full-reset",
+    database: databaseResults,
     rabbitMq: rabbitMqResults,
     api: apiResults,
   };
@@ -77,39 +77,34 @@ async function main(): Promise<void> {
   await sendMaintenanceEmail(summary);
 }
 
-async function cleanupSqlDemoRows(): Promise<SqlCleanupResult[]> {
-  const pool = await sql.connect({
-    server: env.DB_SERVER,
-    port: env.DB_PORT,
-    user: env.DB_USER,
-    password: env.DB_PASSWORD,
-    database: env.DB_DATABASE,
-    options: {
-      encrypt: env.DB_ENCRYPT,
-      trustServerCertificate: env.DB_TRUST_SERVER_CERTIFICATE,
-    },
+async function cleanupDatabaseDemoRows(): Promise<DatabaseCleanupResult[]> {
+  const pool = new Pool({
+    connectionString: env.DATABASE_URL,
+    connectionTimeoutMillis: 30_000,
+    idleTimeoutMillis: 30_000,
+    max: 2,
+    ssl: env.PGSSLMODE !== "disable",
   });
 
   try {
     return [
-      await deleteDemoRows(pool, "dbo.WidgetQueueDemo"),
-      await deleteDemoRows(pool, "dbo.WidgetConsumerDemo"),
+      await deleteDemoRows(pool, "widget_queue_demo"),
+      await deleteDemoRows(pool, "widget_consumer_demo"),
     ];
   } finally {
-    await pool.close();
+    await pool.end();
   }
 }
 
 async function deleteDemoRows(
-  pool: sql.ConnectionPool,
-  table: "dbo.WidgetQueueDemo" | "dbo.WidgetConsumerDemo",
-): Promise<SqlCleanupResult> {
-  const result = await pool.request()
-    .query(`delete from ${table};`);
+  pool: Pool,
+  table: "widget_queue_demo" | "widget_consumer_demo",
+): Promise<DatabaseCleanupResult> {
+  const result = await pool.query(`delete from ${table};`);
 
   return {
     table,
-    deletedRows: result.rowsAffected[0] ?? 0,
+    deletedRows: result.rowCount ?? 0,
   };
 }
 
@@ -204,7 +199,7 @@ function sendApiRequest(
 }
 
 async function sendMaintenanceEmail(summary: MaintenanceSummary): Promise<void> {
-  const totalDeletedRows = summary.sql.reduce((total, item) => total + item.deletedRows, 0);
+  const totalDeletedRows = summary.database.reduce((total, item) => total + item.deletedRows, 0);
   const totalPurgedMessages = summary.rabbitMq.reduce((total, item) => total + item.purgedMessages, 0);
 
   await sendEmail({
@@ -215,10 +210,10 @@ async function sendMaintenanceEmail(summary: MaintenanceSummary): Promise<void> 
       "",
       `Started: ${summary.startedAt}`,
       `Completed: ${summary.completedAt}`,
-      `SQL cleanup mode: ${summary.sqlCleanupMode}`,
+      `Database cleanup mode: ${summary.databaseCleanupMode}`,
       "",
-      `SQL rows deleted: ${totalDeletedRows}`,
-      ...summary.sql.map((item) => `- ${item.table}: ${item.deletedRows}`),
+      `Database rows deleted: ${totalDeletedRows}`,
+      ...summary.database.map((item) => `- ${item.table}: ${item.deletedRows}`),
       "",
       `RabbitMQ messages purged: ${totalPurgedMessages}`,
       ...summary.rabbitMq.map((item) => `- ${item.queue}: ${item.purgedMessages}`),
@@ -231,11 +226,11 @@ async function sendMaintenanceEmail(summary: MaintenanceSummary): Promise<void> 
       "<ul>",
       `<li><strong>Started:</strong> ${escapeHtml(summary.startedAt)}</li>`,
       `<li><strong>Completed:</strong> ${escapeHtml(summary.completedAt)}</li>`,
-      `<li><strong>SQL cleanup mode:</strong> ${summary.sqlCleanupMode}</li>`,
+      `<li><strong>Database cleanup mode:</strong> ${summary.databaseCleanupMode}</li>`,
       "</ul>",
-      "<h2>SQL cleanup</h2>",
+      "<h2>Database cleanup</h2>",
       "<ul>",
-      ...summary.sql.map((item) => `<li>${escapeHtml(item.table)}: ${item.deletedRows}</li>`),
+      ...summary.database.map((item) => `<li>${escapeHtml(item.table)}: ${item.deletedRows}</li>`),
       "</ul>",
       "<h2>RabbitMQ cleanup</h2>",
       "<ul>",

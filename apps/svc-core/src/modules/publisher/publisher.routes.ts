@@ -48,9 +48,7 @@ export async function publisherRoutes(app: FastifyInstance): Promise<void> {
       const publisher = await createPublisherRegistration(app.db, parsed.data);
       reply.code(201).send(publisher);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-
-      if (message.includes("UX_Publisher_Name")) {
+      if (isUniqueConstraintViolation(err, "ux_publisher_name")) {
         reply.code(409).send({ error: "Publisher name already exists" });
         return;
       }
@@ -146,4 +144,9 @@ export async function publisherRoutes(app: FastifyInstance): Promise<void> {
 
     return publisher;
   });
+}
+
+function isUniqueConstraintViolation(err: unknown, constraintName: string): boolean {
+  const pgError = err as { code?: string; constraint?: string };
+  return pgError.code === "23505" && pgError.constraint === constraintName;
 }

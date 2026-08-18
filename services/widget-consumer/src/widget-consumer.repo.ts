@@ -1,7 +1,7 @@
-import sql from "mssql";
+import type { Pool } from "pg";
 
 export async function markWidgetProcessing(
-  db: sql.ConnectionPool,
+  db: Pool,
   params: {
     widgetId: number;
     consumerName: string;
@@ -9,28 +9,25 @@ export async function markWidgetProcessing(
     messageId: string;
   },
 ): Promise<void> {
-  await db
-    .request()
-    .input("widgetId", sql.Int, params.widgetId)
-    .input("consumerName", sql.VarChar(100), params.consumerName)
-    .input("processingSeconds", sql.Int, params.processingSeconds)
-    .input("messageId", sql.UniqueIdentifier, params.messageId)
-    .query(`
-      update dbo.WidgetConsumerDemo
+  await db.query(
+    `
+      update widget_consumer_demo
       set
-        Status = 'processing',
-        ProcessingStartedAt = sysutcdatetime(),
-        ProcessedAt = null,
-        ProcessedBy = @consumerName,
-        ProcessingSeconds = @processingSeconds,
-        LastMessageId = @messageId,
-        LastError = null
-      where WidgetId = @widgetId;
-    `);
+        status = 'processing',
+        processing_started_at = now(),
+        processed_at = null,
+        processed_by = $2,
+        processing_seconds = $3,
+        last_message_id = $4,
+        last_error = null
+      where widget_id = $1;
+    `,
+    [params.widgetId, params.consumerName, params.processingSeconds, params.messageId],
+  );
 }
 
 export async function markWidgetProcessed(
-  db: sql.ConnectionPool,
+  db: Pool,
   params: {
     widgetId: number;
     consumerName: string;
@@ -38,27 +35,24 @@ export async function markWidgetProcessed(
     messageId: string;
   },
 ): Promise<void> {
-  await db
-    .request()
-    .input("widgetId", sql.Int, params.widgetId)
-    .input("consumerName", sql.VarChar(100), params.consumerName)
-    .input("processingSeconds", sql.Int, params.processingSeconds)
-    .input("messageId", sql.UniqueIdentifier, params.messageId)
-    .query(`
-      update dbo.WidgetConsumerDemo
+  await db.query(
+    `
+      update widget_consumer_demo
       set
-        Status = 'processed',
-        ProcessedAt = sysutcdatetime(),
-        ProcessedBy = @consumerName,
-        ProcessingSeconds = @processingSeconds,
-        LastMessageId = @messageId,
-        LastError = null
-      where WidgetId = @widgetId;
-    `);
+        status = 'processed',
+        processed_at = now(),
+        processed_by = $2,
+        processing_seconds = $3,
+        last_message_id = $4,
+        last_error = null
+      where widget_id = $1;
+    `,
+    [params.widgetId, params.consumerName, params.processingSeconds, params.messageId],
+  );
 }
 
 export async function markWidgetFailed(
-  db: sql.ConnectionPool,
+  db: Pool,
   params: {
     widgetId: number;
     consumerName: string;
@@ -67,21 +61,17 @@ export async function markWidgetFailed(
     error: string;
   },
 ): Promise<void> {
-  await db
-    .request()
-    .input("widgetId", sql.Int, params.widgetId)
-    .input("consumerName", sql.VarChar(100), params.consumerName)
-    .input("processingSeconds", sql.Int, params.processingSeconds)
-    .input("messageId", sql.UniqueIdentifier, params.messageId)
-    .input("error", sql.VarChar(1000), params.error)
-    .query(`
-      update dbo.WidgetConsumerDemo
+  await db.query(
+    `
+      update widget_consumer_demo
       set
-        Status = 'failed',
-        ProcessedBy = @consumerName,
-        ProcessingSeconds = @processingSeconds,
-        LastMessageId = @messageId,
-        LastError = @error
-      where WidgetId = @widgetId;
-    `);
+        status = 'failed',
+        processed_by = $2,
+        processing_seconds = $3,
+        last_message_id = $4,
+        last_error = $5
+      where widget_id = $1;
+    `,
+    [params.widgetId, params.consumerName, params.processingSeconds, params.messageId, params.error],
+  );
 }

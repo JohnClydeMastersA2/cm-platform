@@ -85,7 +85,7 @@ jobs:
       - name: Validate required runtime configuration
         env:
           CM_PLATFORM_MONITORS: ${{ vars.CM_PLATFORM_MONITORS }}
-          SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
+          POSTGRES_DATABASE_URL: ${{ secrets.POSTGRES_DATABASE_URL }}
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
@@ -97,7 +97,7 @@ jobs:
           missing=()
 
           [[ -z "${CM_PLATFORM_MONITORS}" ]] && missing+=("CM_PLATFORM_MONITORS")
-          [[ -z "${SQL_APP_PASSWORD}" ]] && missing+=("SQL_APP_PASSWORD")
+          [[ -z "${POSTGRES_DATABASE_URL}" ]] && missing+=("POSTGRES_DATABASE_URL")
           [[ -z "${ADMIN_KEY}" ]] && missing+=("ADMIN_KEY")
           [[ -z "${RABBITMQ_URL}" ]] && missing+=("RABBITMQ_URL")
           [[ -z "${MONGODB_URI}" ]] && missing+=("MONGODB_URI")
@@ -119,7 +119,7 @@ jobs:
       - name: What-if Container Apps deployment
         env:
           CM_PLATFORM_MONITORS: ${{ vars.CM_PLATFORM_MONITORS }}
-          SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
+          POSTGRES_DATABASE_URL: ${{ secrets.POSTGRES_DATABASE_URL }}
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
@@ -137,7 +137,7 @@ jobs:
         if: inputs.action == 'DEPLOY APPS'
         env:
           CM_PLATFORM_MONITORS: ${{ vars.CM_PLATFORM_MONITORS }}
-          SQL_APP_PASSWORD: ${{ secrets.SQL_APP_PASSWORD }}
+          POSTGRES_DATABASE_URL: ${{ secrets.POSTGRES_DATABASE_URL }}
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}

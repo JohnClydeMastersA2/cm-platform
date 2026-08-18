@@ -24,13 +24,8 @@ type BuildAppOptions = {
   nodeEnv: string;
   logLevel: string;
   adminKey: string;
-  dbServer: string;
-  dbPort: number;
-  dbUser: string;
-  dbPassword: string;
-  dbDatabase: string;
-  dbEncrypt: boolean;
-  dbTrustServerCertificate: boolean;
+  databaseUrl: string;
+  databaseSsl: boolean;
   authApiBaseUrl: string;
   publicWebBaseUrl: string;
   healthcareTransformBaseUrl: string;
@@ -61,13 +56,8 @@ export function buildApp(opts: BuildAppOptions) {
   });
 
   app.register(dbPlugin, {
-    server: opts.dbServer,
-    port: opts.dbPort,
-    user: opts.dbUser,
-    password: opts.dbPassword,
-    database: opts.dbDatabase,
-    encrypt: opts.dbEncrypt,
-    trustServerCertificate: opts.dbTrustServerCertificate,
+    databaseUrl: opts.databaseUrl,
+    ssl: opts.databaseSsl,
   });
 
   app.register(messagingPlugin, {
@@ -118,7 +108,7 @@ export function buildApp(opts: BuildAppOptions) {
       },
     },
     async () => {
-      await app.db.request().query("select 1 as ok");
+      await app.db.query("select 1 as ok");
       await app.mongoDb.command({ ping: 1 });
       return { ok: true };
     },

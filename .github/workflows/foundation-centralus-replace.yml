@@ -227,5 +227,5 @@ jobs:
             echo "- Created Central US environment: ${CENTRALUS_ENVIRONMENT}"
             echo "- Verified provisioning state, region, and Log Analytics linkage"
             echo "- Soft-deleted unused East US workspace: ${EASTUS_WORKSPACE}"
-            echo "- Azure SQL was not modified"
+            echo "- External relational database was not modified"
           } >> "${GITHUB_STEP_SUMMARY}"
